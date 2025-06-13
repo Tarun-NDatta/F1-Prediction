@@ -1,40 +1,41 @@
 [comment]: # (You may find the following markdown cheat sheet useful: https://www.markdownguide.org/cheat-sheet/. You may also consider using an online Markdown editor such as StackEdit or makeareadme.) 
 
-## Project title: *[Insert your project title here]*
+## Project title: *AI/ML-Based Formula 1 Race Outcome Prediction Using Historical and Real-Time Data*
 
-### Student name: *[Insert your name here]*
+### Student name: *Tarun Datta*
 
-### Student email: *[Insert your university email address here]*
+### Student email: *td188@student.le.ac.uk*
 
 ### Project description: 
-*[Add your project description here, these will typically be around 100-150 words long]*
+This project leverages AI/ML techniques to predict Formula 1 race outcomes, including qualifying and final race positions. It uses historical data, driver profiles, team strategies, and environmental variables to extract patterns and trends in performance. The end goal is to develop a predictive model and an interactive web dashboard to visualize results and provide insights. This real-world data-driven project supports learning in machine learning, cloud computing, and data engineering. It showcases the application of theory to a dynamic, strategy-intensive sport.
 
 ### List of requirements (objectives): 
 
-[comment]: # (You can add as many additional bullet points as necessary by adding an additional hyphon symbol '-' at the end of each list) 
-
 Essential:
-- [Essential requirement 1]
-- [Essential requirement 2]
-- [Essential requirement 3]
-- [Essential requirement *n*]
+- Collect historical F1 race data from the 2022 season onward via APIs.
+- Preprocess and store structured race data for model training.
+- Engineer meaningful features from driver, team, track, and race metrics.
+- Build and evaluate ML models to predict qualifying and race outcomes.
+- Develop a Django-based interface to visualize predictions and analysis.
 
 Desirable:
-- [Desirable requirement 1]
-- [Desirable requirement 2]
-- [Desirable requirement 3]
-- [Desirable requirement *n*]
+- Analyze feature importance to understand what factors impact race results most.
+- Implement model comparison (Random Forest, XGBoost, Neural Networks).
+- Include qualifying data, weather impact, and team performance metrics in models.
+- Allow dynamic switching between seasons (2022, 2023, etc.)
 
 Optional:
-- [Optional requirement 1]
-- [Optional requirement 2]
-- [Optional requirement 3]
-- [Optional requirement *n*]
-
+- Enable real-time data ingestion for live race predictions.
+- Integrate cloud services (e.g., AWS/GCP) for model hosting and scalability.
+- Provide an option for users to compare model predictions vs actual race results.
 
 ## Information about this repository
-This is the repository that you are going to use **individually** for developing your project. Please use the resources provided in the module to learn about **plagiarism** and how plagiarism awareness can foster your learning.
+This is the repository used individually for developing the dissertation project. It includes all software artefacts such as:
 
-Regarding the use of this repository, once a feature (or part of it) is developed and **working** or parts of your system are integrated and **working**, define a commit and push it to the remote repository. You may find yourself making a commit after a productive hour of work (or even after 20 minutes!), for example. Choose commit message wisely and be concise.
+- `data/`: For data gathering, cleaning, and preprocessing scripts (via Django management commands).
+- `prediction/`: For storing model-related files, training scripts, and evaluation logic.
+- `dashboard/`: For Django views, templates, and routes to display results.
+- `notebooks/`: For prototyping and exploratory data analysis using Jupyter Notebooks.
+- `README.md`: This file.
 
-Please choose the structure of the contents of this repository that suits the needs of your project but do indicate in this file where the main software artefacts are located.
+Frequent commits are encouraged after each working feature or milestone. Commit messages should be clear and concise (e.g., "Added feature engineering for driver consistency", "Connected XGBoost model to prediction pipeline").
