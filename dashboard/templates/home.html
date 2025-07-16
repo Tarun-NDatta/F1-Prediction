@@ -1,0 +1,361 @@
+<!-- home.html -->
+{% extends 'base.html' %}
+
+{% block title %}Dashboard Home{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Hero Section */
+    .hero-section {
+        background: var(--f1-gradient);
+        color: white;
+        padding: 3rem 0;
+        border-radius: 0 0 50px 50px;
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 3rem;
+    }
+
+    .hero-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M54 18h6v6h-6zM36 18h6v6h-6zM18 18h6v6h-6zM0 18h6v6H0zM54 0h6v6h-6zM36 0h6v6h-6zM18 0h6v6h-6zM0 0h6v6H0z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E") repeat;
+        opacity: 0.1;
+    }
+
+    .hero-content {
+        position: relative;
+        z-index: 1;
+    }
+
+    .hero-title {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 1rem;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .hero-subtitle {
+        font-size: 1.25rem;
+        opacity: 0.9;
+        margin-bottom: 2rem;
+    }
+
+    .racing-stats {
+        display: flex;
+        justify-content: space-around;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+
+    .stat-item {
+        text-align: center;
+        padding: 1rem;
+        min-width: 120px;
+    }
+
+    .stat-number {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #ffd700;
+        display: block;
+    }
+
+    .stat-label {
+        font-size: 0.9rem;
+        opacity: 0.8;
+    }
+
+    /* Feature Cards */
+    .feature-card {
+        padding: 2rem;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .feature-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        text-align: center;
+        color: var(--f1-red);
+    }
+
+    .feature-title {
+        color: var(--f1-red);
+        font-weight: bold;
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+        text-align: center;
+    }
+
+    .feature-description {
+        color: #6b7280;
+        line-height: 1.6;
+        margin-bottom: 1.5rem;
+        flex-grow: 1;
+    }
+
+    .feature-card .btn {
+        align-self: center;
+    }
+
+    /* Coming Soon Badge */
+    .coming-soon-badge {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background: #ffd700;
+        color: #dc143c;
+        padding: 0.25rem 0.75rem;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        font-weight: bold;
+        animation: pulse 2s infinite;
+    }
+
+    /* Benefits Section */
+    .benefit-item {
+        display: flex;
+        align-items: flex-start;
+        margin-bottom: 1.5rem;
+    }
+
+    .benefit-icon {
+        font-size: 1.8rem;
+        margin-right: 1rem;
+        min-width: 40px;
+        color: var(--f1-red);
+    }
+
+    .benefit-content h5 {
+        color: var(--f1-red);
+        margin-bottom: 0.5rem;
+    }
+
+    /* Card Stagger Animation */
+    .feature-card:nth-child(1) { animation-delay: 0.1s; }
+    .feature-card:nth-child(2) { animation-delay: 0.3s; }
+    .feature-card:nth-child(3) { animation-delay: 0.5s; }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .hero-title {
+            font-size: 2rem;
+        }
+        
+        .hero-subtitle {
+            font-size: 1rem;
+        }
+        
+        .feature-card {
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .feature-icon {
+            font-size: 2.5rem;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .hero-title {
+            font-size: 1.8rem;
+        }
+        
+        .stat-item {
+            min-width: 100px;
+            padding: 0.5rem;
+        }
+        
+        .stat-number {
+            font-size: 1.8rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container hero-content text-center">
+        <h1 class="hero-title fade-in"><i class="fas fa-flag-checkered me-2"></i>Formula 1 Outcome Predictor</h1>
+        <p class="hero-subtitle fade-in">Track race data, view predictions, and analyze performance trends using machine learning insights.</p>
+        
+        <div class="racing-stats fade-in">
+            <div class="stat-item">
+                <span class="stat-number" id="stat1">23</span>
+                <span class="stat-label">Races per Season</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number" id="stat2">20</span>
+                <span class="stat-label">Drivers</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number" id="stat3">10</span>
+                <span class="stat-label">Teams</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Feature Cards -->
+<div class="row mt-4">
+    <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card feature-card fade-in">
+            <div class="card-body">
+                <div class="feature-icon"><i class="fas fa-chart-bar"></i></div>
+                <h5 class="feature-title">Results</h5>
+                <p class="feature-description">View past race and qualifying results by season and round. Analyze driver performance across different circuits and weather conditions.</p>
+                <a href="results/" class="btn btn-primary">View Results</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card feature-card fade-in">
+            <div class="card-body">
+                <div class="feature-icon"><i class="fas fa-crystal-ball"></i></div>
+                <h5 class="feature-title">Predictions</h5>
+                <p class="feature-description">Explore predicted race outcomes and compare model accuracy. Get insights into which drivers are likely to perform well in upcoming races.</p>
+                <a href="prediction/" class="btn btn-primary">View Predictions</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card feature-card fade-in">
+            <div class="card-body">
+                <div class="coming-soon-badge">Coming Soon</div>
+                <div class="feature-icon"><i class="fas fa-cogs"></i></div>
+                <h5 class="feature-title">Feature Insights</h5>
+                <p class="feature-description">Understand driver & team metrics used for predictions. Deep dive into the machine learning features that drive our predictive models.</p>
+                <a href="#" class="btn btn-secondary disabled">Coming Soon</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="racing-stripe"></div>
+
+<!-- Benefits Section -->
+<div class="row mt-5">
+    <div class="col-12 text-center mb-4">
+        <h2 class="text-danger">Why Use F1 Outcome Predictor?</h2>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="benefit-item fade-in">
+            <div class="benefit-icon"><i class="fas fa-bullseye"></i></div>
+            <div class="benefit-content">
+                <h5>High Accuracy</h5>
+                <p>Our ML models achieve 85%+ accuracy in race predictions</p>
+            </div>
+        </div>
+        
+        <div class="benefit-item fade-in">
+            <div class="benefit-icon"><i class="fas fa-bolt"></i></div>
+            <div class="benefit-content">
+                <h5>Real-time Updates</h5>
+                <p>Get predictions updated with latest race and practice data</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="benefit-item fade-in">
+            <div class="benefit-icon"><i class="fas fa-chart-line"></i></div>
+            <div class="benefit-content">
+                <h5>Data-Driven</h5>
+                <p>Analysis based on historical F1 data from 1950-2024</p>
+            </div>
+        </div>
+        
+        <div class="benefit-item fade-in">
+            <div class="benefit-icon"><i class="fas fa-graduation-cap"></i></div>
+            <div class="benefit-content">
+                <h5>University Research</h5>
+                <p>Developed at University of Leicester with academic rigor</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Preview -->
+<div class="row mt-5">
+    <div class="col-12 text-center mb-4">
+        <h2 class="text-danger">Performance Statistics</h2>
+    </div>
+    
+    <div class="col-md-3 col-6 mb-4">
+        <div class="card text-center py-3 fade-in">
+            <div class="display-4 text-danger fw-bold">85%</div>
+            <div class="text-muted">Prediction Accuracy</div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 col-6 mb-4">
+        <div class="card text-center py-3 fade-in">
+            <div class="display-4 text-danger fw-bold">10K+</div>
+            <div class="text-muted">Race Records</div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 col-6 mb-4">
+        <div class="card text-center py-3 fade-in">
+            <div class="display-4 text-danger fw-bold">5</div>
+            <div class="text-muted">ML Models</div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 col-6 mb-4">
+        <div class="card text-center py-3 fade-in">
+            <div class="display-4 text-danger fw-bold">24/7</div>
+            <div class="text-muted">Data Updates</div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Animate stats on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        // Stats counter animation
+        function animateValue(id, start, end, duration) {
+            const element = document.getElementById(id);
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                const value = Math.floor(progress * (end - start) + start);
+                element.textContent = value;
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+        
+        // Trigger animations with delay
+        setTimeout(() => {
+            animateValue("stat1", 0, 23, 1000);
+            animateValue("stat2", 0, 20, 1000);
+            animateValue("stat3", 0, 10, 1000);
+        }, 500);
+        
+        // Add animation classes
+        document.querySelectorAll('.fade-in').forEach(el => {
+            el.style.opacity = 0;
+            setTimeout(() => {
+                el.style.opacity = 1;
+            }, 100);
+        });
+    });
+</script>
+{% endblock %}

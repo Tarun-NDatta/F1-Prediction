@@ -1,0 +1,626 @@
+{% extends 'base.html' %}
+
+{% block title %}F1 Results{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Results Page Specific Styles */
+    .results-header {
+        background: linear-gradient(135deg, #dc143c 0%, #991b1b 100%);
+        color: white;
+        padding: 2rem 0;
+        border-radius: 0 0 30px 30px;
+        margin-bottom: 2rem;
+    }
+    
+    .filter-section {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+    
+    .filter-title {
+        color: #dc143c;
+        font-weight: bold;
+        margin-bottom: 1.2rem;
+        border-bottom: 2px solid #f0f0f0;
+        padding-bottom: 0.8rem;
+    }
+    
+    .results-card {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+        transition: all 0.3s ease;
+    }
+    
+    .results-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(220, 20, 60, 0.2);
+    }
+    
+    .results-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #f0f0f0;
+    }
+    
+    .circuit-info {
+        display: flex;
+        align-items: center;
+    }
+    
+    .circuit-image {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: #f0f0f0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        color: #dc143c;
+        font-size: 1.5rem;
+    }
+    
+    .race-title {
+        font-weight: bold;
+        margin-bottom: 0.3rem;
+    }
+    
+    .race-date {
+        color: #6b7280;
+        font-size: 0.9rem;
+    }
+    
+    .results-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+    
+    .results-table th {
+        background: #f8f9fa;
+        color: #dc143c;
+        font-weight: 600;
+        padding: 0.8rem 1rem;
+        text-align: left;
+        border-bottom: 2px solid #e9ecef;
+    }
+    
+    .results-table td {
+        padding: 0.8rem 1rem;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .results-table tr:hover {
+        background-color: rgba(220, 20, 60, 0.03);
+    }
+    
+    .position-cell {
+        font-weight: bold;
+        text-align: center;
+        width: 40px;
+    }
+    
+    .driver-cell {
+        display: flex;
+        align-items: center;
+    }
+    
+    .driver-number {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: #dc143c;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        margin-right: 0.8rem;
+    }
+    
+    .driver-name {
+        font-weight: 500;
+    }
+    
+    .team-badge {
+        display: inline-block;
+        padding: 0.2rem 0.8rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        margin-left: 0.5rem;
+    }
+    
+    .team-mercedes { background: #00D2BE; color: white; }
+    .team-ferrari { background: #DC0000; color: white; }
+    .team-redbull { background: #0600EF; color: white; }
+    .team-mclaren { background: #FF8700; color: white; }
+    .team-alpine { background: #0090FF; color: white; }
+    .team-astonmartin { background: #006F62; color: white; }
+    .team-alfaromeo { background: #900000; color: white; }
+    .team-haas { background: #FFFFFF; color: black; border: 1px solid #ccc; }
+    .team-alphatauri { background: #2B4562; color: white; }
+    .team-williams { background: #005AFF; color: white; }
+    
+    .time-cell {
+        font-family: monospace;
+        font-weight: 500;
+    }
+    
+    .podium {
+        background-color: rgba(255, 215, 0, 0.1);
+    }
+    
+    .points-cell {
+        font-weight: bold;
+        color: #dc143c;
+    }
+    
+    .dnf {
+        color: #6c757d;
+        font-style: italic;
+    }
+    
+    .no-results {
+        text-align: center;
+        padding: 3rem;
+        color: #6c757d;
+    }
+    
+    .pagination {
+        justify-content: center;
+        margin-top: 2rem;
+    }
+    
+    .page-link {
+        color: #dc143c;
+        border: none;
+    }
+    
+    .page-item.active .page-link {
+        background: #dc143c;
+        border-color: #dc143c;
+    }
+    
+    .podium-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: #dc143c;
+        color: white;
+        font-weight: bold;
+        margin-right: 0.8rem;
+    }
+    
+    .podium-1 { background: #FFD700; }
+    .podium-2 { background: #C0C0C0; }
+    .podium-3 { background: #CD7F32; }
+    
+    .weather-icon {
+        font-size: 1.2rem;
+        margin-right: 0.5rem;
+    }
+    
+    .sunny { color: #FFD700; }
+    .cloudy { color: #6c757d; }
+    .rainy { color: #007BFF; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="results-header">
+    <div class="container text-center">
+        <h1><i class="fas fa-flag-checkered me-2"></i>F1 Race Results</h1>
+        <p class="lead">Explore historical race data and qualifying results</p>
+    </div>
+</div>
+
+<div class="container">
+    <div class="filter-section">
+        <h4 class="filter-title"><i class="fas fa-filter me-2"></i>Filter Results</h4>
+        <div class="row">
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Season</label>
+                <select class="form-select">
+                    <option selected>2023</option>
+                    <option>2022</option>
+                    <option>2021</option>
+                    <option>2020</option>
+                    <option>2019</option>
+                </select>
+            </div>
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Circuit</label>
+                <select class="form-select">
+                    <option selected>All Circuits</option>
+                    <option>Bahrain International Circuit</option>
+                    <option>Jeddah Corniche Circuit</option>
+                    <option>Albert Park Circuit</option>
+                    <option>Baku City Circuit</option>
+                    <option>Miami International Autodrome</option>
+                </select>
+            </div>
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Session Type</label>
+                <select class="form-select">
+                    <option selected>Race Results</option>
+                    <option>Qualifying Results</option>
+                </select>
+            </div>
+            <div class="col-md-3 mb-3 d-flex align-items-end">
+                <button class="btn btn-primary w-100"><i class="fas fa-search me-2"></i>Apply Filters</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Example Race Result -->
+    <div class="results-card">
+        <div class="results-card-header">
+            <div class="circuit-info">
+                <div class="circuit-image">
+                    <i class="fas fa-route"></i>
+                </div>
+                <div>
+                    <h4 class="race-title">Bahrain Grand Prix</h4>
+                    <div class="race-date">
+                        <i class="fas fa-calendar-alt me-2"></i>March 5, 2023
+                        <span class="ms-3">
+                            <i class="fas fa-thermometer-half me-2"></i>Track: 32°C
+                        </span>
+                        <span class="ms-3">
+                            <i class="fas fa-cloud weather-icon sunny"></i>Sunny
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <span class="badge bg-danger">57 Laps</span>
+            </div>
+        </div>
+        
+        <div class="table-responsive">
+            <table class="results-table">
+                <thead>
+                    <tr>
+                        <th class="position-cell">Pos</th>
+                        <th>Driver</th>
+                        <th>Team</th>
+                        <th>Grid</th>
+                        <th>Time/Status</th>
+                        <th>Laps</th>
+                        <th>Points</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="podium">
+                        <td class="position-cell"><span class="podium-badge podium-1">1</span></td>
+                        <td>
+                            <div class="driver-cell">
+                                <div class="driver-number">1</div>
+                                <div class="driver-name">Max Verstappen</div>
+                            </div>
+                        </td>
+                        <td><span class="team-badge team-redbull">Red Bull</span></td>
+                        <td>1</td>
+                        <td class="time-cell">1:33:56.736</td>
+                        <td>57</td>
+                        <td class="points-cell">25</td>
+                    </tr>
+                    <tr class="podium">
+                        <td class="position-cell"><span class="podium-badge podium-2">2</span></td>
+                        <td>
+                            <div class="driver-cell">
+                                <div class="driver-number">11</div>
+                                <div class="driver-name">Sergio Pérez</div>
+                            </div>
+                        </td>
+                        <td><span class="team-badge team-redbull">Red Bull</span></td>
+                        <td>2</td>
+                        <td class="time-cell">+11.987s</td>
+                        <td>57</td>
+                        <td class="points-cell">18</td>
+                    </tr>
+                    <tr class="podium">
+                        <td class="position-cell"><span class="podium-badge podium-3">3</span></td>
+                        <td>
+                            <div class="driver-cell">
+                                <div class="driver-number">14</div>
+                                <div class="driver-name">Fernando Alonso</div>
+                            </div>
+                        </td>
+                        <td><span class="team-badge team-astonmartin">Aston Martin</span></td>
+                        <td>5</td>
+                        <td class="time-cell">+38.637s</td>
+                        <td>57</td>
+                        <td class="points-cell">15</td>
+                    </tr>
+                    <tr>
+                        <td class="position-cell">4</td>
+                        <td>
+                            <div class="driver-cell">
+                                <div class="driver-number">55</div>
+                                <div class="driver-name">Carlos Sainz</div>
+                            </div>
+                        </td>
+                        <td><span class="team-badge team-ferrari">Ferrari</span></td>
+                        <td>4</td>
+                        <td class="time-cell">+48.052s</td>
+                        <td>57</td>
+                        <td class="points-cell">12</td>
+                    </tr>
+                    <tr>
+                        <td class="position-cell">5</td>
+                        <td>
+                            <div class="driver-cell">
+                                <div class="driver-number">44</div>
+                                <div class="driver-name">Lewis Hamilton</div>
+                            </div>
+                        </td>
+                        <td><span class="team-badge team-mercedes">Mercedes</span></td>
+                        <td>7</td>
+                        <td class="time-cell">+50.977s</td>
+                        <td>57</td>
+                        <td class="points-cell">10</td>
+                    </tr>
+                    <tr>
+                        <td class="position-cell">6</td>
+                        <td>
+                            <div class="driver-cell">
+                                <div class="driver-number">18</div>
+                                <div class="driver-name">Lance Stroll</div>
+                            </div>
+                        </td>
+                        <td><span class="team-badge team-astonmartin">Aston Martin</span></td>
+                        <td>8</td>
+                        <td class="time-cell">+54.502s</td>
+                        <td>57</td>
+                        <td class="points-cell">8</td>
+                    </tr>
+                    <tr>
+                        <td class="position-cell">7</td>
+                        <td>
+                            <div class="driver-cell">
+                                <div class="driver-number">63</div>
+                                <div class="driver-name">George Russell</div>
+                            </div>
+                        </td>
+                        <td><span class="team-badge team-mercedes">Mercedes</span></td>
+                        <td>6</td>
+                        <td class="time-cell">+55.873s</td>
+                        <td>57</td>
+                        <td class="points-cell">6</td>
+                    </tr>
+                    <tr>
+                        <td class="position-cell">8</td>
+                        <td>
+                            <div class="driver-cell">
+                                <div class="driver-number">77</div>
+                                <div class="driver-name">Valtteri Bottas</div>
+                            </div>
+                        </td>
+                        <td><span class="team-badge team-alfaromeo">Alfa Romeo</span></td>
+                        <td>12</td>
+                        <td class="time-cell">+72.647s</td>
+                        <td>57</td>
+                        <td class="points-cell">4</td>
+                    </tr>
+                    <tr>
+                        <td class="position-cell">9</td>
+                        <td>
+                            <div class="driver-cell">
+                                <div class="driver-number">10</div>
+                                <div class="driver-name">Pierre Gasly</div>
+                            </div>
+                        </td>
+                        <td><span class="team-badge team-alpine">Alpine</span></td>
+                        <td>20</td>
+                        <td class="time-cell">+73.753s</td>
+                        <td>57</td>
+                        <td class="points-cell">2</td>
+                    </tr>
+                    <tr>
+                        <td class="position-cell">10</td>
+                        <td>
+                            <div class="driver-cell">
+                                <div class="driver-number">23</div>
+                                <div class="driver-name">Alexander Albon</div>
+                            </div>
+                        </td>
+                        <td><span class="team-badge team-williams">Williams</span></td>
+                        <td>15</td>
+                        <td class="time-cell">+89.774s</td>
+                        <td>57</td>
+                        <td class="points-cell">1</td>
+                    </tr>
+                    <tr>
+                        <td class="position-cell">11</td>
+                        <td>
+                            <div class="driver-cell">
+                                <div class="driver-number">22</div>
+                                <div class="driver-name">Yuki Tsunoda</div>
+                            </div>
+                        </td>
+                        <td><span class="team-badge team-alphatauri">AlphaTauri</span></td>
+                        <td>14</td>
+                        <td class="time-cell">+90.870s</td>
+                        <td>57</td>
+                        <td class="points-cell">0</td>
+                    </tr>
+                    <tr>
+                        <td class="position-cell">12</td>
+                        <td>
+                            <div class="driver-cell">
+                                <div class="driver-number">2</div>
+                                <div class="driver-name">Logan Sargeant</div>
+                            </div>
+                        </td>
+                        <td><span class="team-badge team-williams">Williams</span></td>
+                        <td>16</td>
+                        <td class="time-cell dn">+1 Lap</td>
+                        <td>56</td>
+                        <td class="points-cell">0</td>
+                    </tr>
+                    <tr>
+                        <td class="position-cell">13</td>
+                        <td>
+                            <div class="driver-cell">
+                                <div class="driver-number">20</div>
+                                <div class="driver-name">Kevin Magnussen</div>
+                            </div>
+                        </td>
+                        <td><span class="team-badge team-haas">Haas</span></td>
+                        <td>17</td>
+                        <td class="time-cell">+1 Lap</td>
+                        <td>56</td>
+                        <td class="points-cell">0</td>
+                    </tr>
+                    <tr>
+                        <td class="position-cell">14</td>
+                        <td>
+                            <div class="driver-cell">
+                                <div class="driver-number">21</div>
+                                <div class="driver-name">Nyck de Vries</div>
+                            </div>
+                        </td>
+                        <td><span class="team-badge team-alphatauri">AlphaTauri</span></td>
+                        <td>19</td>
+                        <td class="time-cell">+1 Lap</td>
+                        <td>56</td>
+                        <td class="points-cell">0</td>
+                    </tr>
+                    <tr>
+                        <td class="position-cell">15</td>
+                        <td>
+                            <div class="driver-cell">
+                                <div class="driver-number">27</div>
+                                <div class="driver-name">Nico Hülkenberg</div>
+                            </div>
+                        </td>
+                        <td><span class="team-badge team-haas">Haas</span></td>
+                        <td>10</td>
+                        <td class="time-cell">+1 Lap</td>
+                        <td>56</td>
+                        <td class="points-cell">0</td>
+                    </tr>
+                    <tr>
+                        <td class="position-cell">16</td>
+                        <td>
+                            <div class="driver-cell">
+                                <div class="driver-number">24</div>
+                                <div class="driver-name">Zhou Guanyu</div>
+                            </div>
+                        </td>
+                        <td><span class="team-badge team-alfaromeo">Alfa Romeo</span></td>
+                        <td>13</td>
+                        <td class="time-cell">+1 Lap</td>
+                        <td>56</td>
+                        <td class="points-cell">0</td>
+                    </tr>
+                    <tr>
+                        <td class="position-cell">17</td>
+                        <td>
+                            <div class="driver-cell">
+                                <div class="driver-number">4</div>
+                                <div class="driver-name">Lando Norris</div>
+                            </div>
+                        </td>
+                        <td><span class="team-badge team-mclaren">McLaren</span></td>
+                        <td>11</td>
+                        <td class="time-cell">+3 Laps</td>
+                        <td>54</td>
+                        <td class="points-cell">0</td>
+                    </tr>
+                    <tr class="dnf">
+                        <td class="position-cell">NC</td>
+                        <td>
+                            <div class="driver-cell">
+                                <div class="driver-number">31</div>
+                                <div class="driver-name">Esteban Ocon</div>
+                            </div>
+                        </td>
+                        <td><span class="team-badge team-alpine">Alpine</span></td>
+                        <td>9</td>
+                        <td class="time-cell">DNF</td>
+                        <td>41</td>
+                        <td class="points-cell">0</td>
+                    </tr>
+                    <tr class="dnf">
+                        <td class="position-cell">NC</td>
+                        <td>
+                            <div class="driver-cell">
+                                <div class="driver-number">16</div>
+                                <div class="driver-name">Charles Leclerc</div>
+                            </div>
+                        </td>
+                        <td><span class="team-badge team-ferrari">Ferrari</span></td>
+                        <td>3</td>
+                        <td class="time-cell">DNF</td>
+                        <td>39</td>
+                        <td class="points-cell">0</td>
+                    </tr>
+                    <tr class="dnf">
+                        <td class="position-cell">NC</td>
+                        <td>
+                            <div class="driver-cell">
+                                <div class="driver-number">81</div>
+                                <div class="driver-name">Oscar Piastri</div>
+                            </div>
+                        </td>
+                        <td><span class="team-badge team-mclaren">McLaren</span></td>
+                        <td>18</td>
+                        <td class="time-cell">DNF</td>
+                        <td>13</td>
+                        <td class="points-cell">0</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <nav aria-label="Race results pagination">
+        <ul class="pagination">
+            <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
+            <li class="page-item active"><a class="page-link" href="#">1</a></li>
+            <li class="page-item"><a class="page-link" href="#">2</a></li>
+            <li class="page-item"><a class="page-link" href="#">3</a></li>
+            <li class="page-item"><a class="page-link" href="#">4</a></li>
+            <li class="page-item"><a class="page-link" href="#">5</a></li>
+            <li class="page-item"><a class="page-link" href="#">Next</a></li>
+        </ul>
+    </nav>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add hover effects to rows
+        const rows = document.querySelectorAll('.results-table tbody tr');
+        rows.forEach(row => {
+            row.addEventListener('mouseenter', function() {
+                this.style.backgroundColor = 'rgba(220, 20, 60, 0.03)';
+            });
+            
+            row.addEventListener('mouseleave', function() {
+                if (!this.classList.contains('podium')) {
+                    this.style.backgroundColor = '';
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}
