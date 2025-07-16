@@ -1,0 +1,641 @@
+{% extends 'base.html' %}
+
+{% block title %}F1 Predictions{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Predictions Page Specific Styles */
+    .predictions-header {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        color: white;
+        padding: 2rem 0;
+        border-radius: 0 0 30px 30px;
+        margin-bottom: 2rem;
+    }
+    
+    .prediction-filters {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+    
+    .prediction-title {
+        color: #dc143c;
+        font-weight: bold;
+        margin-bottom: 1.2rem;
+        border-bottom: 2px solid #f0f0f0;
+        padding-bottom: 0.8rem;
+    }
+    
+    .prediction-card {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+        transition: all 0.3s ease;
+    }
+    
+    .prediction-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(220, 20, 60, 0.2);
+    }
+    
+    .prediction-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #f0f0f0;
+    }
+    
+    .prediction-model {
+        display: flex;
+        align-items: center;
+    }
+    
+    .model-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: #f0f0f0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        color: #dc143c;
+        font-size: 1.5rem;
+    }
+    
+    .prediction-race {
+        font-weight: bold;
+        margin-bottom: 0.3rem;
+    }
+    
+    .prediction-date {
+        color: #6b7280;
+        font-size: 0.9rem;
+    }
+    
+    .prediction-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+    
+    .prediction-table th {
+        background: #f8f9fa;
+        color: #dc143c;
+        font-weight: 600;
+        padding: 0.8rem 1rem;
+        text-align: left;
+        border-bottom: 2px solid #e9ecef;
+    }
+    
+    .prediction-table td {
+        padding: 0.8rem 1rem;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .prediction-table tr:hover {
+        background-color: rgba(220, 20, 60, 0.03);
+    }
+    
+    .prediction-position {
+        font-weight: bold;
+        text-align: center;
+        width: 40px;
+    }
+    
+    .prediction-driver {
+        display: flex;
+        align-items: center;
+    }
+    
+    .confidence-bar {
+        height: 10px;
+        background: #e9ecef;
+        border-radius: 5px;
+        margin-top: 0.3rem;
+        overflow: hidden;
+    }
+    
+    .confidence-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #dc143c, #b91c1c);
+        border-radius: 5px;
+    }
+    
+    .confidence-label {
+        font-size: 0.8rem;
+        color: #6b7280;
+        margin-top: 0.2rem;
+    }
+    
+    .accuracy-badge {
+        display: inline-block;
+        padding: 0.3rem 0.8rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        background: rgba(25, 135, 84, 0.1);
+        color: #198754;
+    }
+    
+    .prediction-podium {
+        background-color: rgba(255, 215, 0, 0.05);
+    }
+    
+    .prediction-compare {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 2rem;
+    }
+    
+    .comparison-card {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        width: 48%;
+    }
+    
+    .comparison-title {
+        color: #dc143c;
+        font-weight: bold;
+        margin-bottom: 1rem;
+        text-align: center;
+    }
+    
+    .comparison-table {
+        width: 100%;
+    }
+    
+    .comparison-table th {
+        background: #f8f9fa;
+        color: #6c757d;
+        font-weight: 600;
+        padding: 0.6rem;
+        text-align: center;
+        font-size: 0.9rem;
+    }
+    
+    .comparison-table td {
+        padding: 0.6rem;
+        text-align: center;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .comparison-table tr:last-child td {
+        border-bottom: none;
+    }
+    
+    .prediction-change {
+        display: inline-block;
+        padding: 0.2rem 0.5rem;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    
+    .change-up {
+        background: rgba(25, 135, 84, 0.1);
+        color: #198754;
+    }
+    
+    .change-down {
+        background: rgba(220, 53, 69, 0.1);
+        color: #dc3545;
+    }
+    
+    .change-neutral {
+        background: rgba(108, 117, 125, 0.1);
+        color: #6c757d;
+    }
+    
+    .model-metrics {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-top: 1.5rem;
+    }
+    
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+    }
+    
+    .metric-card {
+        background: white;
+        border-radius: 10px;
+        padding: 1rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        text-align: center;
+    }
+    
+    .metric-value {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #dc143c;
+        margin-bottom: 0.5rem;
+    }
+    
+    .metric-label {
+        font-size: 0.9rem;
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="predictions-header">
+    <div class="container text-center">
+        <h1><i class="fas fa-crystal-ball me-2"></i>F1 Race Predictions</h1>
+        <p class="lead">Machine learning powered outcome predictions</p>
+    </div>
+</div>
+
+<div class="container">
+    <div class="prediction-filters">
+        <h4 class="prediction-title"><i class="fas fa-filter me-2"></i>Prediction Filters</h4>
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Race</label>
+                <select class="form-select">
+                    <option selected>Upcoming: Spanish Grand Prix</option>
+                    <option>Canadian Grand Prix</option>
+                    <option>Austrian Grand Prix</option>
+                    <option>British Grand Prix</option>
+                </select>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Prediction Model</label>
+                <select class="form-select">
+                    <option selected>Ensemble Model v3.1</option>
+                    <option>Track-Specific Model v2.4</option>
+                    <option>Qualifying Predictor v1.8</option>
+                    <option>Historical Performance Model v4.2</option>
+                </select>
+            </div>
+            <div class="col-md-4 mb-3 d-flex align-items-end">
+                <button class="btn btn-primary w-100"><i class="fas fa-sync-alt me-2"></i>Generate Predictions</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Prediction Card -->
+    <div class="prediction-card">
+        <div class="prediction-card-header">
+            <div class="prediction-model">
+                <div class="model-icon">
+                    <i class="fas fa-brain"></i>
+                </div>
+                <div>
+                    <h4 class="prediction-race">Spanish Grand Prix Predictions</h4>
+                    <div class="prediction-date">
+                        <i class="fas fa-calendar-alt me-2"></i>June 4, 2023
+                        <span class="ms-3">
+                            <i class="fas fa-microchip me-2"></i>Model: Ensemble v3.1
+                        </span>
+                        <span class="ms-3">
+                            <span class="accuracy-badge"><i class="fas fa-bullseye me-1"></i>85.2% Accuracy</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <span class="badge bg-success">Latest Data</span>
+            </div>
+        </div>
+        
+        <div class="table-responsive">
+            <table class="prediction-table">
+                <thead>
+                    <tr>
+                        <th class="prediction-position">Pred</th>
+                        <th>Driver</th>
+                        <th>Team</th>
+                        <th>Confidence</th>
+                        <th>Expected Points</th>
+                        <th>Position Change</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="prediction-podium">
+                        <td class="prediction-position">1</td>
+                        <td>
+                            <div class="prediction-driver">
+                                <div class="driver-number">1</div>
+                                <div class="driver-name">Max Verstappen</div>
+                            </div>
+                            <div class="confidence-bar">
+                                <div class="confidence-fill" style="width: 92%"></div>
+                            </div>
+                            <div class="confidence-label">92% confidence</div>
+                        </td>
+                        <td><span class="team-badge team-redbull">Red Bull</span></td>
+                        <td>Very High</td>
+                        <td class="points-cell">25.0</td>
+                        <td><span class="prediction-change change-neutral">-</span></td>
+                    </tr>
+                    <tr class="prediction-podium">
+                        <td class="prediction-position">2</td>
+                        <td>
+                            <div class="prediction-driver">
+                                <div class="driver-number">11</div>
+                                <div class="driver-name">Sergio Pérez</div>
+                            </div>
+                            <div class="confidence-bar">
+                                <div class="confidence-fill" style="width: 78%"></div>
+                            </div>
+                            <div class="confidence-label">78% confidence</div>
+                        </td>
+                        <td><span class="team-badge team-redbull">Red Bull</span></td>
+                        <td>High</td>
+                        <td class="points-cell">18.5</td>
+                        <td><span class="prediction-change change-neutral">-</span></td>
+                    </tr>
+                    <tr class="prediction-podium">
+                        <td class="prediction-position">3</td>
+                        <td>
+                            <div class="prediction-driver">
+                                <div class="driver-number">14</div>
+                                <div class="driver-name">Fernando Alonso</div>
+                            </div>
+                            <div class="confidence-bar">
+                                <div class="confidence-fill" style="width: 65%"></div>
+                            </div>
+                            <div class="confidence-label">65% confidence</div>
+                        </td>
+                        <td><span class="team-badge team-astonmartin">Aston Martin</span></td>
+                        <td>Medium</td>
+                        <td class="points-cell">15.2</td>
+                        <td><span class="prediction-change change-up">+2</span></td>
+                    </tr>
+                    <tr>
+                        <td class="prediction-position">4</td>
+                        <td>
+                            <div class="prediction-driver">
+                                <div class="driver-number">44</div>
+                                <div class="driver-name">Lewis Hamilton</div>
+                            </div>
+                            <div class="confidence-bar">
+                                <div class="confidence-fill" style="width: 62%"></div>
+                            </div>
+                            <div class="confidence-label">62% confidence</div>
+                        </td>
+                        <td><span class="team-badge team-mercedes">Mercedes</span></td>
+                        <td>Medium</td>
+                        <td class="points-cell">12.8</td>
+                        <td><span class="prediction-change change-up">+1</span></td>
+                    </tr>
+                    <tr>
+                        <td class="prediction-position">5</td>
+                        <td>
+                            <div class="prediction-driver">
+                                <div class="driver-number">55</div>
+                                <div class="driver-name">Carlos Sainz</div>
+                            </div>
+                            <div class="confidence-bar">
+                                <div class="confidence-fill" style="width: 58%"></div>
+                            </div>
+                            <div class="confidence-label">58% confidence</div>
+                        </td>
+                        <td><span class="team-badge team-ferrari">Ferrari</span></td>
+                        <td>Medium</td>
+                        <td class="points-cell">10.5</td>
+                        <td><span class="prediction-change change-down">-1</span></td>
+                    </tr>
+                    <tr>
+                        <td class="prediction-position">6</td>
+                        <td>
+                            <div class="prediction-driver">
+                                <div class="driver-number">63</div>
+                                <div class="driver-name">George Russell</div>
+                            </div>
+                            <div class="confidence-bar">
+                                <div class="confidence-fill" style="width: 55%"></div>
+                            </div>
+                            <div class="confidence-label">55% confidence</div>
+                        </td>
+                        <td><span class="team-badge team-mercedes">Mercedes</span></td>
+                        <td>Medium</td>
+                        <td class="points-cell">8.7</td>
+                        <td><span class="prediction-change change-up">+2</span></td>
+                    </tr>
+                    <tr>
+                        <td class="prediction-position">7</td>
+                        <td>
+                            <div class="prediction-driver">
+                                <div class="driver-number">16</div>
+                                <div class="driver-name">Charles Leclerc</div>
+                            </div>
+                            <div class="confidence-bar">
+                                <div class="confidence-fill" style="width: 52%"></div>
+                            </div>
+                            <div class="confidence-label">52% confidence</div>
+                        </td>
+                        <td><span class="team-badge team-ferrari">Ferrari</span></td>
+                        <td>Medium</td>
+                        <td class="points-cell">6.3</td>
+                        <td><span class="prediction-change change-down">-2</span></td>
+                    </tr>
+                    <tr>
+                        <td class="prediction-position">8</td>
+                        <td>
+                            <div class="prediction-driver">
+                                <div class="driver-number">4</div>
+                                <div class="driver-name">Lando Norris</div>
+                            </div>
+                            <div class="confidence-bar">
+                                <div class="confidence-fill" style="width: 48%"></div>
+                            </div>
+                            <div class="confidence-label">48% confidence</div>
+                        </td>
+                        <td><span class="team-badge team-mclaren">McLaren</span></td>
+                        <td>Low</td>
+                        <td class="points-cell">4.8</td>
+                        <td><span class="prediction-change change-neutral">-</span></td>
+                    </tr>
+                    <tr>
+                        <td class="prediction-position">9</td>
+                        <td>
+                            <div class="prediction-driver">
+                                <div class="driver-number">18</div>
+                                <div class="driver-name">Lance Stroll</div>
+                            </div>
+                            <div class="confidence-bar">
+                                <div class="confidence-fill" style="width: 45%"></div>
+                            </div>
+                            <div class="confidence-label">45% confidence</div>
+                        </td>
+                        <td><span class="team-badge team-astonmartin">Aston Martin</span></td>
+                        <td>Low</td>
+                        <td class="points-cell">3.2</td>
+                        <td><span class="prediction-change change-down">-1</span></td>
+                    </tr>
+                    <tr>
+                        <td class="prediction-position">10</td>
+                        <td>
+                            <div class="prediction-driver">
+                                <div class="driver-number">31</div>
+                                <div class="driver-name">Esteban Ocon</div>
+                            </div>
+                            <div class="confidence-bar">
+                                <div class="confidence-fill" style="width: 42%"></div>
+                            </div>
+                            <div class="confidence-label">42% confidence</div>
+                        </td>
+                        <td><span class="team-badge team-alpine">Alpine</span></td>
+                        <td>Low</td>
+                        <td class="points-cell">1.5</td>
+                        <td><span class="prediction-change change-up">+3</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="model-metrics">
+            <h5 class="mb-3"><i class="fas fa-chart-line me-2"></i>Model Performance Metrics</h5>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-value">85.2%</div>
+                    <div class="metric-label">Top 3 Accuracy</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">72.8%</div>
+                    <div class="metric-label">Position Accuracy</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">0.78</div>
+                    <div class="metric-label">MAE</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">1.12</div>
+                    <div class="metric-label">RMSE</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">0.91</div>
+                    <div class="metric-label">R² Score</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="prediction-compare">
+            <div class="comparison-card">
+                <h5 class="comparison-title">Predicted vs Actual (Last Race)</h5>
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Driver</th>
+                            <th>Predicted</th>
+                            <th>Actual</th>
+                            <th>Difference</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Verstappen</td>
+                            <td>1</td>
+                            <td>1</td>
+                            <td><span class="prediction-change change-neutral">0</span></td>
+                        </tr>
+                        <tr>
+                            <td>Pérez</td>
+                            <td>2</td>
+                            <td>2</td>
+                            <td><span class="prediction-change change-neutral">0</span></td>
+                        </tr>
+                        <tr>
+                            <td>Alonso</td>
+                            <td>3</td>
+                            <td>3</td>
+                            <td><span class="prediction-change change-neutral">0</span></td>
+                        </tr>
+                        <tr>
+                            <td>Hamilton</td>
+                            <td>5</td>
+                            <td>5</td>
+                            <td><span class="prediction-change change-neutral">0</span></td>
+                        </tr>
+                        <tr>
+                            <td>Sainz</td>
+                            <td>4</td>
+                            <td>4</td>
+                            <td><span class="prediction-change change-neutral">0</span></td>
+                        </tr>
+                        <tr>
+                            <td>Leclerc</td>
+                            <td>6</td>
+                            <td>DNF</td>
+                            <td><span class="prediction-change change-down">-</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="comparison-card">
+                <h5 class="comparison-title">Feature Importance</h5>
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Feature</th>
+                            <th>Importance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Recent Form (5 races)</td>
+                            <td>22.4%</td>
+                        </tr>
+                        <tr>
+                            <td>Qualifying Position</td>
+                            <td>18.7%</td>
+                        </tr>
+                        <tr>
+                            <td>Circuit Affinity</td>
+                            <td>15.2%</td>
+                        </tr>
+                        <tr>
+                            <td>Team Performance</td>
+                            <td>12.8%</td>
+                        </tr>
+                        <tr>
+                            <td>Weather Impact</td>
+                            <td>9.5%</td>
+                        </tr>
+                        <tr>
+                            <td>Tire Strategy</td>
+                            <td>7.3%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add hover effects to prediction rows
+        const predictionRows = document.querySelectorAll('.prediction-table tbody tr');
+        predictionRows.forEach(row => {
+            row.addEventListener('mouseenter', function() {
+                this.style.backgroundColor = 'rgba(220, 20, 60, 0.03)';
+            });
+            
+            row.addEventListener('mouseleave', function() {
+                if (!this.classList.contains('prediction-podium')) {
+                    this.style.backgroundColor = '';
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

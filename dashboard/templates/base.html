@@ -1,0 +1,247 @@
+<!-- base.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}F1 Prediction Dashboard{% endblock %}</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* F1 Theme Variables */
+        :root {
+            --f1-red: #dc143c;
+            --f1-dark: #1a1a1a;
+            --f1-silver: #c0c0c0;
+            --f1-gold: #ffd700;
+            --f1-blue: #0066cc;
+            --f1-gradient: linear-gradient(135deg, #dc143c 0%, #b91c1c 50%, #991b1b 100%);
+            --f1-card-gradient: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        }
+
+        /* Body and General Styling */
+        body {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            color: #333;
+        }
+
+        /* Navigation Enhancements */
+        .navbar {
+            background: var(--f1-gradient) !important;
+            box-shadow: 0 2px 15px rgba(220, 20, 60, 0.3);
+        }
+
+        .navbar-brand {
+            font-weight: bold;
+            font-size: 1.5rem;
+            color: white !important;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            transition: transform 0.3s ease;
+        }
+
+        .navbar-brand:hover {
+            transform: scale(1.05);
+            color: var(--f1-gold) !important;
+        }
+
+        .nav-link {
+            color: rgba(255,255,255,0.9) !important;
+            font-weight: 500;
+            margin: 0 0.5rem;
+            padding: 0.5rem 1rem !important;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: white !important;
+            background: rgba(255,255,255,0.1);
+            transform: translateY(-1px);
+        }
+
+        .nav-link.active {
+            color: var(--f1-gold) !important;
+        }
+
+        /* Main Content Area */
+        main {
+            flex: 1;
+            padding-bottom: 2rem;
+        }
+
+        /* Footer Styling */
+        footer {
+            background: var(--f1-gradient) !important;
+            box-shadow: 0 -2px 15px rgba(220, 20, 60, 0.3);
+            padding: 1.5rem 0;
+        }
+
+        /* Card Enhancements */
+        .card {
+            border: none;
+            border-radius: 15px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            background: var(--f1-card-gradient);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            height: 100%;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+        }
+
+        .card-title {
+            color: var(--f1-red);
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+
+        /* Button Styling */
+        .btn-primary {
+            background: var(--f1-gradient);
+            border: none;
+            border-radius: 25px;
+            padding: 0.75rem 2rem;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(220, 20, 60, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(220, 20, 60, 0.4);
+            background: linear-gradient(135deg, #b91c1c 0%, #991b1b 50%, #7f1d1d 100%);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+            border: none;
+            border-radius: 25px;
+            padding: 0.75rem 2rem;
+            font-weight: bold;
+        }
+
+        /* Racing Stripe Animation */
+        .racing-stripe {
+            height: 4px;
+            background: linear-gradient(90deg, 
+                var(--f1-red) 0%, 
+                var(--f1-gold) 25%, 
+                var(--f1-blue) 50%, 
+                var(--f1-silver) 75%, 
+                var(--f1-red) 100%);
+            background-size: 200% 100%;
+            animation: raceStripe 3s linear infinite;
+            margin: 2rem 0;
+        }
+
+        @keyframes raceStripe {
+            0% { background-position: 0% 0%; }
+            100% { background-position: 200% 0%; }
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* Add fade-in animations */
+        .fade-in {
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .navbar-brand {
+                font-size: 1.25rem;
+            }
+            
+            .nav-link {
+                margin: 0.25rem;
+                padding: 0.5rem !important;
+            }
+            
+            .card {
+                margin-bottom: 1.5rem;
+            }
+        }
+
+        {% block extra_css %}{% endblock %}
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/"><i class="fas fa-car-side me-2"></i>F1 Dashboard</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="results/">Results</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="prediction/">Predictions</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Page Content -->
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- Footer -->
+    <footer class="text-light">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-6 text-center text-md-start mb-3 mb-md-0">
+                    &copy; 2025 F1 Outcome Predictor | University of Leicester
+                </div>
+                <div class="col-md-6 text-center text-md-end">
+                    <a href="#" class="text-light me-3"><i class="fab fa-twitter"></i></a>
+                    <a href="#" class="text-light me-3"><i class="fab fa-github"></i></a>
+                    <a href="#" class="text-light"><i class="fab fa-linkedin"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+    
+    <!-- JS (Bootstrap Bundle) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Active nav link highlighting
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentPath = window.location.pathname;
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => {
+                if (link.getAttribute('href') === currentPath) {
+                    link.classList.add('active');
+                }
+            });
+        });
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
