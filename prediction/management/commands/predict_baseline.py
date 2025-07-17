@@ -86,8 +86,18 @@ class Command(BaseCommand):
 
             # 5. Make predictions
             raw_predictions = model.predict(X_pred)
-            predictions = (self.apply_race_adjustments(raw_predictions, drivers, year, round_num) 
-                          if options['apply_adjustments'] else raw_predictions)
+            
+            # CRITICAL FIX: Convert raw predictions to positions
+            position_predictions = self.convert_predictions_to_positions(raw_predictions, drivers)
+            
+            # Apply adjustments to positions if requested
+            if options['apply_adjustments']:
+                final_predictions = self.apply_race_adjustments(position_predictions, drivers, year, round_num)
+            else:
+                final_predictions = position_predictions
+            
+            # Use final_predictions instead of predictions
+            predictions = final_predictions
 
             # 6. Display results
             results_df = self.prepare_results(drivers, predictions)
@@ -226,11 +236,33 @@ class Command(BaseCommand):
             self.stdout.write(self.style.ERROR(f"Error calculating dynamic features: {str(e)}"))
             return {}
 
+    def convert_predictions_to_positions(self, raw_predictions, drivers):
+        """Convert raw model predictions to race positions (1-20)"""
+        try:
+            # Create DataFrame with predictions and drivers
+            pred_df = pd.DataFrame({
+                'driver': drivers,
+                'raw_prediction': raw_predictions
+            })
+            
+            # Sort by raw prediction (assuming lower values = better performance)
+            pred_df = pred_df.sort_values('raw_prediction').reset_index(drop=True)
+            
+            # Assign positions 1-20
+            pred_df['position'] = range(1, len(pred_df) + 1)
+            
+            return pred_df['position'].values
+            
+        except Exception as e:
+            self.stdout.write(self.style.ERROR(f"Position conversion error: {str(e)}"))
+            return raw_predictions
+
     def apply_race_adjustments(self, predictions, drivers, year, round_num):
-        """Apply domain knowledge adjustments"""
+        """Apply domain knowledge adjustments to POSITIONS not raw scores"""
         adjusted = np.copy(predictions)
         
         try:
+            # Team performance expectations (position ranges)
             team_limits = {
                 'Red Bull': (1, 6), 'Mercedes': (2, 8), 'Ferrari': (2, 8),
                 'McLaren': (3, 10), 'Aston Martin': (5, 12), 'Alpine': (8, 15),
@@ -238,11 +270,13 @@ class Command(BaseCommand):
                 'Alfa Romeo': (12, 19), 'Haas': (14, 20)
             }
             
+            # Get recent top performers
             recent_top5 = RaceResult.objects.filter(
                 position__lte=5,
                 session__event__year__gte=year-1
             ).values_list('driver__family_name', flat=True)
             
+            # Circuit specialists
             circuit = Event.objects.get(year=year, round=round_num).circuit
             circuit_top3 = RaceResult.objects.filter(
                 position__lte=3,
@@ -252,21 +286,24 @@ class Command(BaseCommand):
             
             for i, driver in enumerate(drivers):
                 family_name = driver.split()[-1]
+                current_pos = adjusted[i]
                 
                 # Apply team limits
                 try:
-                    team = Driver.objects.get(family_name=family_name).teams.get(
-                        year=year).team.name
-                    if team in team_limits:
-                        adjusted[i] = np.clip(adjusted[i], *team_limits[team])
+                    driver_obj = Driver.objects.get(family_name=family_name)
+                    team_name = driver_obj.teams.filter(year=year).first().team.name
+                    
+                    if team_name in team_limits:
+                        min_pos, max_pos = team_limits[team_name]
+                        adjusted[i] = np.clip(current_pos, min_pos, max_pos)
                 except:
                     pass
                 
-                # Apply performance boosts
+                # Apply performance boosts (move up positions)
                 if family_name in recent_top5:
-                    adjusted[i] *= 0.93  # 7% boost
+                    adjusted[i] = max(1, adjusted[i] - 1)  # Move up 1 position
                 if family_name in circuit_top3:
-                    adjusted[i] *= 0.95  # 5% boost
+                    adjusted[i] = max(1, adjusted[i] - 1)  # Move up 1 position
             
             return adjusted
             
@@ -282,13 +319,14 @@ class Command(BaseCommand):
         }).sort_values('predicted_position').reset_index(drop=True)
 
     def display_predictions(self, results_df, event):
-        """Format and display predictions"""
+        """Format and display predictions with integer positions"""
         self.stdout.write(f"\n=== Predicted Results for {event.name} ===")
         self.stdout.write(f"{'Rank':<4} {'Driver':<20} {'Position':<10}")
         self.stdout.write("-" * 40)
         
         for i, row in results_df.iterrows():
-            self.stdout.write(f"{i+1:<4} {row['driver']:<20} {row['predicted_position']:.2f}")
+            # Display as integer position
+            self.stdout.write(f"{i+1:<4} {row['driver']:<20} {int(row['predicted_position'])}")
 
     def compare_with_actual(self, predictions_df, event):
         """Compare predictions with actual results"""
@@ -337,8 +375,8 @@ class Command(BaseCommand):
             for _, row in comparison_df.iterrows():
                 diff = row['predicted_position'] - row['actual_position']
                 self.stdout.write(
-                    f"{row['driver']:<20} {row['predicted_position']:<10.2f} "
-                    f"{row['actual_position']:<8} {diff:+.2f}"
+                    f"{row['driver']:<20} {int(row['predicted_position']):<10} "
+                    f"{int(row['actual_position']):<8} {diff:+.0f}"
                 )
                 
         except Exception as e:
