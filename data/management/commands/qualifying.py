@@ -1,4 +1,3 @@
-# data/management/commands/qualifying.py
 import os
 import time
 from datetime import timedelta
@@ -13,7 +12,7 @@ class Command(BaseCommand):
     help = 'Fetch and store F1 qualifying results using FastF1'
 
     def add_arguments(self, parser):
-        parser.add_argument('--years', nargs='+', type=int, default=[2022, 2023, 2024],
+        parser.add_argument('--years', nargs='+', type=int, default=[2022, 2023, 2024, 2025],
                             help='Years to fetch data for (space separated)')
         parser.add_argument('--force', action='store_true',
                             help='Force fresh download ignoring cache')
@@ -52,7 +51,6 @@ class Command(BaseCommand):
                     session = fastf1.get_session(year, round_num, 'Q')
 
                     load_params = {'telemetry': False, 'weather': False, 'messages': False}
-                    # Try force reload if requested
                     if force_refresh:
                         for param in ['force_rerun', 'force', 'force_restore']:
                             try:
@@ -71,6 +69,67 @@ class Command(BaseCommand):
 
             except Exception as e:
                 self.stdout.write(self.style.ERROR(f"Error processing season {year}: {e}"))
+
+    def get_or_create_driver(self, row):
+        """
+        Safely get or create a driver, handling potential conflicts
+        """
+        driver_number = row['DriverNumber']
+        driver_ref = row['Abbreviation'].strip()
+        
+        # Try to find existing driver by driver_id first
+        try:
+            driver = Driver.objects.get(driver_id=driver_number)
+            # Update existing driver with latest info
+            driver.driver_ref = driver_ref
+            driver.given_name = row['FirstName']
+            driver.family_name = row['LastName']
+            driver.nationality = row.get('Country', '')
+            driver.code = row['Abbreviation']
+            driver.permanent_number = driver_number
+            driver.save()
+            return driver
+        except Driver.DoesNotExist:
+            pass
+        
+        # Try to find by driver_ref
+        try:
+            driver = Driver.objects.get(driver_ref=driver_ref)
+            # Update existing driver with latest info
+            driver.driver_id = driver_number
+            driver.given_name = row['FirstName']
+            driver.family_name = row['LastName']
+            driver.nationality = row.get('Country', '')
+            driver.code = row['Abbreviation']
+            driver.permanent_number = driver_number
+            driver.save()
+            return driver
+        except Driver.DoesNotExist:
+            pass
+        
+        # Create new driver
+        try:
+            driver = Driver.objects.create(
+                driver_id=driver_number,
+                driver_ref=driver_ref,
+                given_name=row['FirstName'],
+                family_name=row['LastName'],
+                nationality=row.get('Country', ''),
+                code=row['Abbreviation'],
+                permanent_number=driver_number,
+            )
+            return driver
+        except Exception as e:
+            self.stdout.write(self.style.ERROR(f"Error creating driver {driver_ref}: {e}"))
+            # As a last resort, try to find any existing driver with same name
+            try:
+                driver = Driver.objects.get(
+                    given_name=row['FirstName'],
+                    family_name=row['LastName']
+                )
+                return driver
+            except Driver.DoesNotExist:
+                raise e
 
     def process_qualifying(self, session, event_data, session_type):
         circuit, _ = Circuit.objects.update_or_create(
@@ -112,27 +171,7 @@ class Command(BaseCommand):
                     defaults={'name': row['TeamName']}
                 )
 
-                driver, created = Driver.objects.get_or_create(
-                    driver_id=row['DriverNumber'],  # lookup by unique driver_id
-                    defaults={
-                        'driver_ref': row['Abbreviation'].strip(),
-                        'given_name': row['FirstName'],
-                        'family_name': row['LastName'],
-                        'nationality': row.get('Country', ''),
-                        'code': row['Abbreviation'],
-                        'permanent_number': row['DriverNumber'],
-                    }
-                )
-
-                # If it already existed, only update fields that might have changed:
-                if not created:
-                    driver.given_name = row['FirstName']
-                    driver.family_name = row['LastName']
-                    driver.nationality = row.get('Country', '')
-                    driver.code = row['Abbreviation']
-                    driver.permanent_number = row['DriverNumber']
-                    driver.save()
-
+                driver = self.get_or_create_driver(row)
 
                 def to_duration(val):
                     return val if isinstance(val, timedelta) else None
@@ -149,7 +188,7 @@ class Command(BaseCommand):
                         'q1_millis': row.get('Q1Millis'),
                         'q2_millis': row.get('Q2Millis'),
                         'q3_millis': row.get('Q3Millis'),
-                        'pole_delta': None,  # You can add logic to calculate if needed
+                        'pole_delta': None,
                         'status': row.get('Status', ''),
                         'laps': row.get('Laps', None),
                     }

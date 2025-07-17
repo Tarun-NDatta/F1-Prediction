@@ -1,4 +1,3 @@
-# data/management/commands/race_results.py
 import os
 import time
 from datetime import timedelta
@@ -71,6 +70,67 @@ class Command(BaseCommand):
             except Exception as e:
                 self.stdout.write(self.style.ERROR(f"Error processing season {year}: {e}"))
 
+    def get_or_create_driver(self, row):
+        """
+        Safely get or create a driver, handling potential conflicts
+        """
+        driver_number = row['DriverNumber']
+        driver_ref = row['Abbreviation'].strip()
+        
+        # Try to find existing driver by driver_id first
+        try:
+            driver = Driver.objects.get(driver_id=driver_number)
+            # Update existing driver with latest info
+            driver.driver_ref = driver_ref
+            driver.given_name = row['FirstName']
+            driver.family_name = row['LastName']
+            driver.nationality = row.get('Country', '')
+            driver.code = row['Abbreviation']
+            driver.permanent_number = driver_number
+            driver.save()
+            return driver
+        except Driver.DoesNotExist:
+            pass
+        
+        # Try to find by driver_ref
+        try:
+            driver = Driver.objects.get(driver_ref=driver_ref)
+            # Update existing driver with latest info
+            driver.driver_id = driver_number
+            driver.given_name = row['FirstName']
+            driver.family_name = row['LastName']
+            driver.nationality = row.get('Country', '')
+            driver.code = row['Abbreviation']
+            driver.permanent_number = driver_number
+            driver.save()
+            return driver
+        except Driver.DoesNotExist:
+            pass
+        
+        # Create new driver
+        try:
+            driver = Driver.objects.create(
+                driver_id=driver_number,
+                driver_ref=driver_ref,
+                given_name=row['FirstName'],
+                family_name=row['LastName'],
+                nationality=row.get('Country', ''),
+                code=row['Abbreviation'],
+                permanent_number=driver_number,
+            )
+            return driver
+        except Exception as e:
+            self.stdout.write(self.style.ERROR(f"Error creating driver {driver_ref}: {e}"))
+            # As a last resort, try to find any existing driver with same name
+            try:
+                driver = Driver.objects.get(
+                    given_name=row['FirstName'],
+                    family_name=row['LastName']
+                )
+                return driver
+            except Driver.DoesNotExist:
+                raise e
+
     def process_race_results(self, session, event_data, session_type):
         circuit, _ = Circuit.objects.update_or_create(
             circuit_ref=event_data.get('CircuitKey', event_data['Location'].lower().replace(' ', '_')),
@@ -111,17 +171,7 @@ class Command(BaseCommand):
                     defaults={'name': row['TeamName']}
                 )
 
-                driver, _ = Driver.objects.update_or_create(
-                    driver_ref=row['Abbreviation'],
-                    defaults={
-                        'driver_id': row['DriverNumber'],
-                        'given_name': row['FirstName'],
-                        'family_name': row['LastName'],
-                        'nationality': row.get('Country', ''),
-                        'code': row['Abbreviation'],
-                        'permanent_number': row['DriverNumber'],
-                    }
-                )
+                driver = self.get_or_create_driver(row)
 
                 def to_duration(val):
                     return val if isinstance(val, timedelta) else None

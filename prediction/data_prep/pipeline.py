@@ -52,6 +52,7 @@ class F1DataPipeline:
         )
     
     def get_feature_names(self):
+        """Return feature names after transformation"""
         return list(set(self.all_features))
     
     def get_required_features(self):
@@ -61,7 +62,7 @@ class F1DataPipeline:
         )
 
     def load_data(self):
-        """Load data with comprehensive validation"""
+        """Load data with year information"""
         try:
             logger.info("Loading race results...")
             race_query = (
@@ -74,6 +75,7 @@ class F1DataPipeline:
                 )
             )
             
+            # Add year to the results
             race_results = pd.DataFrame.from_records(
                 race_query.values(
                     'id', 'driver_id', 'team_id', 'position',
@@ -131,7 +133,7 @@ class F1DataPipeline:
             raise
 
     def _handle_missing_values(self, df):
-        """Handle missing values based on selected strategy"""
+        """Handle missing values while preserving year"""
         # Get all possible feature variations
         feature_variations = []
         for feature in self.get_feature_names():
@@ -161,7 +163,18 @@ class F1DataPipeline:
                 df = df.dropna(subset=required_cols + ['position'])
                 logger.info(f"Dropped {original_size - len(df)} records with missing values")
             else:
-                df = self._impute_missing_values(df, existing_features)
+                # Preserve year column during imputation
+                if 'year' in df.columns and self.impute_strategy != 'drop':
+                    years = df['year']
+                    df = df.drop(columns=['year'])
+                    
+                    # Perform imputation
+                    df = self._impute_missing_values(df, existing_features)
+                    
+                    # Add year back after imputation
+                    df = pd.concat([df, years], axis=1)
+                else:
+                    df = self._impute_missing_values(df, existing_features)
         
         return df
 
@@ -185,13 +198,17 @@ class F1DataPipeline:
         return df
 
     def _validate_training_data(self, df):
-        """Validate data meets minimum requirements"""
+        """Validate data including year information"""
         if len(df) == 0:
             raise ValueError("No data available after processing")
         
         # Check target variable
         if df['position'].isnull().any():
             raise ValueError("Position still contains missing values after processing")
+        
+        # Check year exists
+        if 'year' not in df.columns:
+            raise ValueError("Year column missing from dataset")
         
         # Check required features
         missing_required = []
@@ -223,31 +240,46 @@ class F1DataPipeline:
                     break
         return selected_features
 
+    def _get_split_indices(self, df):
+        """Get indices for time-based split"""
+        # Create stratified bins based on position distribution
+        bins = pd.qcut(df['position'], q=5, duplicates='drop')
+        
+        # Get indices for train/test split
+        indices = np.arange(len(df))
+        train_indices, test_indices = train_test_split(
+            indices,
+            test_size=self.test_size,
+            random_state=self.random_state,
+            stratify=bins
+        )
+        return train_indices, test_indices
+
     def _split_data(self, df):
-        """Split data into train/test sets with stratification"""
+        """Split data into features and target"""
         feature_columns = self._select_features(df)
         
         if not feature_columns:
             raise ValueError("No features available for training")
         
-        # Create stratified bins based on position distribution
-        bins = pd.qcut(df['position'], q=5, duplicates='drop')
+        # Get indices for consistent splitting
+        train_indices, test_indices = self._get_split_indices(df)
         
-        X_train, X_test, y_train, y_test = train_test_split(
-            df[feature_columns],
-            df['position'],
-            test_size=self.test_size,
-            random_state=self.random_state,
-            stratify=bins
-        )
+        X = df[feature_columns].values
+        y = df['position'].values
+        
+        X_train = X[train_indices]
+        X_test = X[test_indices]
+        y_train = y[train_indices]
+        y_test = y[test_indices]
         
         logger.info(
             f"Data split complete - Train: {len(X_train)}, Test: {len(X_test)}"
         )
         return X_train, X_test, y_train, y_test
 
-    def prepare_training_data(self):
-        """Prepare training data with robust missing value handling"""
+    def prepare_training_data(self, include_years=False):
+        """Prepare training data with year preservation"""
         try:
             df = self.load_data()
             
@@ -256,12 +288,52 @@ class F1DataPipeline:
             
             df = self._handle_missing_values(df)
             self._validate_training_data(df)
-            return self._split_data(df)
+            
+            # Extract year information before splitting
+            years = df['year'].values if 'year' in df.columns else None
+            
+            # Split data
+            X_train, X_test, y_train, y_test = self._split_data(df)
+            
+            if include_years and years is not None:
+                # Get indices for train/test split
+                train_indices, test_indices = self._get_split_indices(df)
+                years_train = years[train_indices]
+                years_test = years[test_indices]
+                return X_train, X_test, y_train, y_test, years_train, years_test
+            
+            return X_train, X_test, y_train, y_test
 
         except Exception as e:
             logger.error(f"Error preparing training data: {str(e)}", exc_info=True)
             raise
 
+
+    def create_enhanced_features(self, df):
+        """Add these to your existing feature pipeline"""
+        # 1. Recent form (weighted average)
+        df['weighted_form'] = (
+            0.5 * df['position_last_race'] + 
+            0.3 * df['position_2races_ago'] + 
+            0.2 * df['position_3races_ago']
+        )
+        
+        # 2. Circuit affinity (historical performance at this track)
+        df['circuit_affinity'] = df.groupby(['driver_id', 'circuit'])['position'].transform(
+            lambda x: x.rolling(3, min_periods=1).mean()
+        )
+        
+        # 3. Tire performance delta
+        df['tire_delta'] = df['soft_tire_laptime'] - df['medium_tire_laptime']
+        
+        # 4. Head-to-head teammate comparison
+        df['teammate_gap'] = df.groupby(['team', 'year', 'round']).apply(
+            lambda g: g['qualifying_time'] - g['qualifying_time'].mean()
+        ).reset_index(level=[0,1,2], drop=True)
+        
+        return df
+    
+    
     def get_preprocessing_pipeline(self):
         """Get preprocessing pipeline with optional imputation"""
         steps = []
@@ -272,3 +344,5 @@ class F1DataPipeline:
         steps.append(('scaler', StandardScaler()))
         
         return Pipeline(steps)
+
+
