@@ -39,7 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'data',
     'dashboard',
-    'prediction.apps.PredictionConfig',
+    'prediction',
 ]
 
 MIDDLEWARE = [

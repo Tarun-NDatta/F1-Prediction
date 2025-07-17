@@ -4,7 +4,7 @@ from .models import (
     QualifyingResult, RaceResult,
     Session, SessionType,
     DriverPerformance, TeamPerformance, TrackCharacteristics,
-    PredictionModel, RacePrediction
+    PredictionModel, RacePrediction,ridgeregression
 )
 
 @admin.register(Event)
@@ -64,3 +64,6 @@ class PredictionModelAdmin(admin.ModelAdmin):
 @admin.register(RacePrediction)
 class RacePredictionAdmin(admin.ModelAdmin):
     list_display = ('event', 'session', 'model', 'predicted_at', 'top_3_accuracy')
+
+
+admin.site.register(ridgeregression)

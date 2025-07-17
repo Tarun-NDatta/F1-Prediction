@@ -7,7 +7,7 @@ from django.core.management.base import BaseCommand
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from scipy.stats import spearmanr
 from prediction.data_prep.pipeline import F1DataPipeline
-from data.models import Event, Session, RaceResult, Driver, QualifyingResult, Team, DriverPerformance, TeamPerformance
+from data.models import Event, Session, RaceResult, Driver, QualifyingResult, Team, DriverPerformance, TeamPerformance,ridgeregression
 import traceback
 
 class Command(BaseCommand):
@@ -30,15 +30,15 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('--model', type=str, default='ridge_baseline.pkl',
-                          help='Path to the trained model file')
+                            help='Path to the trained model file')
         parser.add_argument('--year', type=int, required=True,
-                          help='Year to predict')
+                            help='Year to predict')
         parser.add_argument('--round', type=int, required=True,
-                          help='Round number to predict')
+                            help='Round number to predict')
         parser.add_argument('--compare', action='store_true',
-                          help='Compare predictions with actual results')
+                            help='Compare predictions with actual results')
         parser.add_argument('--apply-adjustments', action='store_true',
-                          help='Apply post-prediction race adjustments')
+                            help='Apply post-prediction race adjustments')
 
     def handle(self, *args, **options):
         try:
@@ -328,8 +328,26 @@ class Command(BaseCommand):
             # Display as integer position
             self.stdout.write(f"{i+1:<4} {row['driver']:<20} {int(row['predicted_position'])}")
 
+        # Save to RidgeRegression DB table
+        for _, row in results_df.iterrows():
+            given, family = row['driver'].split()
+            driver_obj = Driver.objects.filter(given_name=given, family_name=family).first()
+                
+            if driver_obj:
+                ridgeregression.objects.update_or_create(
+                    event=event,
+                    driver=driver_obj,
+                    defaults={
+                        'year': event.year,  # ADD THIS LINE
+                        'round_number': event.round,  # ADD THIS LINE
+                        'predicted_position': int(row['predicted_position'])
+                    }
+                )
+
+        self.stdout.write(self.style.SUCCESS(f"Saved {len(results_df)} predictions to RidgeRegression table"))
+
     def compare_with_actual(self, predictions_df, event):
-        """Compare predictions with actual results"""
+        """Compare predictions with actual results and save actual results to database"""
         try:
             race_results = RaceResult.objects.filter(
                 session__event=event,
@@ -353,6 +371,29 @@ class Command(BaseCommand):
                 self.stdout.write("\nNo matching drivers for comparison")
                 return
             
+            # UPDATE DATABASE WITH ACTUAL RESULTS
+            updated_count = 0
+            for _, row in comparison_df.iterrows():
+                given, family = row['driver'].split()
+                driver_obj = Driver.objects.filter(given_name=given, family_name=family).first()
+                
+                if driver_obj:
+                    ridgeregression.objects.update_or_create(
+                        event=event,
+                        driver=driver_obj,
+                        model_name='ridge_regression',  # Include this in the lookup
+                        defaults={
+                            'year': event.year,
+                            'round_number': event.round,
+                            'predicted_position': row['predicted_position'],
+                            'actual_position': int(row['actual_position'])  # Save actual result
+                        }
+                    )
+                    updated_count += 1
+            
+            self.stdout.write(self.style.SUCCESS(f"Updated {updated_count} records with actual results"))
+            
+            # CALCULATE AND DISPLAY METRICS
             y_true = comparison_df['actual_position']
             y_pred = comparison_df['predicted_position']
             
