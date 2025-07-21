@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+
+{% block title %}Register{% endblock %}
+
+{% block extra_css %}
+<style>
+.register-container {
+    max-width: 120px;
+    margin: 3rem auto;
+    background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+    border-radius: 18px;
+    box-shadow: 0 8px 32px rgba(220,20,60,0.10), 0 1.5px 8px rgba(0,0,0,0.06);
+    border: 1.5px solid #e9ecef;
+    padding: 1.5rem 1.2rem 1.2rem 1.2rem;
+    transition: box-shadow 0.2s, border 0.2s;
+}
+.register-container:hover {
+    box-shadow: 0 12px 40px rgba(220,20,60,0.13), 0 2px 12px rgba(0,0,0,0.09);
+    border: 1.5px solid var(--f1-red, #dc143c);
+}
+body.dark-mode .register-container {
+    background: linear-gradient(135deg, #232527 0%, #181a1a 100%);
+    color: #fff;
+    border: 1.5px solid #333;
+}
+.register-title {
+    color: var(--f1-red, #dc143c);
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+.form-label {
+    color: var(--f1-red, #dc143c);
+    font-weight: 500;
+}
+.form-control {
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    margin-bottom: 1.2rem;
+    padding: 0.7em 1em;
+}
+body.dark-mode .form-control {
+    background: #232527;
+    color: #fff;
+    border: 1px solid #444;
+}
+.btn-register {
+    background: var(--f1-gradient);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    width: 100%;
+    font-weight: bold;
+    padding: 0.7em 0;
+    margin-top: 0.5em;
+    transition: background 0.2s;
+}
+.btn-register:hover {
+    background: var(--f1-red, #dc143c);
+}
+.register-container input {
+    width: 100%;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    margin-bottom: 1.2rem;
+    padding: 0.7em 1em;
+    font-size: 1rem;
+}
+body.dark-mode .register-container input {
+    background: #232527;
+    color: #fff;
+    border: 1px solid #444;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="register-container">
+    <h2 class="register-title">Create Account</h2>
+    {% if form.errors %}
+        <div class="alert alert-danger" style="color: #fff; background: var(--f1-red, #dc143c); border-radius: 8px; padding: 0.7em 1em; margin-bottom: 1em;">
+            {% for field in form %}
+                {% for error in field.errors %}
+                    <div>{{ error }}</div>
+                {% endfor %}
+            {% endfor %}
+            {% for error in form.non_field_errors %}
+                <div>{{ error }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+    <form method="post">
+        {% csrf_token %}
+        {% if next %}
+            <input type="hidden" name="next" value="{{ next }}">
+        {% endif %}
+        {% for field in form %}
+            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+        {% endfor %}
+        <button class="btn btn-register" type="submit">Register</button>
+    </form>
+</div>
+{% endblock %} 

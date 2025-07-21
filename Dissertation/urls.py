@@ -23,4 +23,9 @@ urlpatterns = [
     path('', view.home, name='home'),
     path('results/', view.results, name='results'),
     path('prediction/', view.prediction, name='prediction'),
+    path('standings/', view.standings, name='standings'),
+    path('register/', view.register, name='register'),
+    path('login/', view.login_view, name='login'),
+    path('logout/', view.logout_view, name='logout'),
+    path('activate/<uidb64>/<token>/', view.activate, name='activate'),
     ]

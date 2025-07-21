@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+
+{% block title %}Check Your Email{% endblock %}
+
+{% block content %}
+<div class="register-container">
+    <h2 class="register-title">Verify Your Email</h2>
+    <p style="text-align:center; color: var(--f1-red, #dc143c); font-weight: 500;">A verification link has been sent to <b>{{ email }}</b>.</p>
+    <p style="text-align:center;">Please check your inbox and click the link to activate your account.</p>
+</div>
+{% endblock %} 

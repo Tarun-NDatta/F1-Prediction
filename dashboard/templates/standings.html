@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+
+{% block title %}F1 Standings{% endblock %}
+
+{% block extra_css %}
+<style>
+.standings-toggle-group {
+    display: flex;
+    justify-content: center;
+    margin: 2rem 0 1.5rem 0;
+    gap: 1rem;
+}
+.standings-toggle-btn {
+    background: var(--f1-gradient);
+    color: #fff;
+    border: none;
+    border-radius: 20px;
+    padding: 0.5em 2em;
+    font-weight: bold;
+    font-size: 1.1rem;
+    transition: background 0.2s, color 0.2s;
+    cursor: pointer;
+}
+.standings-toggle-btn.active, .standings-toggle-btn:focus {
+    background: var(--f1-red, #dc143c);
+    color: #ffd700;
+    outline: none;
+}
+.standings-section {
+    display: none;
+}
+.standings-section.active {
+    display: block;
+}
+.table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: #fff;
+    color: #232527;
+    margin-bottom: 2rem;
+}
+.table th {
+    background: #f8f9fa;
+    color: var(--f1-red, #dc143c);
+    font-weight: 600;
+    padding: 0.8rem 1rem;
+    text-align: left;
+    border-bottom: 2px solid #e9ecef;
+}
+.table td {
+    padding: 0.8rem 1rem;
+    border-bottom: 1px solid #e9ecef;
+}
+body.dark-mode .table,
+body.dark-mode .table th,
+body.dark-mode .table td {
+    background: #232527 !important;
+    color: #e0e0e0 !important;
+    border-color: #333 !important;
+}
+body.dark-mode .table th {
+    color: #fff !important;
+}
+.driver-number {
+    background: #f8f9fa;
+    color: var(--f1-red, #dc143c);
+    font-weight: bold;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: inline-block;
+    text-align: center;
+    line-height: 28px;
+    margin-right: 8px;
+    vertical-align: middle;
+    border: 2px solid #e9ecef;
+    font-size: 1rem;
+}
+.driver-name-inline {
+    display: inline-block;
+    vertical-align: middle;
+}
+body.dark-mode .driver-number {
+    background: #232527 !important;
+    color: #fff !important;
+    border: 2px solid #232527 !important;
+    text-shadow: 0 1px 4px #1a1a1a, 0 0 2px #000;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mt-4 mb-3" style="color: var(--f1-red, #dc143c); font-weight: bold;">F1 Standings</h1>
+    <div class="standings-toggle-group">
+        <button id="toggle-drivers" class="standings-toggle-btn active" type="button">Drivers</button>
+        <button id="toggle-constructors" class="standings-toggle-btn" type="button">Constructors</button>
+    </div>
+    <div id="drivers-standings" class="standings-section active">
+        <h2>Drivers Standings</h2>
+        <table class="table table-striped">
+            <thead>
+                <tr><th>Pos</th><th>Driver</th><th>Points</th></tr>
+            </thead>
+            <tbody>
+                {% for d in driver_standings %}
+                <tr>
+                    <td>{{ d.position }}</td>
+                    <td><span class="driver-number">{{ d.number }}</span><span class="driver-name-inline">{{ d.name }}</span></td>
+                    <td>{{ d.points|floatformat:0 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div id="constructors-standings" class="standings-section">
+        <h2>Constructors Standings</h2>
+        <table class="table table-striped">
+            <thead>
+                <tr><th>Pos</th><th>Team</th><th>Points</th></tr>
+            </thead>
+            <tbody>
+                {% for t in team_standings %}
+                <tr>
+                    <td>{{ t.position }}</td>
+                    <td>{{ t.name }}</td>
+                    <td>{{ t.points|floatformat:0 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const btnDrivers = document.getElementById('toggle-drivers');
+    const btnConstructors = document.getElementById('toggle-constructors');
+    const sectionDrivers = document.getElementById('drivers-standings');
+    const sectionConstructors = document.getElementById('constructors-standings');
+
+    btnDrivers.addEventListener('click', function() {
+        btnDrivers.classList.add('active');
+        btnConstructors.classList.remove('active');
+        sectionDrivers.classList.add('active');
+        sectionConstructors.classList.remove('active');
+    });
+    btnConstructors.addEventListener('click', function() {
+        btnConstructors.classList.add('active');
+        btnDrivers.classList.remove('active');
+        sectionConstructors.classList.add('active');
+        sectionDrivers.classList.remove('active');
+    });
+});
+</script>
+{% endblock %} 

@@ -194,6 +194,7 @@
         width: 100%;
         border-collapse: separate;
         border-spacing: 0;
+        background: #f8f9fa;
     }
     
     .results-table th {
@@ -249,12 +250,31 @@
         color: #666;
     }
     
+    .team-badge.team-mercedes { background: #e3e9ed; color: #00d2be; }
+    .team-badge.team-ferrari { background: #fbeaea; color: #dc0000; }
+    .team-badge.team-redbull { background: #eaeaf6; color: #1e41ff; }
+    .team-badge.team-mclaren { background: #fff4e6; color: #ff8700; }
+    .team-badge.team-alpine { background: #eaf4fa; color: #0090ff; }
+    .team-badge.team-astonmartin { background: #e6f4ea; color: #006f62; }
+    .team-badge.team-alfaromeo { background: #f9eaea; color: #900000; }
+    .team-badge.team-haas { background: #f7f7f7; color: #b6babd; }
+    .team-badge.team-alphatauri { background: #f4f6fa; color: #2b4562; }
+    .team-badge.team-williams { background: #eaf3fb; color: #005aff; }
+    .team-badge.team-default { background: #eee; color: #666; }
+    
     .correct-prediction {
         background-color: rgba(25, 135, 84, 0.1);
     }
     
     .incorrect-prediction {
         background-color: rgba(220, 53, 69, 0.1);
+    }
+    
+    .results-table tbody tr.correct-prediction {
+        background: #eafbe7;
+    }
+    .results-table tbody tr.incorrect-prediction {
+        background: #fff4f4;
     }
     
     .difference-badge {
@@ -359,6 +379,179 @@
     .scroll-indicator:hover {
         background: rgba(220, 20, 60, 1);
     }
+
+    body.dark-mode input,
+    body.dark-mode select,
+    body.dark-mode textarea {
+        background: #232527 !important;
+        color: #fff !important;
+        border: 1px solid #444 !important;
+    }
+
+    body.dark-mode input::placeholder,
+    body.dark-mode textarea::placeholder {
+        color: #c0c0c0 !important;
+        opacity: 1;
+    }
+
+    body.dark-mode .search-bar,
+    body.dark-mode .search-container {
+        background: #232527 !important;
+        color: #fff !important;
+        border: 1px solid #444 !important;
+    }
+
+    body.dark-mode .dropdown-menu,
+    body.dark-mode .dropdown-content {
+        background: #232527 !important;
+        color: #fff !important;
+    }
+
+    body.dark-mode .results-popup,
+    body.dark-mode .search-results,
+    body.dark-mode .modal-content {
+        background: #232527 !important;
+        color: #fff !important;
+        border: 1px solid #333 !important;
+    }
+
+    body.dark-mode .overview-card,
+    body.dark-mode .stat-box,
+    body.dark-mode .season-overview-box {
+        background: #232527 !important;
+        color: #e0e0e0 !important;
+        border: 1px solid #333;
+    }
+    body.dark-mode .overview-card *,
+    body.dark-mode .stat-box *,
+    body.dark-mode .season-overview-box * {
+        color: #e0e0e0 !important;
+    }
+    body.dark-mode .model-selector,
+    body.dark-mode .season-overview,
+    body.dark-mode .overview-stat,
+    body.dark-mode .results-card {
+        background: #232527 !important;
+        color: #e0e0e0 !important;
+        border: 1px solid #333;
+    }
+    body.dark-mode .overview-stat-value,
+    body.dark-mode .overview-stat-label {
+        color: #fff !important;
+    }
+    body.dark-mode select {
+        color: #fff !important;
+        background: #232527 !important;
+        border: 1px solid #444 !important;
+        /* Remove default arrow */
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        background-image: url('data:image/svg+xml;utf8,<svg fill="%23fff" height="20" viewBox="0 0 20 20" width="20" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
+        background-repeat: no-repeat;
+        background-position: right 0.75rem center;
+        background-size: 1.2em;
+        padding-right: 2.5em;
+    }
+    /* Dark mode results table rows and cells */
+    body.dark-mode .results-table,
+    body.dark-mode .results-table thead,
+    body.dark-mode .results-table tbody,
+    body.dark-mode .results-table tr,
+    body.dark-mode .results-table td,
+    body.dark-mode .results-table th {
+        background: #232527 !important;
+        color: #e0e0e0 !important;
+        border-color: #333 !important;
+    }
+    body.dark-mode .results-table th {
+        color: #fff !important;
+    }
+    /* Ensure model selector dropdown arrow is white in dark mode */
+    body.dark-mode .model-dropdown {
+        color: #fff !important;
+        background: #232527 !important;
+        border: 1px solid #444 !important;
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        background-image: url('data:image/svg+xml;utf8,<svg fill="%23fff" height="20" viewBox="0 0 20 20" width="20" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
+        background-repeat: no-repeat;
+        background-position: right 0.75rem center;
+        background-size: 1.2em;
+        padding-right: 2.5em;
+    }
+    /* Dark mode for performance metrics */
+    body.dark-mode .model-stats,
+    body.dark-mode .stats-grid,
+    body.dark-mode .stat-card {
+        background: #232527 !important;
+        color: #e0e0e0 !important;
+        border: 1px solid #333;
+    }
+    body.dark-mode .stat-card * {
+        color: #e0e0e0 !important;
+    }
+    body.dark-mode .stat-card .stat-value {
+        color: #ffd700 !important;
+    }
+.predictions-blur {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(255,255,255,0.7);
+    z-index: 10;
+    filter: blur(2px);
+    pointer-events: none;
+}
+.predictions-content-blur {
+    filter: blur(4px) grayscale(0.5) opacity(0.5);
+    pointer-events: none;
+}
+.predictions-locked-overlay {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 20000;
+    background: rgba(255,255,255,0.95);
+    border-radius: 18px;
+    box-shadow: 0 8px 32px rgba(220,20,60,0.10), 0 1.5px 8px rgba(0,0,0,0.06);
+    padding: 2.5rem 2rem 2rem 2rem;
+    text-align: center;
+    max-width: 350px;
+}
+.locked-title {
+    color: var(--f1-red, #dc143c);
+    font-weight: bold;
+    margin-bottom: 1.5rem;
+}
+.locked-btn-group {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+}
+.btn-login-locked, .btn-register-locked {
+    background: var(--f1-gradient);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    padding: 0.7em 2em;
+    font-size: 1.1rem;
+    transition: background 0.2s;
+    text-decoration: none;
+}
+.btn-login-locked:hover, .btn-register-locked:hover {
+    background: var(--f1-red, #dc143c);
+    color: #fff;
+}
+body.dark-mode .predictions-blur {
+    background: rgba(35,37,39,0.7);
+}
+body.dark-mode .predictions-locked-overlay {
+    background: rgba(35,37,39,0.98);
+    color: #fff;
+    border: 1.5px solid #333;
+}
 </style>
 {% endblock %}
 
@@ -370,204 +563,220 @@
     </div>
 </div>
 
-<div class="container">
-    <!-- Model Selector Section -->
-    <div class="model-selector">
-        <div class="row align-items-center">
-            <div class="col-md-6">
-                <h4 class="mb-0">
-                    <i class="fas fa-brain me-2"></i>Select Prediction Model
-                </h4>
-                <small class="text-muted">Choose which machine learning model to view predictions from</small>
-            </div>
-            <div class="col-md-6 text-md-end">
-                <select class="form-select model-dropdown d-inline-block" onchange="changeModel(this.value)">
-                    {% for key, model in available_models.items %}
-                    <option value="{{ key }}" {% if key == selected_model_key %}selected{% endif %}>
-                        {{ model.name }}
-                        {% if model.status == 'coming_soon' %} (Coming Soon){% endif %}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-        </div>
-        
-        {% if model_status == 'coming_soon' %}
-        <div class="coming-soon-model-text">
-            <i class="fas fa-cogs fa-2x mb-2"></i>
-            <p class="mb-0">{{ model_name }} model is currently in development</p>
-            <small>Predictions will be available soon!</small>
-        </div>
-        {% endif %}
-    </div>
-
-    <!-- Season Overview Section -->
-    <div class="season-overview">
-        <h3 class="results-title">
-            <i class="fas fa-trophy me-2"></i>2025 Season Overview
-            <span class="model-status-badge {% if model_status == 'active' %}status-active{% else %}status-coming-soon{% endif %}">
-                {{ model_name }}
-                {% if model_status == 'coming_soon' %} - Coming Soon{% endif %}
-            </span>
-        </h3>
-        <div class="overview-stats">
-            <div class="overview-stat">
-                <div class="overview-stat-value">{{ total_races }}</div>
-                <div class="overview-stat-label">Total Races</div>
-            </div>
-            <div class="overview-stat">
-                <div class="overview-stat-value">{{ races_with_predictions }}</div>
-                <div class="overview-stat-label">Races with Predictions</div>
-            </div>
-            <div class="overview-stat">
-                <div class="overview-stat-value">{{ available_rounds_display }}</div>
-                <div class="overview-stat-label">Available Rounds</div>
-            </div>
-            <div class="overview-stat">
-                <div class="overview-stat-value">{{ model_name }}</div>
-                <div class="overview-stat-label">Model Used</div>
-            </div>
+<div class="container position-relative">
+    {% if predictions_locked %}
+    <div class="predictions-blur"></div>
+    <div class="predictions-locked-overlay">
+        <h2 class="locked-title">Sign up or log in to view predictions</h2>
+        <div class="locked-btn-group">
+            <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-login-locked">Login</a>
+            <a href="{% url 'register' %}?next={{ request.path }}" class="btn btn-register-locked">Register</a>
         </div>
     </div>
-
-    {% if error %}
-        <div class="alert alert-danger">{{ error }}</div>
-    {% elif model_status == 'coming_soon' %}
-        <!-- Model Coming Soon - Show message for entire model -->
-        <div class="results-card coming-soon-card">
-            <div class="coming-soon-content">
-                <div class="coming-soon-icon">
-                    <i class="fas fa-cogs fa-3x"></i>
+    {% endif %}
+    <div class="predictions-content{% if predictions_locked %} predictions-content-blur{% endif %}">
+        <!-- Model Selector Section -->
+        <div class="model-selector">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h4 class="mb-0">
+                        <i class="fas fa-brain me-2"></i>Select Prediction Model
+                    </h4>
+                    <small class="text-muted">Choose which machine learning model to view predictions from</small>
                 </div>
-                <div class="coming-soon-text">{{ model_name }} Model Coming Soon</div>
-                <div class="coming-soon-subtitle">
-                    This model is currently in development and will provide predictions soon
-                </div>
-            </div>
-        </div>
-    {% else %}
-        <!-- Model is active - Show race results -->
-        {% for race_data in results %}
-        <div class="results-card {% if race_data.coming_soon %}coming-soon-card{% endif %}">
-            <div class="race-info {% if not race_data.coming_soon %}clickable{% endif %}" 
-                 {% if not race_data.coming_soon %}onclick="toggleRaceDetails({{ race_data.event.round }})"{% endif %}>
-                <div class="race-info-content">
-                    <div class="race-name">{{ race_data.event.name }}</div>
-                    <div class="race-details">
-                        <i class="fas fa-map-marker-alt me-1"></i>{{ race_data.event.circuit.name }}
-                        <span class="mx-2">•</span>
-                        <i class="fas fa-calendar me-1"></i>{{ race_data.event.date }}
-                        <span class="mx-2">•</span>
-                        <i class="fas fa-flag-checkered me-1"></i>{{ race_data.event.name }}
-                    </div>
-                </div>
-                <div class="race-status-controls">
-                    <span class="round-badge">Round {{ race_data.event.round }}</span>
-                    {% if not race_data.coming_soon %}
-                        <i class="fas fa-chevron-down dropdown-arrow" id="arrow-{{ race_data.event.round }}"></i>
-                    {% endif %}
+                <div class="col-md-6 text-md-end">
+                    <select class="form-select model-dropdown d-inline-block" onchange="changeModel(this.value)">
+                        {% for key, model in available_models.items %}
+                        <option value="{{ key }}" {% if key == selected_model_key %}selected{% endif %}>
+                            {{ model.name }}
+                            {% if model.status == 'coming_soon' %} (Coming Soon){% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
                 </div>
             </div>
             
-            {% if race_data.coming_soon %}
-                <div class="coming-soon-content">
-                    <div class="coming-soon-icon">
-                        <i class="fas fa-clock"></i>
-                    </div>
-                    <div class="coming-soon-text">Predictions Coming Soon</div>
-                    <div class="coming-soon-subtitle">
-                        Model predictions will be available closer to race weekend
-                    </div>
-                </div>
-            {% else %}
-                <div class="race-details-content" id="details-{{ race_data.event.round }}" style="display: none;">
-                    <div class="table-responsive">
-                        <table class="results-table">
-                            <thead>
-                                <tr>
-                                    <th>Pos</th>
-                                    <th>Driver</th>
-                                    <th>Team</th>
-                                    <th>Predicted</th>
-                                    <th>Actual</th>
-                                    <th>Difference</th>
-                                    <th>Confidence</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for item in race_data.comparison %}
-                                <tr class="{% if item.is_correct %}correct-prediction{% else %}incorrect-prediction{% endif %}">
-                                    <td class="position-cell">{{ forloop.counter }}</td>
-                                    <td class="driver-cell">
-                                        <div class="driver-number">{{ item.driver_number }}</div>
-                                        <div>{{ item.driver }}</div>
-                                    </td>
-                                    <td>
-                                        <span class="team-badge">N/A</span>
-                                    </td>
-                                    <td>{{ item.predicted }}</td>
-                                    <td>{{ item.actual }}</td>
-                                    <td>
-                                        {% if item.difference != 'N/A' %}
-                                            {% if item.difference == 0 %}
-                                                <span class="difference-badge diff-perfect">±0</span>
-                                            {% elif item.difference <= 2 and item.difference >= -2 %}
-                                                <span class="difference-badge diff-close">
-                                                    {% if item.difference > 0 %}+{% endif %}{{ item.difference }}
-                                                </span>
-                                            {% else %}
-                                                <span class="difference-badge diff-far">
-                                                    {% if item.difference > 0 %}+{% endif %}{{ item.difference }}
-                                                </span>
-                                            {% endif %}
-                                        {% else %}
-                                            {{ item.difference }}
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if item.confidence %}
-                                            <div class="confidence-bar">
-                                                <div class="confidence-fill" style="width: {{ item.confidence }}%"></div>
-                                            </div>
-                                            <small class="text-muted">{{ item.confidence }}%</small>
-                                        {% else %}
-                                            N/A
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    {% if race_data.accuracy_stats %}
-                    <div class="model-stats">
-                        <h5 class="mb-3"><i class="fas fa-tachometer-alt me-2"></i>Round {{ race_data.event.round }} Performance Metrics</h5>
-                        <div class="stats-grid">
-                            <div class="stat-card">
-                                <div class="stat-value">{{ race_data.accuracy_stats.accuracy }}%</div>
-                                <div class="stat-label">Overall Accuracy</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-value">{{ race_data.accuracy_stats.top3_accuracy }}</div>
-                                <div class="stat-label">Top 3 Accuracy</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-value">{{ race_data.accuracy_stats.avg_position_diff }}</div>
-                                <div class="stat-label">Avg Position Diff</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-value">{{ race_data.accuracy_stats.correct_predictions }}/{{ race_data.accuracy_stats.total_predictions }}</div>
-                                <div class="stat-label">Correct Predictions</div>
-                            </div>
-                        </div>
-                    </div>
-                    {% endif %}
-                </div>
+            {% if model_status == 'coming_soon' %}
+            <div class="coming-soon-model-text">
+                <i class="fas fa-cogs fa-2x mb-2"></i>
+                <p class="mb-0">{{ model_name }} model is currently in development</p>
+                <small>Predictions will be available soon!</small>
+            </div>
             {% endif %}
         </div>
-        {% endfor %}
-    {% endif %}
+
+        <!-- Season Overview Section -->
+        <div class="season-overview">
+            <h3 class="results-title">
+                <i class="fas fa-trophy me-2"></i>2025 Season Overview
+                <span class="model-status-badge {% if model_status == 'active' %}status-active{% else %}status-coming-soon{% endif %}">
+                    {{ model_name }}
+                    {% if model_status == 'coming_soon' %} - Coming Soon{% endif %}
+                </span>
+            </h3>
+            <div class="overview-stats">
+                <div class="overview-stat">
+                    <div class="overview-stat-value">{{ total_races }}</div>
+                    <div class="overview-stat-label">Total Races</div>
+                </div>
+                <div class="overview-stat">
+                    <div class="overview-stat-value">{{ races_with_predictions }}</div>
+                    <div class="overview-stat-label">Races with Predictions</div>
+                </div>
+                <div class="overview-stat">
+                    <div class="overview-stat-value">{{ available_rounds_display }}</div>
+                    <div class="overview-stat-label">Available Rounds</div>
+                </div>
+                <div class="overview-stat">
+                    <div class="overview-stat-value">{{ model_name }}</div>
+                    <div class="overview-stat-label">Model Used</div>
+                </div>
+            </div>
+        </div>
+
+        {% if error %}
+            <div class="alert alert-danger">{{ error }}</div>
+        {% elif model_status == 'coming_soon' %}
+            <!-- Model Coming Soon - Show message for entire model -->
+            <div class="results-card coming-soon-card">
+                <div class="coming-soon-content">
+                    <div class="coming-soon-icon">
+                        <i class="fas fa-cogs fa-3x"></i>
+                    </div>
+                    <div class="coming-soon-text">{{ model_name }} Model Coming Soon</div>
+                    <div class="coming-soon-subtitle">
+                        This model is currently in development and will provide predictions soon
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <!-- Model is active - Show race results -->
+            {% for race_data in results %}
+            <div class="results-card {% if race_data.coming_soon %}coming-soon-card{% endif %}">
+                <div class="race-info {% if not race_data.coming_soon %}clickable{% endif %}" 
+                     {% if not race_data.coming_soon %}onclick="toggleRaceDetails({{ race_data.event.round }})"{% endif %}>
+                    <div class="race-info-content">
+                        <div class="race-name">{{ race_data.event.name }}</div>
+                        <div class="race-details">
+                            <i class="fas fa-map-marker-alt me-1"></i>{{ race_data.event.circuit.name }}
+                            <span class="mx-2">•</span>
+                            <i class="fas fa-calendar me-1"></i>{{ race_data.event.date }}
+                            <span class="mx-2">•</span>
+                            <i class="fas fa-flag-checkered me-1"></i>{{ race_data.event.name }}
+                        </div>
+                    </div>
+                    <div class="race-status-controls">
+                        <span class="round-badge">Round {{ race_data.event.round }}</span>
+                        {% if not race_data.coming_soon %}
+                            <i class="fas fa-chevron-down dropdown-arrow" id="arrow-{{ race_data.event.round }}"></i>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if race_data.coming_soon %}
+                    <div class="coming-soon-content">
+                        <div class="coming-soon-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="coming-soon-text">Predictions Coming Soon</div>
+                        <div class="coming-soon-subtitle">
+                            Model predictions will be available closer to race weekend
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="race-details-content" id="details-{{ race_data.event.round }}" style="display: none;">
+                        <div class="table-responsive">
+                            <table class="results-table">
+                                <thead>
+                                    <tr>
+                                        <th>Pos</th>
+                                        <th>Driver</th>
+                                        <th>Team</th>
+                                        <th>Predicted</th>
+                                        <th>Actual</th>
+                                        <th>Difference</th>
+                                        <th>Confidence</th>
+                                        <th>Points</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in race_data.comparison %}
+                                    <tr class="{% if item.is_correct %}correct-prediction{% else %}incorrect-prediction{% endif %}">
+                                        <td class="position-cell">{{ forloop.counter }}</td>
+                                        <td class="driver-cell">
+                                            <div class="driver-number">{{ item.driver_number }}</div>
+                                            <div>{{ item.driver }}</div>
+                                        </td>
+                                        <td>
+                                            <span class="team-badge {{ item.team_class }}">{{ item.team }}</span>
+                                        </td>
+                                        <td>{{ item.predicted }}</td>
+                                        <td>{{ item.actual }}</td>
+                                        <td>
+                                            {% if item.difference != 'N/A' %}
+                                                {% if item.difference == 0 %}
+                                                    <span class="difference-badge diff-perfect">±0</span>
+                                                {% elif item.difference <= 2 and item.difference >= -2 %}
+                                                    <span class="difference-badge diff-close">
+                                                        {% if item.difference > 0 %}+{% endif %}{{ item.difference }}
+                                                    </span>
+                                                {% else %}
+                                                    <span class="difference-badge diff-far">
+                                                        {% if item.difference > 0 %}+{% endif %}{{ item.difference }}
+                                                    </span>
+                                                {% endif %}
+                                            {% else %}
+                                                {{ item.difference }}
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if item.confidence %}
+                                                <div class="confidence-bar">
+                                                    <div class="confidence-fill" style="width: {{ item.confidence }}%"></div>
+                                                </div>
+                                                <small class="text-muted">{{ item.confidence }}%</small>
+                                            {% else %}
+                                                N/A
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if item.points is not None %}
+                                                {{ item.points|floatformat:0 }}
+                                            {% else %}
+                                                N/A
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        {% if race_data.accuracy_stats %}
+                        <div class="model-stats">
+                            <h5 class="mb-3"><i class="fas fa-tachometer-alt me-2"></i>Round {{ race_data.event.round }} Performance Metrics</h5>
+                            <div class="stats-grid">
+                                <div class="stat-card">
+                                    <div class="stat-value">{{ race_data.accuracy_stats.top10_accuracy }}</div>
+                                    <div class="stat-label">Top 10 Accuracy</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-value">{{ race_data.accuracy_stats.top3_accuracy }}</div>
+                                    <div class="stat-label">Top 3 Accuracy</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-value">{{ race_data.accuracy_stats.avg_position_diff }}</div>
+                                    <div class="stat-label">Avg Position Diff</div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        {% endif %}
+    </div>
 </div>
 
 <!-- Scroll to top button -->

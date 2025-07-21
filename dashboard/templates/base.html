@@ -19,22 +19,27 @@
             --f1-blue: #0066cc;
             --f1-gradient: linear-gradient(135deg, #dc143c 0%, #b91c1c 50%, #991b1b 100%);
             --f1-card-gradient: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            --f1-body-gradient: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            --f1-btn-hover: linear-gradient(135deg, #b91c1c 0%, #991b1b 50%, #7f1d1d 100%);
+            --f1-btn-secondary: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
         }
 
         /* Body and General Styling */
         body {
-            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            background: var(--f1-body-gradient);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            color: #333;
+            color: var(--f1-dark);
         }
 
         /* Navigation Enhancements */
         .navbar {
             background: var(--f1-gradient) !important;
             box-shadow: 0 2px 15px rgba(220, 20, 60, 0.3);
+            position: relative;
+            z-index: 1000;
         }
 
         .navbar-brand {
@@ -48,6 +53,18 @@
         .navbar-brand:hover {
             transform: scale(1.05);
             color: var(--f1-gold) !important;
+        }
+
+        /* Custom F1 Car Icon */
+        .f1-car-icon {
+            margin-right: 0.5rem;
+            animation: subtle-race 2s ease-in-out infinite;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+        }
+
+        @keyframes subtle-race {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(2px); }
         }
 
         .nav-link {
@@ -182,27 +199,349 @@
 
         {% block extra_css %}{% endblock %}
     </style>
+    <style>
+    :root {
+        --f1-red: #dc143c;
+        --f1-dark: #1a1a1a;
+        --f1-silver: #c0c0c0;
+        --f1-gold: #ffd700;
+        --f1-blue: #0066cc;
+        --f1-gradient: linear-gradient(135deg, #dc143c 0%, #b91c1c 50%, #991b1b 100%);
+        --f1-card-gradient: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        --f1-body-gradient: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        --f1-btn-hover: linear-gradient(135deg, #b91c1c 0%, #991b1b 50%, #7f1d1d 100%);
+        --f1-btn-secondary: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+    }
+    body {
+        background: var(--f1-body-gradient);
+        color: var(--f1-dark);
+    }
+    .navbar, .navbar-brand {
+        background: var(--f1-gradient) !important;
+        color: #fff !important;
+        position: relative;
+        z-index: 1000;
+    }
+    .results-table, .card, .stat-card {
+        background: var(--f1-card-gradient) !important;
+        color: var(--f1-dark) !important;
+    }
+    .team-badge {
+        border: none;
+    }
+    .driver-number {
+        background: #f0f0f0;
+        color: var(--f1-red);
+        font-weight: bold;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 10px;
+    }
+    .btn-theme-toggle {
+        background: var(--f1-gradient);
+        color: var(--f1-gold);
+        border: none;
+        font-weight: bold;
+        border-radius: 20px;
+        padding: 0.4em 1.2em;
+        box-shadow: 0 2px 8px rgba(220,20,60,0.08);
+        transition: background 0.2s, color 0.2s;
+    }
+    .btn-theme-toggle:hover, .btn-theme-toggle:focus {
+        background: var(--f1-btn-hover);
+        color: #fff;
+        outline: none;
+    }
+    /* Dark mode overrides */
+    body.dark-mode {
+        background: var(--f1-dark) !important;
+        color: #fff !important;
+    }
+    body.dark-mode .navbar, body.dark-mode .navbar-brand {
+        background: var(--f1-gradient) !important;
+        color: #fff !important;
+    }
+    body.dark-mode .card,
+    body.dark-mode .stat-card,
+    body.dark-mode .results-card,
+    body.dark-mode .results-table {
+        background: #232527 !important;
+        color: #e0e0e0 !important;
+        border: 1px solid #333;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    body.dark-mode .card *,
+    body.dark-mode .stat-card *,
+    body.dark-mode .results-card *,
+    body.dark-mode .results-table * {
+        color: #e0e0e0 !important;
+    }
+    body.dark-mode .card h1,
+    body.dark-mode .card h2,
+    body.dark-mode .card h3,
+    body.dark-mode .card h4,
+    body.dark-mode .card h5,
+    body.dark-mode .card h6,
+    body.dark-mode .stat-card h1,
+    body.dark-mode .stat-card h2,
+    body.dark-mode .stat-card h3,
+    body.dark-mode .stat-card h4,
+    body.dark-mode .stat-card h5,
+    body.dark-mode .stat-card h6 {
+        color: #fff !important;
+    }
+    body.dark-mode .team-badge {
+        background: #232527 !important;
+        color: #fff !important;
+        border: 1px solid #333;
+    }
+    body.dark-mode .driver-number {
+        background: #232527 !important;
+        color: var(--f1-gold) !important;
+        border: 1px solid #333;
+    }
+    body.dark-mode .btn-theme-toggle {
+        background: var(--f1-gradient);
+        color: var(--f1-gold);
+        border: none;
+    }
+    body.dark-mode .btn-theme-toggle:hover, body.dark-mode .btn-theme-toggle:focus {
+        background: var(--f1-btn-hover);
+        color: #fff;
+    }
+    /* F1 Red utility class */
+    .f1-red-bg { background: var(--f1-red) !important; color: #fff !important; }
+
+    /* Dark mode: all div-based boxes use black, dark gray, or F1 red backgrounds */
+    body.dark-mode .card,
+    body.dark-mode .stat-card,
+    body.dark-mode .results-card,
+    body.dark-mode .results-table,
+    body.dark-mode .search-bar,
+    body.dark-mode .search-container,
+    body.dark-mode .dropdown-menu,
+    body.dark-mode .dropdown-content,
+    body.dark-mode .results-popup,
+    body.dark-mode .search-results,
+    body.dark-mode .modal-content,
+    body.dark-mode .box,
+    body.dark-mode .panel,
+    body.dark-mode .overview-card {
+        background: #232527 !important;
+        color: #e0e0e0 !important;
+        border: 1px solid #333;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    body.dark-mode .card *,
+    body.dark-mode .stat-card *,
+    body.dark-mode .results-card *,
+    body.dark-mode .results-table *,
+    body.dark-mode .search-bar *,
+    body.dark-mode .search-container *,
+    body.dark-mode .dropdown-menu *,
+    body.dark-mode .dropdown-content *,
+    body.dark-mode .results-popup *,
+    body.dark-mode .search-results *,
+    body.dark-mode .modal-content *,
+    body.dark-mode .box *,
+    body.dark-mode .panel *,
+    body.dark-mode .overview-card * {
+        color: #e0e0e0 !important;
+    }
+    body.dark-mode .card h1,
+    body.dark-mode .card h2,
+    body.dark-mode .card h3,
+    body.dark-mode .card h4,
+    body.dark-mode .card h5,
+    body.dark-mode .card h6,
+    body.dark-mode .stat-card h1,
+    body.dark-mode .stat-card h2,
+    body.dark-mode .stat-card h3,
+    body.dark-mode .stat-card h4,
+    body.dark-mode .stat-card h5,
+    body.dark-mode .stat-card h6 {
+        color: #fff !important;
+    }
+    /* F1 red accent for special boxes */
+    body.dark-mode .f1-red-bg {
+        background: var(--f1-red) !important;
+        color: #fff !important;
+    }
+    body.dark-mode .coming-soon-badge {
+        background: #232527 !important;   /* dark background */
+        color: #ffd700 !important;        /* gold text */
+        border: 1px solid #ffd700;
+        box-shadow: 0 1px 4px #1a1a1a;
+    }
+    .user-badge {
+        background: var(--f1-red, #dc143c);
+        color: #fff;
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        transition: background 0.2s, color 0.2s;
+    }
+    .user-badge i {
+        color: #fff !important;
+    }
+    .user-badge:hover, .user-badge:focus {
+        background: #fff;
+        color: var(--f1-red, #dc143c);
+    }
+    .user-badge:hover i, .user-badge:focus i {
+        color: var(--f1-red, #dc143c) !important;
+    }
+    body.dark-mode .user-badge {
+        background: #232527;
+        color: #fff;
+    }
+    body.dark-mode .user-badge i {
+        color: #fff !important;
+    }
+    body.dark-mode .user-badge:hover, body.dark-mode .user-badge:focus {
+        background: var(--f1-red, #dc143c);
+        color: #fff;
+    }
+    body.dark-mode .user-badge:hover i, body.dark-mode .user-badge:focus i {
+        color: #fff !important;
+    }
+    .user-menu-dropdown {
+        position: absolute;
+        top: 48px;
+        right: 0;
+        min-width: 120px;
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        border: 1px solid #e9ecef;
+        z-index: 9999;
+        padding: 0.5em 0;
+        text-align: left;
+    }
+    .user-menu-link {
+        display: block;
+        padding: 0.6em 1.2em;
+        color: var(--f1-red, #dc143c);
+        text-decoration: none;
+        font-weight: 500;
+        transition: background 0.2s, color 0.2s;
+    }
+    .user-menu-link:hover {
+        background: var(--f1-gradient);
+        color: #fff;
+    }
+    body.dark-mode .user-menu-dropdown {
+        background: #232527;
+        color: #fff;
+        border: 1px solid #333;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    }
+    body.dark-mode .user-menu-link {
+        color: #ffd700;
+    }
+    body.dark-mode .user-menu-link:hover {
+        background: var(--f1-red, #dc143c);
+        color: #fff;
+    }
+    .user-menu-theme-section {
+        padding: 0.5em 1em 0.2em 1em;
+        text-align: left;
+    }
+    .user-menu-theme-label {
+        font-size: 0.95em;
+        color: #888;
+        font-weight: 600;
+        margin-bottom: 0.2em;
+    }
+    .user-menu-divider {
+        margin: 0.5em 0;
+        border: none;
+        border-top: 1px solid #eee;
+    }
+    body.dark-mode .user-menu-divider {
+        border-top: 1px solid #333;
+    }
+    .btn-theme-toggle.w-100 {
+        width: 100%;
+        margin-bottom: 0.5em;
+    }
+    </style>
 </head>
 <body>
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
-            <a class="navbar-brand" href="/"><i class="fas fa-car-side me-2"></i>F1 Dashboard</a>
+            <a class="navbar-brand" href="/">
+            <svg class="f1-car-icon" width="56" height="56" viewBox="0 0 200 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- F1 Car Body -->
+                <path d="M20 45 L40 35 L80 30 L120 30 L160 35 L180 45 L175 55 L165 60 L35 60 L25 55 Z" fill="white" stroke="#dc143c" stroke-width="2"/>
+                <!-- Cockpit -->
+                <path d="M70 30 L130 30 L125 45 L75 45 Z" fill="#1a1a1a" stroke="#dc143c" stroke-width="1"/>
+                <!-- Front Wing -->
+                <path d="M15 40 L35 35 L35 45 L15 50 Z" fill="#dc143c"/>
+                <!-- Rear Wing -->
+                <path d="M165 25 L185 25 L185 35 L165 35 Z" fill="#dc143c"/>
+                <path d="M165 20 L185 20 L185 30 L165 30 Z" fill="white" stroke="#dc143c" stroke-width="1"/>
+                <!-- Front Wheels -->
+                <circle cx="45" cy="55" r="12" fill="#1a1a1a" stroke="#c0c0c0" stroke-width="2"/>
+                <circle cx="45" cy="55" r="6" fill="#c0c0c0"/>
+                <!-- Rear Wheels -->
+                <circle cx="155" cy="55" r="12" fill="#1a1a1a" stroke="#c0c0c0" stroke-width="2"/>
+                <circle cx="155" cy="55" r="6" fill="#c0c0c0"/>
+                <!-- Nose -->
+                <path d="M20 45 L10 47 L10 53 L20 55" fill="#dc143c"/>
+                <!-- Side Mirrors -->
+                <circle cx="75" cy="38" r="2" fill="#c0c0c0"/>
+                <circle cx="125" cy="38" r="2" fill="#c0c0c0"/>
+                <!-- Racing Number -->
+                <text x="100" y="50" text-anchor="middle" fill="#ffd700" font-family="Arial" font-size="12" font-weight="bold">1</text>
+            </svg>
+            F1 Dashboard
+        </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
                     <li class="nav-item">
-                        <a class="nav-link active" href="/">Home</a>
+                        <a class="nav-link" href="{% url 'home' %}">Home</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link active" href="results/">Results</a>
+                        <a class="nav-link" href="{% url 'results' %}">Results</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link active" href="prediction/">Predictions</a>
+                        <a class="nav-link" href="{% url 'prediction' %}">Predictions</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'standings' %}">Standings</a>
                     </li>
                 </ul>
+                <button class="btn user-badge ms-3" type="button" title="User" id="user-menu-btn" onclick="toggleUserMenu(event)">
+                    <i class="fa-solid fa-user"></i>
+                </button>
+                        <div id="user-menu-dropdown" class="user-menu-dropdown" style="display: none;">
+                            <div class="user-menu-theme-section">
+                                <div class="user-menu-theme-label">Theme</div>
+                                <button id="theme-toggle" class="btn btn-theme-toggle w-100 my-2" type="button">Dark</button>
+                            </div>
+                            <hr class="user-menu-divider">
+                            {% if request.user.is_authenticated %}
+                                <a href="{% url 'logout' %}" class="user-menu-link">Logout</a>
+                            {% else %}
+                                <a href="{% url 'register' %}" class="user-menu-link">Register</a>
+                                <a href="{% url 'login' %}" class="user-menu-link">Login</a>
+                            {% endif %}
+                        </div>
             </div>
         </div>
     </nav>
@@ -243,5 +582,60 @@
         });
     </script>
     {% block extra_js %}{% endblock %}
+    <script>
+    // Theme toggle logic
+    function setTheme(dark) {
+        if (dark) {
+            document.body.classList.add('dark-mode');
+            document.getElementById('theme-toggle').textContent = 'Light';
+            localStorage.setItem('theme', 'dark');
+        } else {
+            document.body.classList.remove('dark-mode');
+            document.getElementById('theme-toggle').textContent = 'Dark';
+            localStorage.setItem('theme', 'light');
+        }
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+        const themeToggle = document.getElementById('theme-toggle');
+        // Set initial theme
+        const savedTheme = localStorage.getItem('theme');
+        setTheme(savedTheme === 'dark');
+        themeToggle.addEventListener('click', function() {
+            setTheme(!document.body.classList.contains('dark-mode'));
+        });
+    });
+    </script>
+    <script>
+    function toggleUserMenu(event) {
+        event.stopPropagation();
+        const menu = document.getElementById('user-menu-dropdown');
+        const isOpen = menu.style.display === 'block';
+        menu.style.display = isOpen ? 'none' : 'block';
+        if (!isOpen) {
+            document.addEventListener('mousedown', closeUserMenu);
+        }
+    }
+    function closeUserMenu(e) {
+        const menu = document.getElementById('user-menu-dropdown');
+        const btn = document.getElementById('user-menu-btn');
+        if (
+            menu &&
+            !menu.contains(e.target) &&
+            e.target !== btn &&
+            !btn.contains(e.target)
+        ) {
+            menu.style.display = 'none';
+            document.removeEventListener('mousedown', closeUserMenu);
+        }
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+        const menu = document.getElementById('user-menu-dropdown');
+        if (menu) {
+            menu.addEventListener('mousedown', function(e) {
+                e.stopPropagation();
+            });
+        }
+    });
+    </script>
 </body>
 </html>
