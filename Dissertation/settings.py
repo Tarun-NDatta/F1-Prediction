@@ -11,16 +11,22 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
+from dotenv import load_dotenv, find_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load environment variables from .env file
+# This will search for the .env file in parent directories
+load_dotenv(find_dotenv())
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-kzlr6(ch7&uv!bf51qx%wuhjm#-x012x*tuo%e_)4$v0t4egx_'
+SECRET_KEY = 'django-insecure-^bs!zqs#i1k8y@wfd9g(+5q(o1owd3@*6&q3&@^t$z43%z32*q'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -126,14 +132,14 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Email backend for development (prints emails to console)
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-DEFAULT_FROM_EMAIL = 'F1 Dashboard <dattatarun86@gmail.com>'
+# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# DEFAULT_FROM_EMAIL = 'F1 Dashboard <dattatarun86@gmail.com>'
 
 # For production, uncomment and configure the following:
-# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-# EMAIL_HOST = 'smtp.gmail.com'
-# EMAIL_PORT = 587
-# EMAIL_USE_TLS = True
-# EMAIL_HOST_USER = 'dattatarun86@gmail.com'
-# EMAIL_HOST_PASSWORD = 'your_gmail_app_password'  # Use an app password, not your main password
-# DEFAULT_FROM_EMAIL = 'F1 Dashboard <dattatarun86@gmail.com>'
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'dattatarun86@gmail.com'
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')  # Use an app password, not your main password
+DEFAULT_FROM_EMAIL = 'F1 Dashboard <dattatarun86@gmail.com>'

@@ -1,714 +1,267 @@
 {% extends 'base.html' %}
-
 {% block title %}F1 Results{% endblock %}
 
 {% block extra_css %}
 <style>
-    /* Results Page Specific Styles */
     .results-header {
-        background: linear-gradient(135deg, #dc143c 0%, #991b1b 100%);
+        background: var(--f1-gradient);
         color: white;
-        padding: 2rem 0;
-        border-radius: 0 0 30px 30px;
+        padding: 2rem;
         margin-bottom: 2rem;
-    }
-    
-    .filter-section {
-        background: white;
-        border-radius: 15px;
-        padding: 1.5rem;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-        margin-bottom: 2rem;
-    }
-    
-    .filter-title {
-        color: #dc143c;
-        font-weight: bold;
-        margin-bottom: 1.2rem;
-        border-bottom: 2px solid #f0f0f0;
-        padding-bottom: 0.8rem;
-    }
-    
-    .results-card {
-        background: white;
-        border-radius: 15px;
-        padding: 1.5rem;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-        margin-bottom: 2rem;
-        transition: all 0.3s ease;
-    }
-    
-    .results-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 30px rgba(220, 20, 60, 0.2);
-    }
-    
-    .results-card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1.5rem;
-        padding-bottom: 1rem;
-        border-bottom: 2px solid #f0f0f0;
-    }
-    
-    .circuit-info {
-        display: flex;
-        align-items: center;
-    }
-    
-    .circuit-image {
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
-        background: #f0f0f0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-right: 1rem;
-        color: #dc143c;
-        font-size: 1.5rem;
-    }
-    
-    .race-title {
-        font-weight: bold;
-        margin-bottom: 0.3rem;
-    }
-    
-    .race-date {
-        color: #6b7280;
-        font-size: 0.9rem;
-    }
-    
-    .results-table {
-        width: 100%;
-        border-collapse: separate;
-        border-spacing: 0;
-    }
-    
-    .results-table th {
-        background: #f8f9fa;
-        color: #dc143c;
-        font-weight: 600;
-        padding: 0.8rem 1rem;
-        text-align: left;
-        border-bottom: 2px solid #e9ecef;
-    }
-    
-    .results-table td {
-        padding: 0.8rem 1rem;
-        border-bottom: 1px solid #e9ecef;
-    }
-    
-    .results-table tr:hover {
-        background-color: rgba(220, 20, 60, 0.03);
-    }
-    
-    .position-cell {
-        font-weight: bold;
+        border-radius: 12px;
         text-align: center;
-        width: 40px;
     }
-    
-    .driver-cell {
-        display: flex;
-        align-items: center;
+    .content-box {
+        border-radius: 16px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        margin-bottom: 2rem;
+        padding: 2rem 1.5rem;
     }
-    
-    .driver-number {
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
-        background: #dc143c;
-        color: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+    .filter-title {
+        border-bottom: 1px solid #eee;
+        padding-bottom: 1rem;
+        margin-bottom: 1.5rem;
+        font-size: 1.3rem;
         font-weight: bold;
-        margin-right: 0.8rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
     }
-    
-    .driver-name {
-        font-weight: 500;
+    .filter-title i { color: var(--f1-red); }
+    .filter-section .form-select,
+    .filter-section input {
+        border-radius: 8px;
+        min-height: 44px;
     }
-    
-    .team-badge {
-        display: inline-block;
-        padding: 0.2rem 0.8rem;
-        border-radius: 20px;
-        font-size: 0.8rem;
-        font-weight: 500;
-        margin-left: 0.5rem;
+    .filter-section .btn-primary {
+        background: var(--f1-gradient);
+        border: none;
+        font-weight: bold;
+        border-radius: 8px;
     }
-    
+    .filter-section .btn-primary:hover {
+        background: #b91c1c;
+    }
+    .podium-badge {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 30px; height: 30px; border-radius: 50%;
+        font-weight: bold;
+        font-size: 1rem;
+    }
+    .podium-1 { background: var(--f1-gold); color: var(--f1-dark); }
+    .podium-2 { background: var(--f1-silver); color: var(--f1-dark); }
+    .podium-3 { background: #CD7F32; color: white; }
+    .driver-number {
+        width: 30px; height: 30px; border-radius: 50%;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-weight: bold; margin-right: 10px;
+        font-size: 1rem;
+        background: #eee;
+        color: var(--f1-dark);
+    }
+    .team-badge { display: inline-block; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 500; }
     .team-mercedes { background: #00D2BE; color: white; }
     .team-ferrari { background: #DC0000; color: white; }
-    .team-redbull { background: #0600EF; color: white; }
-    .team-mclaren { background: #FF8700; color: white; }
-    .team-alpine { background: #0090FF; color: white; }
-    .team-astonmartin { background: #006F62; color: white; }
-    .team-alfaromeo { background: #900000; color: white; }
-    .team-haas { background: #FFFFFF; color: black; border: 1px solid #ccc; }
-    .team-alphatauri { background: #2B4562; color: white; }
-    .team-williams { background: #005AFF; color: white; }
-    .team-default { background: #6c757d; color: white; }
-    
-    .time-cell {
-        font-family: monospace;
-        font-weight: 500;
+    /* Add other team colors as needed */
+    .table th, .table td {
+        vertical-align: middle;
+        font-size: 1rem;
     }
-    
-    .podium {
-        background-color: rgba(255, 215, 0, 0.1);
-    }
-    
-    .points-cell {
-        font-weight: bold;
-        color: #dc143c;
-    }
-    
-    .dnf {
-        color: #6c757d;
-        font-style: italic;
-    }
-    
-    .no-results {
-        text-align: center;
-        padding: 3rem;
-        color: #6c757d;
-    }
-    
-    .pagination {
-        justify-content: center;
-        margin-top: 2rem;
-    }
-    
-    .page-link {
-        color: #dc143c;
-        border: none;
-        padding: 0.75rem 1rem;
-        margin: 0 0.125rem;
-        border-radius: 8px;
-        text-decoration: none;
-        transition: all 0.3s ease;
-    }
-    
-    .page-link:hover {
-        color: white;
-        background: #dc143c;
-    }
-    
-    .page-item.active .page-link {
-        background: #dc143c;
-        border-color: #dc143c;
-        color: white;
-    }
-    
-    .page-item.disabled .page-link {
-        color: #6c757d;
+    .table th {
         background: #f8f9fa;
+        color: var(--f1-red);
+        font-weight: 600;
+        border-bottom: 2px solid #e9ecef;
     }
-    
-    .podium-badge {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
-        background: #dc143c;
-        color: white;
-        font-weight: bold;
-        margin-right: 0.8rem;
-    }
-    
-    .podium-1 { background: #FFD700; color: #000; }
-    .podium-2 { background: #C0C0C0; color: #000; }
-    .podium-3 { background: #CD7F32; color: #fff; }
-    
-    .weather-icon {
-        font-size: 1.2rem;
-        margin-right: 0.5rem;
-    }
-    
-    .sunny { color: #FFD700; }
-    .cloudy { color: #6c757d; }
-    .rainy { color: #007BFF; }
-    
-    .stats-badge {
-        background: #f8f9fa;
-        border: 1px solid #dee2e6;
-        padding: 0.25rem 0.75rem;
-        border-radius: 20px;
-        font-size: 0.85rem;
-        margin-right: 0.5rem;
-    }
-    
-    .loading-spinner {
-        display: none;
-        margin-left: 0.5rem;
-    }
-    
-    .fastest-lap {
-        background: linear-gradient(45deg, #8B00FF, #FF1493);
-        color: white;
-        padding: 0.25rem 0.5rem;
-        border-radius: 12px;
-        font-size: 0.7rem;
-        font-weight: bold;
-        margin-left: 0.5rem;
-    }
-
-    /* Debug card specific styles */
-    .debug-card {
+    .table-striped > tbody > tr:nth-of-type(odd) {
         background-color: #f8f9fa;
-        border: 1px dashed #6c757d;
-        border-radius: 8px;
-        margin-bottom: 1.5rem;
     }
-    
-    .debug-card-header {
-        padding: 0.75rem 1.25rem;
-        background-color: #e9ecef;
-        border-bottom: 1px dashed #6c757d;
-        font-weight: 600;
-        color: #495057;
+    .pagination { justify-content: center; margin-top: 2rem; }
+    .page-link { color: var(--f1-red); text-decoration: none; padding: 0.5rem 1rem; margin: 0 0.2rem; border-radius: 8px; border: 1px solid #ddd; background: #fff; }
+    .page-link:hover { background-color: var(--f1-red); color: var(--f1-white) !important; }
+    .page-item.active .page-link { background-color: var(--f1-red); color: var(--f1-white) !important; border-color: var(--f1-red); }
+    .pagination .page-item {
+        margin: 0 0.25em;
     }
-    
-    .debug-card-body {
-        padding: 1rem;
-        font-size: 0.85rem;
-    }
-    
-    .debug-info {
-        margin-bottom: 0.5rem;
-    }
-    
-    .debug-label {
-        font-weight: 600;
-        color: #495057;
-    }
-    
-    .debug-value {
-        color: #6c757d;
-    }
-
-    body.dark-mode .filter-section {
+    /* Dark mode overrides */
+    body.dark-mode .content-box {
         background: #232527 !important;
-        color: #e0e0e0 !important;
+        color: #fff !important;
         border: 1px solid #333;
     }
-    body.dark-mode .filter-title {
-        color: #fff !important;
-        border-bottom: 2px solid #333 !important;
-    }
-    body.dark-mode .filter-section input,
-    body.dark-mode .filter-section select {
+    body.dark-mode .filter-title { border-color: #444; color: #fff; }
+    body.dark-mode .filter-section .form-select,
+    body.dark-mode .filter-section input {
         background: #232527 !important;
         color: #fff !important;
         border: 1px solid #444 !important;
-        appearance: none;
-        -webkit-appearance: none;
-        -moz-appearance: none;
-        background-image: url('data:image/svg+xml;utf8,<svg fill="%23fff" height="20" viewBox="0 0 20 20" width="20" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
-        background-repeat: no-repeat;
-        background-position: right 0.75rem center;
-        background-size: 1.2em;
-        padding-right: 2.5em;
     }
-    body.dark-mode .filter-section input::placeholder {
-        color: #c0c0c0 !important;
-        opacity: 1;
+    body.dark-mode .filter-section .btn-primary {
+        background: var(--f1-gradient);
+        color: #fff;
     }
-    body.dark-mode .circuit-image {
-        background: #232527 !important;
-        color: #fff !important;
-        border: 1px solid #333;
-    }
-    body.dark-mode .circuit-image i {
-        color: var(--f1-red, #dc143c) !important;
-    }
-    body.dark-mode .results-table th,
-    body.dark-mode .results-table thead {
+    body.dark-mode .table th {
         background: #232527 !important;
         color: #fff !important;
         border-color: #333 !important;
     }
-    body.dark-mode .driver-number,
-    body.dark-mode .podium-badge {
-        text-shadow: 0 1px 4px #1a1a1a, 0 0 2px #000;
-        border: 2px solid #232527;
-    }
-    body.dark-mode .pagination {
-        background: none;
-        padding: 0.5em 0;
-    }
-    .page-item {
-        margin: 0 0.25em;
-    }
-    .page-link {
-        background: #f8f9fa;
-        color: #dc143c;
-        border-radius: 8px;
-        padding: 0.5em 1em;
-        transition: background 0.2s, color 0.2s;
-        border: 1px solid #e9ecef;
-    }
-    .page-item.active .page-link {
-        background: var(--f1-red, #dc143c);
-        color: #fff;
-        border-color: var(--f1-red, #dc143c);
-    }
-    .page-item.disabled .page-link {
-        color: #aaa;
-        background: #f8f9fa;
-        border-color: #e9ecef;
-    }
-    /* Light mode buttons */
-    .btn, .btn-primary, .btn-danger, .btn-secondary {
-        background: #f8f9fa;
-        color: #dc143c;
-        border: 1px solid #e9ecef;
-        border-radius: 8px;
-        transition: background 0.2s, color 0.2s;
-    }
-    .btn:hover, .btn-primary:hover, .btn-danger:hover, .btn-secondary:hover {
-        background: #dc143c;
-        color: #fff;
-        border-color: #dc143c;
-    }
-    /* Dark mode buttons */
-    body.dark-mode .btn, body.dark-mode .btn-primary, body.dark-mode .btn-danger, body.dark-mode .btn-secondary {
+    body.dark-mode .table td {
         background: #232527 !important;
         color: #fff !important;
-        border: 1px solid #333 !important;
-    }
-    body.dark-mode .btn:hover, body.dark-mode .btn-primary:hover, body.dark-mode .btn-danger:hover, body.dark-mode .btn-secondary:hover {
-        background: var(--f1-red, #dc143c) !important;
-        color: #fff !important;
-        border-color: var(--f1-red, #dc143c) !important;
-    }
-    /* Light mode pagination buttons */
-    .pagination .page-link {
-        background: #f8f9fa;
-        color: #dc143c;
-        border: 1px solid #e9ecef;
-        border-radius: 8px;
-        padding: 0.5em 1em;
-        transition: background 0.2s, color 0.2s;
-    }
-    .pagination .page-item.active .page-link,
-    .pagination .page-link:hover {
-        background: var(--f1-red, #dc143c);
-        color: #fff;
-        border-color: var(--f1-red, #dc143c);
-    }
-    .pagination .page-item.disabled .page-link {
-        color: #aaa;
-        background: #f8f9fa;
-        border-color: #e9ecef;
-    }
-    /* Dark mode pagination buttons */
-    body.dark-mode .pagination .page-link {
-        background: #232527 !important;
-        color: #fff !important;
-        border: 1px solid #333 !important;
-    }
-    body.dark-mode .pagination .page-item.active .page-link,
-    body.dark-mode .pagination .page-link:hover {
-        background: var(--f1-red, #dc143c) !important;
-        color: #fff !important;
-        border-color: var(--f1-red, #dc143c) !important;
-    }
-    body.dark-mode .pagination .page-item.disabled .page-link {
-        color: #666 !important;
-        background: #232527 !important;
         border-color: #333 !important;
+    }
+    body.dark-mode .table-striped > tbody > tr:nth-of-type(odd) {
+        background-color: #232527 !important;
+    }
+    body.dark-mode .driver-number {
+        background: #15151E !important;
+        color: #fff !important;
+    }
+    body.dark-mode .podium-1, body.dark-mode .podium-2, body.dark-mode .podium-3 {
+        color: #15151E !important;
+        border: 2px solid #ffd700;
+    }
+    body.dark-mode .team-badge { color: #fff !important; }
+    body.dark-mode .page-link {
+        background: #232527 !important;
+        color: #fff !important;
+        border: 1px solid #444 !important;
+    }
+    body.dark-mode .page-link:hover, body.dark-mode .page-item.active .page-link {
+        background: var(--f1-red) !important;
+        color: #fff !important;
+        border-color: var(--f1-red) !important;
     }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="results-header">
-    <div class="container text-center">
-        <h1><i class="fas fa-flag-checkered me-2"></i>F1 Race Results</h1>
-        <p class="lead">Explore race data and qualifying results from 2022-2024</p>
-    </div>
+    <h1><i class="fas fa-flag-checkered me-2"></i>F1 Race Results</h1>
+    <p class="lead">Explore official race and qualifying results</p>
 </div>
 
-<div class="container">
-    <div class="filter-section">
-        <h4 class="filter-title"><i class="fas fa-filter me-2"></i>Filter Results</h4>
-        <form method="GET" action="{% url 'results' %}" id="filterForm">
-            <div class="row">
-                <div class="col-md-3 mb-3">
-                    <label class="form-label">Season</label>
-                    <select class="form-select" name="year" id="yearSelect">
-                        {% for year in available_years %}
-                            <option value="{{ year }}" {% if year|stringformat:"s" == selected_year %}selected{% endif %}>
-                                {{ year }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <label class="form-label">Circuit</label>
-                    <select class="form-select" name="circuit" id="circuitSelect">
-                        <option value="all" {% if selected_circuit == 'all' %}selected{% endif %}>All Circuits</option>
-                        {% for circuit in available_circuits %}
-                            <option value="{{ circuit.id }}" {% if circuit.id|stringformat:"s" == selected_circuit %}selected{% endif %}>
-                                {{ circuit.name }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <label class="form-label">Session Type</label>
-                    <select class="form-select" name="session" id="sessionSelect">
-                        <option value="race" {% if selected_session == 'race' %}selected{% endif %}>Race Results</option>
-                        <option value="qualifying" {% if selected_session == 'qualifying' %}selected{% endif %}>Qualifying Results</option>
-                    </select>
-                </div>
-                <div class="col-md-3 mb-3 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="fas fa-search me-2"></i>Apply Filters
-                        <div class="spinner-border spinner-border-sm loading-spinner" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                    </button>
-                </div>
+<div class="content-box filter-section">
+    <h4 class="filter-title"><i class="fas fa-filter me-2"></i>Filter Results</h4>
+    <form method="GET" action="{% url 'results' %}">
+        <div class="row">
+            <div class="col-md-3 mb-3">
+                <select class="form-select" name="year">
+                    {% for year in available_years %}
+                        <option value="{{ year }}" {% if year|stringformat:"s" == selected_year %}selected{% endif %}>{{ year }}</option>
+                    {% endfor %}
+                </select>
             </div>
-        </form>
-        
-        <!-- Results Summary -->
-        {% if total_events > 0 %}
-        <div class="mt-3">
-            <span class="stats-badge">
-                <i class="fas fa-calendar-alt me-1"></i>{{ total_events }} Event{{ total_events|pluralize }}
-            </span>
-            <span class="stats-badge">
-                <i class="fas fa-flag-checkered me-1"></i>{{ selected_session|capfirst }} Results
-            </span>
-            <span class="stats-badge">
-                <i class="fas fa-trophy me-1"></i>{{ selected_year }} Season
-            </span>
+            <div class="col-md-3 mb-3">
+                <select class="form-select" name="circuit">
+                    <option value="all" {% if selected_circuit == 'all' %}selected{% endif %}>All Circuits</option>
+                    {% for circuit in available_circuits %}
+                        <option value="{{ circuit.id }}" {% if circuit.id|stringformat:"s" == selected_circuit %}selected{% endif %}>{{ circuit.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3 mb-3">
+                <select class="form-select" name="session">
+                    <option value="race" {% if selected_session == 'race' %}selected{% endif %}>Race Results</option>
+                    <option value="qualifying" {% if selected_session == 'qualifying' %}selected{% endif %}>Qualifying Results</option>
+                </select>
+            </div>
+            <div class="col-md-3 mb-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">Apply</button>
+            </div>
         </div>
-        {% endif %}
-    </div>
+    </form>
+</div>
 
-    {% if page_obj and page_obj.object_list %}
-        {% for race_data in page_obj.object_list %}
-        <div class="results-card">
-            <div class="results-card-header">
-                <div class="circuit-info">
-                    <div class="circuit-image">
-                        <i class="fas fa-route"></i>
-                    </div>
-                    <div>
-                        <h4 class="race-title">{{ race_data.event.name }}</h4>
-                        <div class="race-date">
-                            <i class="fas fa-calendar-alt me-2"></i>{{ race_data.event.date|date:"F j, Y" }}
-                            <span class="ms-3">
-                                <i class="fas fa-map-marker-alt me-2"></i>{{ race_data.event.circuit.name }}
-                            </span>
-                            {% if race_data.weather.air_temp %}
-                            <span class="ms-3">
-                                <i class="fas fa-thermometer-half me-2"></i>{{ race_data.weather.air_temp|floatformat:0 }}°C
-                            </span>
-                            {% endif %}
-                            {% if race_data.weather.rain %}
-                            <span class="ms-3">
-                                <i class="fas fa-cloud-rain weather-icon rainy"></i>Rain
-                            </span>
-                            {% elif total_events == 0 %}
-                            <span class="ms-3">
-                                <i class="fas fa-sun weather-icon sunny"></i>Dry
-                            </span>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-                <div>
+{% for race_data in page_obj.object_list %}
+<div class="content-box">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h4 class="mb-0">{{ race_data.event.name }}</h4>
+            <small class="text-muted">{{ race_data.event.date|date:"F j, Y" }}</small>
+        </div>
+        <span class="badge bg-primary p-2">{{ race_data.session_type|capfirst }}</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Pos</th>
+                    <th>Driver</th>
+                    <th>Team</th>
                     {% if race_data.session_type == 'race' %}
-                        <span class="badge bg-danger">{{ race_data.total_laps }} Laps</span>
+                    <th>Grid</th><th>Time/Status</th><th>Laps</th><th>Pts</th>
                     {% else %}
-                        <span class="badge bg-primary">Qualifying</span>
+                    <th>Q1</th><th>Q2</th><th>Q3</th><th>Best Time</th>
                     {% endif %}
-                </div>
-            </div>
-            
-            <div class="table-responsive">
-                {% if race_data.results %}
-                <table class="results-table">
-                    <thead>
-                        <tr>
-                            <th class="position-cell">Pos</th>
-                            <th>Driver</th>
-                            <th>Team</th>
-                            {% if race_data.session_type == 'race' %}
-                                <th>Grid</th>
-                                <th>Time/Status</th>
-                                <th>Laps</th>
-                                <th>Points</th>
-                            {% else %}
-                                <th>Q1</th>
-                                <th>Q2</th>
-                                <th>Q3</th>
-                                <th>Best Time</th>
-                            {% endif %}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for result in race_data.results %}
-                        <tr class="{% if result.is_podium %}podium{% endif %} {% if result.is_dnf %}dnf{% endif %}">
-                            <td class="position-cell">
-                                {% if result.is_podium and result.position <= 3 %}
-                                    <span class="podium-badge podium-{{ result.position }}">{{ result.position }}</span>
-                                {% else %}
-                                    {{ result.position }}
-                                {% endif %}
-                            </td>
-                            <td>
-                                <div class="driver-cell">
-                                    <div class="driver-number">{{ result.driver_number|default:"" }}</div>
-                                    <div class="driver-name">
-                                        {{ result.driver_name }}
-                                        {% if result.fastest_lap and race_data.session_type == 'race' %}
-                                            <span class="fastest-lap">FASTEST</span>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </td>
-                            <td><span class="team-badge {{ result.team_class }}">{{ result.team_name }}</span></td>
-                            {% if race_data.session_type == 'race' %}
-                                <td>{{ result.grid_position|default:"-" }}</td>
-                                <td class="time-cell">{{ result.time_or_status }}</td>
-                                <td>{{ result.laps }}</td>
-                                <td class="points-cell">{{ result.points|floatformat:0 }}</td>
-                            {% else %}
-                                <td class="time-cell">-</td> <!-- Q1 placeholder -->
-                                <td class="time-cell">-</td> <!-- Q2 placeholder -->
-                                <td class="time-cell">-</td> <!-- Q3 placeholder -->
-                                <td class="time-cell">{{ result.time_or_status }}</td>
-                            {% endif %}
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                {% else %}
-                <div class="alert alert-info mt-3 mb-3">This race hasn't happened yet.</div>
-                {% endif %}
-            </div>
-        </div>
-        {% endfor %}
-        
-        <!-- Pagination -->
-        {% if page_obj.paginator.num_pages > 1 %}
-        <nav aria-label="Race results pagination">
-            <ul class="pagination">
-                {% if page_obj.has_previous %}
-                    <li class="page-item">
-                        <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page=1">
-                            <i class="fas fa-angle-double-left"></i> First
-                        </a>
-                    </li>
-                    <li class="page-item">
-                        <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}">
-                            <i class="fas fa-angle-left"></i> Previous
-                        </a>
-                    </li>
-                {% else %}
-                    <li class="page-item disabled">
-                        <span class="page-link">
-                            <i class="fas fa-angle-double-left"></i> First
-                        </span>
-                    </li>
-                    <li class="page-item disabled">
-                        <span class="page-link">
-                            <i class="fas fa-angle-left"></i> Previous
-                        </span>
-                    </li>
-                {% endif %}
-                
-                {% for num in page_obj.paginator.page_range %}
-                    {% if page_obj.number == num %}
-                        <li class="page-item active">
-                            <span class="page-link">{{ num }}</span>
-                        </li>
-                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                        <li class="page-item">
-                            <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}">{{ num }}</a>
-                        </li>
+                </tr>
+            </thead>
+            <tbody>
+                {% for result in race_data.results %}
+                <tr>
+                    <td class="text-center">
+                        {% if result.is_podium %}
+                        <span class="podium-badge podium-{{ result.position }}">{{ result.position }}</span>
+                        {% else %}
+                        {{ result.position }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <div class="driver-number">{{ result.driver_number }}</div>
+                            {{ result.driver_name }}
+                        </div>
+                    </td>
+                    <td><span class="team-badge team-{{ result.team_class }}">{{ result.team_name }}</span></td>
+                    {% if race_data.session_type == 'race' %}
+                    <td>{{ result.grid_position|default:"-" }}</td>
+                    <td>{{ result.time_or_status }}</td>
+                    <td>{{ result.laps }}</td>
+                    <td class="fw-bold">{{ result.points|floatformat:0 }}</td>
+                    {% else %}
+                    <td>{{ result.q1|default:'-' }}</td>
+                    <td>{{ result.q2|default:'-' }}</td>
+                    <td>{{ result.q3|default:'-' }}</td>
+                    <td>{{ result.time_or_status }}</td>
                     {% endif %}
+                </tr>
                 {% endfor %}
-                
-                {% if page_obj.has_next %}
-                    <li class="page-item">
-                        <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}">
-                            Next <i class="fas fa-angle-right"></i>
-                        </a>
-                    </li>
-                    <li class="page-item">
-                        <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.paginator.num_pages }}">
-                            Last <i class="fas fa-angle-double-right"></i>
-                        </a>
-                    </li>
-                {% else %}
-                    <li class="page-item disabled">
-                        <span class="page-link">
-                            Next <i class="fas fa-angle-right"></i>
-                        </span>
-                    </li>
-                    <li class="page-item disabled">
-                        <span class="page-link">
-                            Last <i class="fas fa-angle-double-right"></i>
-                        </span>
-                    </li>
-                {% endif %}
-            </ul>
-        </nav>
-        {% endif %}
-        
-    {% else %}
-        <div class="results-card">
-            <div class="no-results">
-                <i class="fas fa-search fa-3x mb-3 text-muted"></i>
-                <h3>No Results Found</h3>
-                <p>No race data found for the selected filters. Try adjusting your search criteria.</p>
-                <div class="mt-3">
-                    <a href="{% url 'results' %}" class="btn btn-primary">
-                        <i class="fas fa-refresh me-2"></i>Reset Filters
-                    </a>
-                </div>
-            </div>
-        </div>
-    {% endif %}
+            </tbody>
+        </table>
+    </div>
 </div>
+{% endfor %}
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('filterForm');
-    const spinner = document.querySelector('.loading-spinner');
-    
-    // Show spinner on form submission
-    if (form) {
-        form.addEventListener('submit', function() {
-            if (spinner) {
-                spinner.style.display = 'inline-block';
-            }
-        });
-    }
-    
-    // Auto-submit form when filters change
-    const selects = ['yearSelect', 'circuitSelect', 'sessionSelect'];
-    selects.forEach(selectId => {
-        const select = document.getElementById(selectId);
-        if (select) {
-            select.addEventListener('change', function() {
-                form.submit();
-            });
-        }
-    });
-});
-</script>
+{% if page_obj.paginator.num_pages > 1 %}
+<nav aria-label="Race results pagination">
+    <ul class="pagination">
+        {% if page_obj.has_previous %}
+            <li class="page-item"><a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page=1">&laquo; First</a></li>
+            <li class="page-item"><a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}">Previous</a></li>
+        {% else %}
+            <li class="page-item disabled"><span class="page-link">&laquo; First</span></li>
+            <li class="page-item disabled"><span class="page-link">Previous</span></li>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+            {% if num == page_obj.number %}
+                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li class="page-item"><a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}">{{ num }}</a></li>
+            {% elif num == 1 or num == page_obj.paginator.num_pages %}
+                <li class="page-item"><a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}">{{ num }}</a></li>
+            {% elif num == page_obj.number|add:'-3' or num == page_obj.number|add:'3' %}
+                <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+            {% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}">Next</a></li>
+            <li class="page-item"><a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.paginator.num_pages }}">Last &raquo;</a></li>
+        {% else %}
+            <li class="page-item disabled"><span class="page-link">Next</span></li>
+            <li class="page-item disabled"><span class="page-link">Last &raquo;</span></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
 {% endblock %}

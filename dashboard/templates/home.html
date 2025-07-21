@@ -184,6 +184,18 @@
         border: 1px solid #bfa100;
         box-shadow: 0 1px 4px #1a1a1a;
     }
+    body.dark-mode .content-box, body.dark-mode .feature-card, body.dark-mode .feature-title, body.dark-mode .feature-description, body.dark-mode .display-4, body.dark-mode .stat-label, body.dark-mode .stat-number, body.dark-mode .feature-icon, body.dark-mode .feature-title, body.dark-mode .feature-description {
+        color: #fff !important;
+    }
+    body.dark-mode .content-box {
+        background: #232527 !important;
+    }
+    .hero-section {
+        background: var(--f1-gradient) !important;
+    }
+    body.dark-mode .text-muted {
+        color: #fff !important;
+    }
 </style>
 {% endblock %}
 
@@ -214,7 +226,7 @@
 <!-- Feature Cards -->
 <div class="row mt-4">
     <div class="col-lg-4 col-md-6 mb-4">
-        <div class="card feature-card fade-in">
+        <div class="content-box feature-card fade-in">
             <div class="card-body">
                 <div class="feature-icon"><i class="fas fa-chart-bar"></i></div>
                 <h5 class="feature-title">Results</h5>
@@ -225,9 +237,12 @@
     </div>
     
     <div class="col-lg-4 col-md-6 mb-4">
-        <div class="card feature-card fade-in">
+        <div class="content-box feature-card fade-in">
             <div class="card-body">
-                <div class="feature-icon"><i class="fas fa-crystal-ball"></i></div>
+                <div class="feature-icon">
+                    <svg class="f1-car-icon" width="40" height="24" viewBox="0 0 200 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:8px;"><path d="M20 45 L40 35 L80 30 L120 30 L160 35 L180 45 L175 55 L165 60 L35 60 L25 55 Z" fill="white" stroke="#dc143c" stroke-width="2"/><path d="M70 30 L130 30 L125 45 L75 45 Z" fill="#1a1a1a" stroke="#dc143c" stroke-width="1"/><path d="M15 40 L35 35 L35 45 L15 50 Z" fill="#dc143c"/><path d="M165 25 L185 25 L185 35 L165 35 Z" fill="#dc143c"/><path d="M165 20 L185 20 L185 30 L165 30 Z" fill="white" stroke="#dc143c" stroke-width="1"/><circle cx="45" cy="55" r="12" fill="#1a1a1a" stroke="#c0c0c0" stroke-width="2"/><circle cx="45" cy="55" r="6" fill="#c0c0c0"/><circle cx="155" cy="55" r="12" fill="#1a1a1a" stroke="#c0c0c0" stroke-width="2"/><circle cx="155" cy="55" r="6" fill="#c0c0c0"/><path d="M20 45 L10 47 L10 53 L20 55" fill="#dc143c"/><circle cx="75" cy="38" r="2" fill="#c0c0c0"/><circle cx="125" cy="38" r="2" fill="#c0c0c0"/><text x="100" y="50" text-anchor="middle" fill="#ffd700" font-family="Arial" font-size="12" font-weight="bold">1</text></svg>
+                    <i class="fas fa-crystal-ball"></i>
+                </div>
                 <h5 class="feature-title">Predictions</h5>
                 <p class="feature-description">Explore predicted race outcomes and compare model accuracy. Get insights into which drivers are likely to perform well in upcoming races.</p>
                 <a href="prediction/" class="btn btn-primary">View Predictions</a>
@@ -236,7 +251,7 @@
     </div>
     
     <div class="col-lg-4 col-md-6 mb-4">
-        <div class="card feature-card fade-in">
+        <div class="content-box feature-card fade-in">
             <div class="card-body">
                 <div class="coming-soon-badge">Coming Soon</div>
                 <div class="feature-icon"><i class="fas fa-cogs"></i></div>
@@ -300,28 +315,28 @@
     </div>
     
     <div class="col-md-3 col-6 mb-4">
-        <div class="card text-center py-3 fade-in">
+        <div class="content-box text-center py-3 fade-in">
             <div class="display-4 text-danger fw-bold">85%</div>
             <div class="text-muted">Prediction Accuracy</div>
         </div>
     </div>
     
     <div class="col-md-3 col-6 mb-4">
-        <div class="card text-center py-3 fade-in">
+        <div class="content-box text-center py-3 fade-in">
             <div class="display-4 text-danger fw-bold">10K+</div>
             <div class="text-muted">Race Records</div>
         </div>
     </div>
     
     <div class="col-md-3 col-6 mb-4">
-        <div class="card text-center py-3 fade-in">
+        <div class="content-box text-center py-3 fade-in">
             <div class="display-4 text-danger fw-bold">5</div>
             <div class="text-muted">ML Models</div>
         </div>
     </div>
     
     <div class="col-md-3 col-6 mb-4">
-        <div class="card text-center py-3 fade-in">
+        <div class="content-box text-center py-3 fade-in">
             <div class="display-4 text-danger fw-bold">24/7</div>
             <div class="text-muted">Data Updates</div>
         </div>

@@ -5,29 +5,31 @@
 {% block extra_css %}
 <style>
 .register-container {
-    max-width: 120px;
-    margin: 3rem auto;
-    background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+    max-width: 400px;
+    margin: 3rem auto 0 auto;
+    padding: 2.5rem 2rem 2rem 2rem;
+    background: var(--f1-card-gradient, #fff);
     border-radius: 18px;
-    box-shadow: 0 8px 32px rgba(220,20,60,0.10), 0 1.5px 8px rgba(0,0,0,0.06);
-    border: 1.5px solid #e9ecef;
-    padding: 1.5rem 1.2rem 1.2rem 1.2rem;
-    transition: box-shadow 0.2s, border 0.2s;
+    box-shadow: 0 4px 32px 0 rgba(0,0,0,0.10);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 .register-container:hover {
     box-shadow: 0 12px 40px rgba(220,20,60,0.13), 0 2px 12px rgba(0,0,0,0.09);
     border: 1.5px solid var(--f1-red, #dc143c);
 }
 body.dark-mode .register-container {
-    background: linear-gradient(135deg, #232527 0%, #181a1a 100%);
+    background: #23232b !important;
     color: #fff;
-    border: 1.5px solid #333;
+    box-shadow: 0 4px 32px 0 rgba(0,0,0,0.25);
 }
 .register-title {
+    font-size: 2rem;
+    font-weight: 700;
     color: var(--f1-red, #dc143c);
-    font-weight: bold;
-    text-align: center;
     margin-bottom: 1.5rem;
+    text-align: center;
 }
 .form-label {
     color: var(--f1-red, #dc143c);

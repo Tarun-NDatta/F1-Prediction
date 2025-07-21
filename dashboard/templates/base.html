@@ -1,579 +1,218 @@
-<!-- base.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}F1 Prediction Dashboard{% endblock %}</title>
-    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* F1 Theme Variables */
+        /*--------------------------------------------------
+        F1 THEME & CORE STYLES
+        --------------------------------------------------*/
         :root {
-            --f1-red: #dc143c;
-            --f1-dark: #1a1a1a;
-            --f1-silver: #c0c0c0;
-            --f1-gold: #ffd700;
-            --f1-blue: #0066cc;
-            --f1-gradient: linear-gradient(135deg, #dc143c 0%, #b91c1c 50%, #991b1b 100%);
-            --f1-card-gradient: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-            --f1-body-gradient: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-            --f1-btn-hover: linear-gradient(135deg, #b91c1c 0%, #991b1b 50%, #7f1d1d 100%);
-            --f1-btn-secondary: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+            --f1-red: #E10600;
+            --f1-dark: #15151E;
+            --f1-light-bg: #F0F2F5;
+            --f1-dark-bg: #1F1F2B;
+            --f1-card-dark: #2A2A35;
+            --f1-silver: #B0B0B0;
+            --f1-gold: #FFD700;
+            --f1-white: #FFFFFF;
+            --f1-gradient: linear-gradient(135deg, #e10600 0%, #b91c1c 100%);
         }
 
-        /* Body and General Styling */
         body {
-            background: var(--f1-body-gradient);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            min-height: 100vh;
             display: flex;
             flex-direction: column;
-            color: var(--f1-dark);
+            min-height: 100vh;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
+        .main-content { flex: 1; }
 
-        /* Navigation Enhancements */
-        .navbar {
-            background: var(--f1-gradient) !important;
-            box-shadow: 0 2px 15px rgba(220, 20, 60, 0.3);
-            position: relative;
-            z-index: 1000;
+        /* Light & Dark Mode Body */
+        body.light-mode { background-color: var(--f1-light-bg); color: var(--f1-dark); }
+        body.dark-mode { background-color: var(--f1-dark-bg); color: var(--f1-white); }
+
+        /*--------------------------------------------------
+        COMPONENT: NAVIGATION BAR
+        --------------------------------------------------*/
+        .navbar { background: var(--f1-gradient); }
+        .nav-link { color: rgba(255,255,255,0.85) !important; font-weight: 500; }
+        .nav-link:hover, .nav-link.active { color: var(--f1-white) !important; }
+
+        /* User Menu */
+        .user-menu-container { position: relative; display: flex; align-items: center; margin-right: 12px; }
+        .username-display { color: var(--f1-white); margin-right: 12px; }
+        .user-menu-button { background: none; border: none; color: var(--f1-white); font-size: 1.25rem; padding: 0; }
+        .user-menu { display: none; position: absolute; top: calc(100% + 10px); right: 0; border-radius: 8px; padding: 8px; min-width: 180px; z-index: 1050; box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+        .user-menu.show { display: block; }
+        .user-menu-item { display: block; text-decoration: none; border-radius: 6px; padding: 10px 15px; text-align: left; }
+        .user-menu-divider { border-top: 1px solid; margin: 8px 0; }
+        .user-menu-theme-label { font-size: 0.8rem; text-transform: uppercase; font-weight: 600; padding: 10px 15px 5px; }
+        .user-menu-greeting {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: var(--f1-red, #dc143c);
+            margin-bottom: 0.5rem;
+            text-align: center;
         }
+        
+        body.light-mode .user-menu { background-color: var(--f1-white); border: 1px solid #ddd; }
+        body.light-mode .user-menu-item { color: var(--f1-dark); }
+        body.light-mode .user-menu-item:hover { background-color: #f2f2f2; }
+        body.light-mode .user-menu-divider { border-color: #eee; }
+        
+        body.dark-mode .user-menu { background-color: var(--f1-card-dark); border: 1px solid #444; }
+        body.dark-mode .username-display { color: var(--f1-silver); }
+        body.dark-mode .user-menu-button { color: var(--f1-silver); }
+        body.dark-mode .user-menu-button:hover { color: var(--f1-white); }
+        body.dark-mode .user-menu-item { color: var(--f1-silver); }
+        body.dark-mode .user-menu-item:hover { background-color: rgba(255,255,255,0.05); }
+        body.dark-mode .user-menu-divider { border-color: #444; }
 
-        .navbar-brand {
-            font-weight: bold;
-            font-size: 1.5rem;
-            color: white !important;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-            transition: transform 0.3s ease;
+        /*--------------------------------------------------
+        COMPONENT: CONTENT BOX / CARD
+        --------------------------------------------------*/
+        .content-box {
+            border: 1px solid;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         }
-
-        .navbar-brand:hover {
-            transform: scale(1.05);
-            color: var(--f1-gold) !important;
+        body.light-mode .content-box { background-color: var(--f1-white); border-color: #E9ECEF; }
+        body.dark-mode .content-box { background-color: var(--f1-card-dark); border-color: #333; }
+        
+        /*--------------------------------------------------
+        COMPONENT: TABLE
+        --------------------------------------------------*/
+        .table { width: 100%; border-collapse: separate; border-spacing: 0; }
+        .table th, .table td { padding: 0.8rem 1rem; border-bottom: 1px solid; }
+        .table th { font-weight: 600; }
+        body.light-mode .table th, body.light-mode .table td { border-color: #e9ecef; }
+        body.light-mode .table th { background-color: #f8f9fa; color: var(--f1-red); }
+        body.dark-mode .table th, body.dark-mode .table td { border-color: #333; }
+        body.dark-mode .table th { background-color: var(--f1-dark); }
+        
+        /*--------------------------------------------------
+        COMPONENT: FORMS & BUTTONS
+        --------------------------------------------------*/
+        .btn-primary { background: var(--f1-gradient); border: none; color: white; }
+        .form-select, .form-control { border-radius: 8px; }
+        
+        body.dark-mode .form-select, body.dark-mode .form-control {
+            background-color: var(--f1-dark);
+            color: var(--f1-white);
+            border-color: #444;
         }
-
-        /* Custom F1 Car Icon */
-        .f1-car-icon {
-            margin-right: 0.5rem;
-            animation: subtle-race 2s ease-in-out infinite;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
-        }
-
-        @keyframes subtle-race {
-            0%, 100% { transform: translateX(0); }
-            50% { transform: translateX(2px); }
-        }
-
-        .nav-link {
-            color: rgba(255,255,255,0.9) !important;
-            font-weight: 500;
-            margin: 0 0.5rem;
-            padding: 0.5rem 1rem !important;
-            border-radius: 20px;
-            transition: all 0.3s ease;
-        }
-
-        .nav-link:hover, .nav-link.active {
-            color: white !important;
-            background: rgba(255,255,255,0.1);
-            transform: translateY(-1px);
-        }
-
-        .nav-link.active {
-            color: var(--f1-gold) !important;
-        }
-
-        /* Main Content Area */
-        main {
-            flex: 1;
-            padding-bottom: 2rem;
-        }
-
-        /* Footer Styling */
-        footer {
-            background: var(--f1-gradient) !important;
-            box-shadow: 0 -2px 15px rgba(220, 20, 60, 0.3);
-            padding: 1.5rem 0;
-        }
-
-        /* Card Enhancements */
-        .card {
-            border: none;
-            border-radius: 15px;
-            overflow: hidden;
-            transition: all 0.3s ease;
-            background: var(--f1-card-gradient);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-            height: 100%;
-        }
-
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
-        }
-
-        .card-title {
-            color: var(--f1-red);
-            font-weight: bold;
-            margin-bottom: 1rem;
-        }
-
-        /* Button Styling */
-        .btn-primary {
-            background: var(--f1-gradient);
-            border: none;
-            border-radius: 25px;
-            padding: 0.75rem 2rem;
-            font-weight: bold;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(220, 20, 60, 0.3);
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(220, 20, 60, 0.4);
-            background: linear-gradient(135deg, #b91c1c 0%, #991b1b 50%, #7f1d1d 100%);
-        }
-
-        .btn-secondary {
-            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
-            border: none;
-            border-radius: 25px;
-            padding: 0.75rem 2rem;
-            font-weight: bold;
-        }
-
-        /* Racing Stripe Animation */
-        .racing-stripe {
-            height: 4px;
-            background: linear-gradient(90deg, 
-                var(--f1-red) 0%, 
-                var(--f1-gold) 25%, 
-                var(--f1-blue) 50%, 
-                var(--f1-silver) 75%, 
-                var(--f1-red) 100%);
-            background-size: 200% 100%;
-            animation: raceStripe 3s linear infinite;
-            margin: 2rem 0;
-        }
-
-        @keyframes raceStripe {
-            0% { background-position: 0% 0%; }
-            100% { background-position: 200% 0%; }
-        }
-
-        /* Animations */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
-
-        /* Add fade-in animations */
-        .fade-in {
-            animation: fadeIn 0.8s ease-out forwards;
-        }
-
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .navbar-brand {
-                font-size: 1.25rem;
-            }
-            
-            .nav-link {
-                margin: 0.25rem;
-                padding: 0.5rem !important;
-            }
-            
-            .card {
-                margin-bottom: 1.5rem;
-            }
-        }
-
-        {% block extra_css %}{% endblock %}
+        
+        /*--------------------------------------------------
+        COMPONENT: FOOTER
+        --------------------------------------------------*/
+        .footer { padding: 1.5rem 0; margin-top: auto; }
+        body.light-mode .footer { background: var(--f1-gradient); }
+        body.dark-mode .footer { background-color: var(--f1-dark); }
     </style>
-    <style>
-    :root {
-        --f1-red: #dc143c;
-        --f1-dark: #1a1a1a;
-        --f1-silver: #c0c0c0;
-        --f1-gold: #ffd700;
-        --f1-blue: #0066cc;
-        --f1-gradient: linear-gradient(135deg, #dc143c 0%, #b91c1c 50%, #991b1b 100%);
-        --f1-card-gradient: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-        --f1-body-gradient: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-        --f1-btn-hover: linear-gradient(135deg, #b91c1c 0%, #991b1b 50%, #7f1d1d 100%);
-        --f1-btn-secondary: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
-    }
-    body {
-        background: var(--f1-body-gradient);
-        color: var(--f1-dark);
-    }
-    .navbar, .navbar-brand {
-        background: var(--f1-gradient) !important;
-        color: #fff !important;
-        position: relative;
-        z-index: 1000;
-    }
-    .results-table, .card, .stat-card {
-        background: var(--f1-card-gradient) !important;
-        color: var(--f1-dark) !important;
-    }
-    .team-badge {
-        border: none;
-    }
-    .driver-number {
-        background: #f0f0f0;
-        color: var(--f1-red);
-        font-weight: bold;
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-right: 10px;
-    }
-    .btn-theme-toggle {
-        background: var(--f1-gradient);
-        color: var(--f1-gold);
-        border: none;
-        font-weight: bold;
-        border-radius: 20px;
-        padding: 0.4em 1.2em;
-        box-shadow: 0 2px 8px rgba(220,20,60,0.08);
-        transition: background 0.2s, color 0.2s;
-    }
-    .btn-theme-toggle:hover, .btn-theme-toggle:focus {
-        background: var(--f1-btn-hover);
-        color: #fff;
-        outline: none;
-    }
-    /* Dark mode overrides */
-    body.dark-mode {
-        background: var(--f1-dark) !important;
-        color: #fff !important;
-    }
-    body.dark-mode .navbar, body.dark-mode .navbar-brand {
-        background: var(--f1-gradient) !important;
-        color: #fff !important;
-    }
-    body.dark-mode .card,
-    body.dark-mode .stat-card,
-    body.dark-mode .results-card,
-    body.dark-mode .results-table {
-        background: #232527 !important;
-        color: #e0e0e0 !important;
-        border: 1px solid #333;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-    }
-    body.dark-mode .card *,
-    body.dark-mode .stat-card *,
-    body.dark-mode .results-card *,
-    body.dark-mode .results-table * {
-        color: #e0e0e0 !important;
-    }
-    body.dark-mode .card h1,
-    body.dark-mode .card h2,
-    body.dark-mode .card h3,
-    body.dark-mode .card h4,
-    body.dark-mode .card h5,
-    body.dark-mode .card h6,
-    body.dark-mode .stat-card h1,
-    body.dark-mode .stat-card h2,
-    body.dark-mode .stat-card h3,
-    body.dark-mode .stat-card h4,
-    body.dark-mode .stat-card h5,
-    body.dark-mode .stat-card h6 {
-        color: #fff !important;
-    }
-    body.dark-mode .team-badge {
-        background: #232527 !important;
-        color: #fff !important;
-        border: 1px solid #333;
-    }
-    body.dark-mode .driver-number {
-        background: #232527 !important;
-        color: var(--f1-gold) !important;
-        border: 1px solid #333;
-    }
-    body.dark-mode .btn-theme-toggle {
-        background: var(--f1-gradient);
-        color: var(--f1-gold);
-        border: none;
-    }
-    body.dark-mode .btn-theme-toggle:hover, body.dark-mode .btn-theme-toggle:focus {
-        background: var(--f1-btn-hover);
-        color: #fff;
-    }
-    /* F1 Red utility class */
-    .f1-red-bg { background: var(--f1-red) !important; color: #fff !important; }
-
-    /* Dark mode: all div-based boxes use black, dark gray, or F1 red backgrounds */
-    body.dark-mode .card,
-    body.dark-mode .stat-card,
-    body.dark-mode .results-card,
-    body.dark-mode .results-table,
-    body.dark-mode .search-bar,
-    body.dark-mode .search-container,
-    body.dark-mode .dropdown-menu,
-    body.dark-mode .dropdown-content,
-    body.dark-mode .results-popup,
-    body.dark-mode .search-results,
-    body.dark-mode .modal-content,
-    body.dark-mode .box,
-    body.dark-mode .panel,
-    body.dark-mode .overview-card {
-        background: #232527 !important;
-        color: #e0e0e0 !important;
-        border: 1px solid #333;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-    }
-    body.dark-mode .card *,
-    body.dark-mode .stat-card *,
-    body.dark-mode .results-card *,
-    body.dark-mode .results-table *,
-    body.dark-mode .search-bar *,
-    body.dark-mode .search-container *,
-    body.dark-mode .dropdown-menu *,
-    body.dark-mode .dropdown-content *,
-    body.dark-mode .results-popup *,
-    body.dark-mode .search-results *,
-    body.dark-mode .modal-content *,
-    body.dark-mode .box *,
-    body.dark-mode .panel *,
-    body.dark-mode .overview-card * {
-        color: #e0e0e0 !important;
-    }
-    body.dark-mode .card h1,
-    body.dark-mode .card h2,
-    body.dark-mode .card h3,
-    body.dark-mode .card h4,
-    body.dark-mode .card h5,
-    body.dark-mode .card h6,
-    body.dark-mode .stat-card h1,
-    body.dark-mode .stat-card h2,
-    body.dark-mode .stat-card h3,
-    body.dark-mode .stat-card h4,
-    body.dark-mode .stat-card h5,
-    body.dark-mode .stat-card h6 {
-        color: #fff !important;
-    }
-    /* F1 red accent for special boxes */
-    body.dark-mode .f1-red-bg {
-        background: var(--f1-red) !important;
-        color: #fff !important;
-    }
-    body.dark-mode .coming-soon-badge {
-        background: #232527 !important;   /* dark background */
-        color: #ffd700 !important;        /* gold text */
-        border: 1px solid #ffd700;
-        box-shadow: 0 1px 4px #1a1a1a;
-    }
-    .user-badge {
-        background: var(--f1-red, #dc143c);
-        color: #fff;
-        border: none;
-        border-radius: 50%;
-        width: 40px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.5rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        transition: background 0.2s, color 0.2s;
-    }
-    .user-badge i {
-        color: #fff !important;
-    }
-    .user-badge:hover, .user-badge:focus {
-        background: #fff;
-        color: var(--f1-red, #dc143c);
-    }
-    .user-badge:hover i, .user-badge:focus i {
-        color: var(--f1-red, #dc143c) !important;
-    }
-    body.dark-mode .user-badge {
-        background: #232527;
-        color: #fff;
-    }
-    body.dark-mode .user-badge i {
-        color: #fff !important;
-    }
-    body.dark-mode .user-badge:hover, body.dark-mode .user-badge:focus {
-        background: var(--f1-red, #dc143c);
-        color: #fff;
-    }
-    body.dark-mode .user-badge:hover i, body.dark-mode .user-badge:focus i {
-        color: #fff !important;
-    }
-    .user-menu-dropdown {
-        position: absolute;
-        top: 48px;
-        right: 0;
-        min-width: 120px;
-        background: #fff;
-        border-radius: 12px;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-        border: 1px solid #e9ecef;
-        z-index: 9999;
-        padding: 0.5em 0;
-        text-align: left;
-    }
-    .user-menu-link {
-        display: block;
-        padding: 0.6em 1.2em;
-        color: var(--f1-red, #dc143c);
-        text-decoration: none;
-        font-weight: 500;
-        transition: background 0.2s, color 0.2s;
-    }
-    .user-menu-link:hover {
-        background: var(--f1-gradient);
-        color: #fff;
-    }
-    body.dark-mode .user-menu-dropdown {
-        background: #232527;
-        color: #fff;
-        border: 1px solid #333;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.25);
-    }
-    body.dark-mode .user-menu-link {
-        color: #ffd700;
-    }
-    body.dark-mode .user-menu-link:hover {
-        background: var(--f1-red, #dc143c);
-        color: #fff;
-    }
-    .user-menu-theme-section {
-        padding: 0.5em 1em 0.2em 1em;
-        text-align: left;
-    }
-    .user-menu-theme-label {
-        font-size: 0.95em;
-        color: #888;
-        font-weight: 600;
-        margin-bottom: 0.2em;
-    }
-    .user-menu-divider {
-        margin: 0.5em 0;
-        border: none;
-        border-top: 1px solid #eee;
-    }
-    body.dark-mode .user-menu-divider {
-        border-top: 1px solid #333;
-    }
-    .btn-theme-toggle.w-100 {
-        width: 100%;
-        margin-bottom: 0.5em;
-    }
-    </style>
+    {% block extra_css %}{% endblock %}
 </head>
-<body>
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container">
-            <a class="navbar-brand" href="/">
-            <svg class="f1-car-icon" width="56" height="56" viewBox="0 0 200 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <!-- F1 Car Body -->
-                <path d="M20 45 L40 35 L80 30 L120 30 L160 35 L180 45 L175 55 L165 60 L35 60 L25 55 Z" fill="white" stroke="#dc143c" stroke-width="2"/>
-                <!-- Cockpit -->
-                <path d="M70 30 L130 30 L125 45 L75 45 Z" fill="#1a1a1a" stroke="#dc143c" stroke-width="1"/>
-                <!-- Front Wing -->
-                <path d="M15 40 L35 35 L35 45 L15 50 Z" fill="#dc143c"/>
-                <!-- Rear Wing -->
-                <path d="M165 25 L185 25 L185 35 L165 35 Z" fill="#dc143c"/>
-                <path d="M165 20 L185 20 L185 30 L165 30 Z" fill="white" stroke="#dc143c" stroke-width="1"/>
-                <!-- Front Wheels -->
-                <circle cx="45" cy="55" r="12" fill="#1a1a1a" stroke="#c0c0c0" stroke-width="2"/>
-                <circle cx="45" cy="55" r="6" fill="#c0c0c0"/>
-                <!-- Rear Wheels -->
-                <circle cx="155" cy="55" r="12" fill="#1a1a1a" stroke="#c0c0c0" stroke-width="2"/>
-                <circle cx="155" cy="55" r="6" fill="#c0c0c0"/>
-                <!-- Nose -->
-                <path d="M20 45 L10 47 L10 53 L20 55" fill="#dc143c"/>
-                <!-- Side Mirrors -->
-                <circle cx="75" cy="38" r="2" fill="#c0c0c0"/>
-                <circle cx="125" cy="38" r="2" fill="#c0c0c0"/>
-                <!-- Racing Number -->
-                <text x="100" y="50" text-anchor="middle" fill="#ffd700" font-family="Arial" font-size="12" font-weight="bold">1</text>
-            </svg>
-            F1 Dashboard
-        </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+<body class="light-mode">
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{% url 'home' %}">
+                <svg class="f1-car-icon" width="56" height="40" viewBox="0 0 200 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M20 45 L40 35 L80 30 L120 30 L160 35 L180 45 L175 55 L165 60 L35 60 L25 55 Z" fill="white" stroke="#dc143c" stroke-width="2"/>
+                    <path d="M70 30 L130 30 L125 45 L75 45 Z" fill="#1a1a1a" stroke="#dc143c" stroke-width="1"/>
+                    <path d="M15 40 L35 35 L35 45 L15 50 Z" fill="#dc143c"/>
+                    <path d="M165 25 L185 25 L185 35 L165 35 Z" fill="#dc143c"/>
+                    <path d="M165 20 L185 20 L185 30 L165 30 Z" fill="white" stroke="#dc143c" stroke-width="1"/>
+                    <circle cx="45" cy="55" r="12" fill="#1a1a1a" stroke="#c0c0c0" stroke-width="2"/>
+                    <circle cx="45" cy="55" r="6" fill="#c0c0c0"/>
+                    <circle cx="155" cy="55" r="12" fill="#1a1a1a" stroke="#c0c0c0" stroke-width="2"/>
+                    <circle cx="155" cy="55" r="6" fill="#c0c0c0"/>
+                    <path d="M20 45 L10 47 L10 53 L20 55" fill="#dc143c"/>
+                    <circle cx="75" cy="38" r="2" fill="#c0c0c0"/>
+                    <circle cx="125" cy="38" r="2" fill="#c0c0c0"/>
+                    <text x="100" y="50" text-anchor="middle" fill="#ffd700" font-family="Arial" font-size="12" font-weight="bold">1</text>
+                </svg>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'home' %}">Home</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'results' %}">Results</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'prediction' %}">Predictions</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'standings' %}">Standings</a>
-                    </li>
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item"><a class="nav-link" href="{% url 'home' %}">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'results' %}">Results</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'prediction' %}">Prediction</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'standings' %}">Standings</a></li>
                 </ul>
-                <button class="btn user-badge ms-3" type="button" title="User" id="user-menu-btn" onclick="toggleUserMenu(event)">
-                    <i class="fa-solid fa-user"></i>
-                </button>
-                        <div id="user-menu-dropdown" class="user-menu-dropdown" style="display: none;">
-                            <div class="user-menu-theme-section">
-                                <div class="user-menu-theme-label">Theme</div>
-                                <button id="theme-toggle" class="btn btn-theme-toggle w-100 my-2" type="button">Dark</button>
-                            </div>
-                            <hr class="user-menu-divider">
-                            {% if request.user.is_authenticated %}
-                                <a href="{% url 'logout' %}" class="user-menu-link">Logout</a>
-                            {% else %}
-                                <a href="{% url 'register' %}" class="user-menu-link">Register</a>
-                                <a href="{% url 'login' %}" class="user-menu-link">Login</a>
-                            {% endif %}
-                        </div>
+                <div class="user-menu-container">
+                    <button id="user-menu-button" class="user-menu-button">
+                        <i class="fa-solid fa-user"></i>
+                    </button>
+                    <div id="user-menu" class="user-menu">
+                        {% if user.is_authenticated %}
+                            <div class="user-menu-greeting">Hi, {{ user.username }}</div>
+                            <a href="{% url 'logout' %}" class="user-menu-item">Logout</a>
+                        {% else %}
+                            <a href="{% url 'register' %}" class="user-menu-item">Register</a>
+                            <a href="{% url 'login' %}" class="user-menu-item">Login</a>
+                        {% endif %}
+                        <hr class="user-menu-divider">
+                        <div class="user-menu-theme-label">Theme</div>
+                        <button id="theme-toggle" class="btn btn-secondary w-100 my-2">Dark</button>
+                    </div>
+                </div>
             </div>
         </div>
     </nav>
-    
-    <!-- Page Content -->
-    <main class="container">
+
+    <div class="container mt-5 pt-4 main-content">
         {% block content %}{% endblock %}
-    </main>
-    
-    <!-- Footer -->
-    <footer class="text-light">
-        <div class="container">
-            <div class="row align-items-center">
-                <div class="col-md-6 text-center text-md-start mb-3 mb-md-0">
-                    &copy; 2025 F1 Outcome Predictor | University of Leicester
-                </div>
-                <div class="col-md-6 text-center text-md-end">
-                    <a href="#" class="text-light me-3"><i class="fab fa-twitter"></i></a>
-                    <a href="#" class="text-light me-3"><i class="fab fa-github"></i></a>
-                    <a href="#" class="text-light"><i class="fab fa-linkedin"></i></a>
-                </div>
-            </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container text-center">
+            <span>&copy; 2025 F1 Prediction Dashboard</span>
         </div>
     </footer>
-    
-    <!-- JS (Bootstrap Bundle) -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
     <script>
-        // Active nav link highlighting
-        document.addEventListener('DOMContentLoaded', function() {
-            const currentPath = window.location.pathname;
+        document.addEventListener('DOMContentLoaded', function () {
+            const themeToggle = document.getElementById('theme-toggle');
+            const userMenuButton = document.getElementById('user-menu-button');
+            const userMenu = document.getElementById('user-menu');
+            const body = document.body;
             const navLinks = document.querySelectorAll('.nav-link');
+            const currentPath = window.location.pathname;
+
+            const setTheme = (theme) => {
+                body.className = theme + '-mode';
+                themeToggle.textContent = theme === 'dark' ? 'Light' : 'Dark';
+                localStorage.setItem('theme', theme);
+            };
+
+            themeToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const newTheme = body.classList.contains('dark-mode') ? 'light' : 'dark';
+                setTheme(newTheme);
+            });
+
+            userMenuButton.addEventListener('click', (e) => {
+                e.stopPropagation();
+                userMenu.classList.toggle('show');
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!userMenu.contains(e.target) && !userMenuButton.contains(e.target)) {
+                    userMenu.classList.remove('show');
+                }
+            });
+
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            setTheme(savedTheme);
+
             navLinks.forEach(link => {
                 if (link.getAttribute('href') === currentPath) {
                     link.classList.add('active');
@@ -582,60 +221,5 @@
         });
     </script>
     {% block extra_js %}{% endblock %}
-    <script>
-    // Theme toggle logic
-    function setTheme(dark) {
-        if (dark) {
-            document.body.classList.add('dark-mode');
-            document.getElementById('theme-toggle').textContent = 'Light';
-            localStorage.setItem('theme', 'dark');
-        } else {
-            document.body.classList.remove('dark-mode');
-            document.getElementById('theme-toggle').textContent = 'Dark';
-            localStorage.setItem('theme', 'light');
-        }
-    }
-    document.addEventListener('DOMContentLoaded', function() {
-        const themeToggle = document.getElementById('theme-toggle');
-        // Set initial theme
-        const savedTheme = localStorage.getItem('theme');
-        setTheme(savedTheme === 'dark');
-        themeToggle.addEventListener('click', function() {
-            setTheme(!document.body.classList.contains('dark-mode'));
-        });
-    });
-    </script>
-    <script>
-    function toggleUserMenu(event) {
-        event.stopPropagation();
-        const menu = document.getElementById('user-menu-dropdown');
-        const isOpen = menu.style.display === 'block';
-        menu.style.display = isOpen ? 'none' : 'block';
-        if (!isOpen) {
-            document.addEventListener('mousedown', closeUserMenu);
-        }
-    }
-    function closeUserMenu(e) {
-        const menu = document.getElementById('user-menu-dropdown');
-        const btn = document.getElementById('user-menu-btn');
-        if (
-            menu &&
-            !menu.contains(e.target) &&
-            e.target !== btn &&
-            !btn.contains(e.target)
-        ) {
-            menu.style.display = 'none';
-            document.removeEventListener('mousedown', closeUserMenu);
-        }
-    }
-    document.addEventListener('DOMContentLoaded', function() {
-        const menu = document.getElementById('user-menu-dropdown');
-        if (menu) {
-            menu.addEventListener('mousedown', function(e) {
-                e.stopPropagation();
-            });
-        }
-    });
-    </script>
 </body>
 </html>

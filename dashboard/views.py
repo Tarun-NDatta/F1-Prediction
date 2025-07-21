@@ -293,112 +293,76 @@ def prediction(request):
     results = []
     
     for event in all_events:
+        # Get predictions and actual results for this event
+        predictions_qs = selected_model['model_class'].objects.filter(
+            event=event,
+            model_name=selected_model_key,
+            year=2025,
+            round_number=event.round
+        ) if (selected_model['model_class'] is not None) else selected_model['model_class']
+        predictions = list(predictions_qs) if predictions_qs else []
+
+        # Get actual results for this event (RaceResult)
+        from data.models import RaceResult
+        actuals_qs = RaceResult.objects.filter(session__event=event).select_related('driver', 'team')
+        actuals = list(actuals_qs) if actuals_qs else []
+
+        # Build a set of all drivers who have either a prediction or an actual result
+        driver_ids = set()
+        for pred in predictions:
+            driver_ids.add(pred.driver_id)
+        for act in actuals:
+            driver_ids.add(act.driver_id)
+
+        # Build a mapping for quick lookup
+        pred_map = {p.driver_id: p for p in predictions}
+        act_map = {a.driver_id: a for a in actuals}
+
+        comparison = []
+        for driver_id in driver_ids:
+            pred = pred_map.get(driver_id)
+            act = act_map.get(driver_id)
+            driver = pred.driver if pred else (act.driver if act else None)
+            team_name = 'N/A'
+            team_class = 'team-default'
+            points = None
+            if act and act.team:
+                team_name = act.team.name
+                team_class = f"team-{act.team.name.lower().replace(' ', '')}"
+                points = act.points
+            elif pred:
+                # Try to get team from prediction if available
+                team_name = getattr(pred, 'team', 'N/A')
+                team_class = 'team-default'
+                points = getattr(pred, 'points', None)
+            comparison.append({
+                'driver': f"{driver.given_name} {driver.family_name}" if driver else 'N/A',
+                'predicted': round(pred.predicted_position, 2) if pred else 'N/A',
+                'actual': act.position if act and act.position is not None else (pred.actual_position if pred and pred.actual_position is not None else 'N/A'),
+                'difference': (act.position - round(pred.predicted_position)) if pred and act and act.position is not None and pred.predicted_position is not None else 'N/A',
+                'driver_number': driver.permanent_number if driver and driver.permanent_number else '',
+                'team': team_name,
+                'team_class': team_class,
+                'team_slug': '',
+                'confidence': round(pred.confidence * 100, 1) if pred and hasattr(pred, 'confidence') and pred.confidence else 'N/A',
+                'is_correct': (act.position == round(pred.predicted_position)) if pred and act and act.position is not None and pred.predicted_position is not None else False,
+                'points': points if points is not None else 'N/A',
+            })
+
+        # Sort comparison: if actual results are available, order by actual; else by predicted
+        if any(item['actual'] != 'N/A' for item in comparison):
+            comparison.sort(key=lambda x: (x['actual'] if x['actual'] != 'N/A' else 9999))
+        else:
+            comparison.sort(key=lambda x: (x['predicted'] if x['predicted'] != 'N/A' else 9999))
+
+        # Only show coming soon if there is no data at all
+        show_coming_soon = len(comparison) == 0
+
         race_data = {
             'event': event,
-            'has_predictions': event.round in available_rounds and selected_model['status'] == 'active',
-            'comparison': [],
-            'accuracy_stats': None,
-            'coming_soon': event.round not in available_rounds or selected_model['status'] == 'coming_soon'
+            'comparison': comparison,
+            'show_coming_soon': show_coming_soon,
         }
-        
-        # Only process predictions if model is active and has data for this round
-        if (event.round in available_rounds and 
-            selected_model['status'] == 'active' and 
-            selected_model['model_class'] is not None):
-            
-            # Get predictions for this event
-            predictions = selected_model['model_class'].objects.filter(
-                event=event,
-                model_name=selected_model_key,
-                year=2025,
-                round_number=event.round
-            ).select_related('driver', 'event').order_by('predicted_position')
-            
-            # Prepare comparison data
-            comparison = []
-            correct_predictions = 0
-            total_predictions = 0
-            position_differences = []
-            top3_correct = 0
-            
-            for pred in predictions:
-                total_predictions += 1
-                difference = 'N/A'
-                is_correct = False
-                
-                if pred.actual_position is not None:
-                    difference = pred.actual_position - pred.predicted_position
-                    position_differences.append(abs(difference))
-                    
-                    # Check if prediction is exactly correct
-                    is_correct = pred.actual_position == round(pred.predicted_position)
-                    if is_correct:
-                        correct_predictions += 1
-                    
-                    # Check top 3 accuracy
-                    predicted_pos = round(pred.predicted_position)
-                    actual_pos = pred.actual_position
-                    if predicted_pos <= 3 and actual_pos <= 3:
-                        top3_correct += 1
-                
-                # Look up team for this driver/event
-                team_name = 'N/A'
-                team_class = 'team-default'
-                race_result = RaceResult.objects.filter(driver=pred.driver, session__event=event).select_related('team').first()
-                if race_result and race_result.team:
-                    team_name = race_result.team.name
-                    team_class = f"team-{race_result.team.name.lower().replace(' ', '')}"
-                points = race_result.points if race_result else None
-                comparison.append({
-                    'driver': f"{pred.driver.given_name} {pred.driver.family_name}",
-                    'predicted': round(pred.predicted_position, 2),
-                    'actual': pred.actual_position if pred.actual_position is not None else 'N/A',
-                    'difference': difference,
-                    'driver_number': pred.driver.permanent_number or '',
-                    'team': team_name,
-                    'team_class': team_class,
-                    'team_slug': '',
-                    'confidence': round(pred.confidence * 100, 1) if hasattr(pred, 'confidence') and pred.confidence else None,
-                    'is_correct': is_correct,
-                    'points': points,
-                })
-            
-            # Sort comparison: if actual results are available, order by actual; else by predicted
-            if any(item['actual'] != 'N/A' for item in comparison):
-                comparison.sort(key=lambda x: (x['actual'] if x['actual'] != 'N/A' else 9999))
-            else:
-                comparison.sort(key=lambda x: x['predicted'])
-            
-            race_data['comparison'] = comparison
-            
-            # Calculate accuracy stats if we have actual results
-            if position_differences:
-                # Calculate how many drivers were predicted in top 3
-                top3_predicted_count = len([p for p in predictions if round(p.predicted_position) <= 3 and p.actual_position is not None])
-                top3_accuracy = round((top3_correct / top3_predicted_count) * 100, 1) if top3_predicted_count > 0 else 0
-                
-                top10_correct = 0
-                # After top3_correct, add top10_correct calculation
-                for pred in predictions:
-                    if pred.actual_position is not None:
-                        predicted_pos = round(pred.predicted_position)
-                        actual_pos = pred.actual_position
-                        if predicted_pos <= 10 and actual_pos <= 10:
-                            top10_correct += 1
-                top10_predicted_count = len([p for p in predictions if round(p.predicted_position) <= 10 and p.actual_position is not None])
-                top10_accuracy = round((top10_correct / top10_predicted_count) * 100, 1) if top10_predicted_count > 0 else 0
-                
-                accuracy_stats = {
-                    'accuracy': round((correct_predictions / total_predictions) * 100, 1),
-                    'top3_accuracy': f"{top3_accuracy}%",
-                    'top10_accuracy': f"{top10_accuracy}%",
-                    'avg_position_diff': round(sum(position_differences) / len(position_differences), 2),
-                    'correct_predictions': correct_predictions,
-                    'total_predictions': total_predictions,
-                    'model_name': selected_model_key
-                }
-                race_data['accuracy_stats'] = accuracy_stats
-        
         results.append(race_data)
     
     context = {

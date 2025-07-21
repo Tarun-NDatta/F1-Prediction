@@ -1,866 +1,395 @@
 {% extends 'base.html' %}
-
-{% block title %}F1 Prediction Results - {{ model_name }} Model{% endblock %}
+{% block title %}F1 Predictions{% endblock %}
 
 {% block extra_css %}
 <style>
-    /* Results Page Specific Styles */
-    .results-header {
-        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-        color: white;
-        padding: 2rem 0;
-        border-radius: 0 0 30px 30px;
-        margin-bottom: 2rem;
-    }
-    
-    .model-selector {
-        background: white;
-        border-radius: 15px;
-        padding: 1.5rem;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-        margin-bottom: 2rem;
-    }
-
-    .model-dropdown {
-        min-width: 200px;
-    }
-
-    .model-status-badge {
-        font-size: 0.75rem;
-        padding: 0.25rem 0.5rem;
-        border-radius: 12px;
-        margin-left: 0.5rem;
-    }
-
-    .status-active {
-        background: rgba(25, 135, 84, 0.1);
-        color: #198754;
-    }
-
-    .status-coming-soon {
-        background: rgba(255, 193, 7, 0.1);
-        color: #ffc107;
-    }
-
-    .coming-soon-model-text {
-        text-align: center;
-        padding: 2rem;
-        color: #6c757d;
-    }
-    
-    .season-overview {
-        background: white;
-        border-radius: 15px;
-        padding: 1.5rem;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-        margin-bottom: 2rem;
-    }
-    
-    .overview-stats {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1rem;
-        margin-top: 1rem;
-    }
-    
-    .overview-stat {
-        background: #f8f9fa;
-        border-radius: 10px;
-        padding: 1rem;
-        text-align: center;
-    }
-    
-    .overview-stat-value {
-        font-size: 1.5rem;
-        font-weight: bold;
-        color: #dc143c;
-    }
-    
-    .overview-stat-label {
-        font-size: 0.9rem;
-        color: #6c757d;
-    }
-    
-    .results-title {
-        color: #dc143c;
-        font-weight: bold;
-        margin-bottom: 1.2rem;
-        border-bottom: 2px solid #f0f0f0;
-        padding-bottom: 0.8rem;
-    }
-    
-    .results-card {
-        background: white;
-        border-radius: 15px;
-        padding: 1.5rem;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-        margin-bottom: 2rem;
-        transition: all 0.3s ease;
-    }
-    
-    .coming-soon-card {
-        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-        border: 2px dashed #dee2e6;
-        opacity: 0.7;
-    }
-    
-    .race-info {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1.5rem;
-        padding-bottom: 1rem;
-        border-bottom: 2px solid #f0f0f0;
-    }
-    
-    .race-info.clickable {
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
-    
-    .race-info.clickable:hover {
-        background-color: rgba(220, 20, 60, 0.02);
-        border-radius: 10px;
-    }
-    
-    .race-status-controls {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-    }
-    
-    .dropdown-arrow {
-        font-size: 1.2rem;
-        color: #dc143c;
-        transition: transform 0.3s ease;
-        padding: 0.5rem;
-    }
-    
-    .dropdown-arrow.rotated {
-        transform: rotate(180deg);
-    }
-    
-    .race-details-content {
-        animation: slideDown 0.3s ease-out;
-        border-top: 1px solid #f0f0f0;
-        margin-top: 1rem;
-        padding-top: 1rem;
-    }
-    
-    @keyframes slideDown {
-        from {
-            opacity: 0;
-            transform: translateY(-10px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-    
-    .race-name {
-        font-size: 1.5rem;
-        font-weight: bold;
-        color: #dc143c;
-    }
-    
-    .race-details {
-        color: #6b7280;
-    }
-    
-    .coming-soon-content {
-        text-align: center;
-        padding: 3rem 0;
-    }
-    
-    .coming-soon-icon {
-        font-size: 3rem;
-        color: #6c757d;
-        margin-bottom: 1rem;
-    }
-    
-    .coming-soon-text {
-        font-size: 1.2rem;
-        color: #6c757d;
-        margin-bottom: 0.5rem;
-    }
-    
-    .coming-soon-subtitle {
-        color: #9ca3af;
-        font-size: 0.9rem;
-    }
-    
-    .results-table {
-        width: 100%;
-        border-collapse: separate;
-        border-spacing: 0;
-        background: #f8f9fa;
-    }
-    
-    .results-table th {
-        background: #f8f9fa;
-        color: #dc143c;
-        font-weight: 600;
-        padding: 0.8rem 1rem;
-        text-align: center;
-        border-bottom: 2px solid #e9ecef;
-    }
-    
-    .results-table td {
-        padding: 0.8rem 1rem;
-        border-bottom: 1px solid #e9ecef;
-        text-align: center;
-    }
-    
-    .results-table tr:hover {
-        background-color: rgba(220, 20, 60, 0.03);
-    }
-    
-    .position-cell {
-        font-weight: bold;
-        width: 50px;
-    }
-    
-    .driver-cell {
-        text-align: left;
-        display: flex;
-        align-items: center;
-    }
-    
-    .driver-number {
-        background: #f0f0f0;
-        color: #dc143c;
-        font-weight: bold;
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-right: 10px;
-    }
-    
-    .team-badge {
-        display: inline-block;
-        padding: 0.3rem 0.8rem;
-        border-radius: 20px;
-        font-size: 0.8rem;
-        font-weight: 500;
-        background-color: #eee;
-        color: #666;
-    }
-    
-    .team-badge.team-mercedes { background: #e3e9ed; color: #00d2be; }
-    .team-badge.team-ferrari { background: #fbeaea; color: #dc0000; }
-    .team-badge.team-redbull { background: #eaeaf6; color: #1e41ff; }
-    .team-badge.team-mclaren { background: #fff4e6; color: #ff8700; }
-    .team-badge.team-alpine { background: #eaf4fa; color: #0090ff; }
-    .team-badge.team-astonmartin { background: #e6f4ea; color: #006f62; }
-    .team-badge.team-alfaromeo { background: #f9eaea; color: #900000; }
-    .team-badge.team-haas { background: #f7f7f7; color: #b6babd; }
-    .team-badge.team-alphatauri { background: #f4f6fa; color: #2b4562; }
-    .team-badge.team-williams { background: #eaf3fb; color: #005aff; }
-    .team-badge.team-default { background: #eee; color: #666; }
-    
-    .correct-prediction {
-        background-color: rgba(25, 135, 84, 0.1);
-    }
-    
-    .incorrect-prediction {
-        background-color: rgba(220, 53, 69, 0.1);
-    }
-    
-    .results-table tbody tr.correct-prediction {
-        background: #eafbe7;
-    }
-    .results-table tbody tr.incorrect-prediction {
-        background: #fff4f4;
-    }
-    
-    .difference-badge {
-        display: inline-block;
-        padding: 0.3rem 0.6rem;
-        border-radius: 12px;
-        font-size: 0.8rem;
-        font-weight: 500;
-    }
-    
-    .diff-perfect {
-        background: rgba(25, 135, 84, 0.1);
-        color: #198754;
-    }
-    
-    .diff-close {
-        background: rgba(255, 193, 7, 0.1);
-        color: #ffc107;
-    }
-    
-    .diff-far {
-        background: rgba(220, 53, 69, 0.1);
-        color: #dc3545;
-    }
-    
-    .confidence-bar {
-        height: 8px;
-        background: #e9ecef;
-        border-radius: 4px;
-        margin-top: 4px;
-        overflow: hidden;
-    }
-    
-    .confidence-fill {
-        height: 100%;
-        background: linear-gradient(90deg, #28a745, #007bff);
-        border-radius: 4px;
-    }
-    
-    .model-stats {
-        background: #f8f9fa;
-        border-radius: 12px;
-        padding: 1.5rem;
-        margin-top: 1.5rem;
-    }
-    
-    .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1rem;
-    }
-    
-    .stat-card {
-        background: white;
-        border-radius: 10px;
-        padding: 1rem;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        text-align: center;
-    }
-    
-    .stat-value {
-        font-size: 1.5rem;
-        font-weight: bold;
-        color: #dc143c;
-        margin-bottom: 0.5rem;
-    }
-    
-    .stat-label {
-        font-size: 0.9rem;
-        color: #6c757d;
-    }
-    
-    .model-badge {
-        font-size: 0.8rem;
-        background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
-        color: white;
-    }
-    
-    .round-badge {
-        background: #dc143c;
-        color: white;
-        padding: 0.3rem 0.8rem;
-        border-radius: 20px;
-        font-size: 0.8rem;
-        font-weight: 500;
-    }
-    
-    .scroll-indicator {
-        position: fixed;
-        top: 50%;
-        right: 20px;
-        transform: translateY(-50%);
-        background: rgba(220, 20, 60, 0.9);
-        color: white;
-        padding: 1rem;
-        border-radius: 50%;
-        cursor: pointer;
-        z-index: 1000;
-        transition: opacity 0.3s ease;
-    }
-    
-    .scroll-indicator:hover {
-        background: rgba(220, 20, 60, 1);
-    }
-
-    body.dark-mode input,
-    body.dark-mode select,
-    body.dark-mode textarea {
-        background: #232527 !important;
-        color: #fff !important;
-        border: 1px solid #444 !important;
-    }
-
-    body.dark-mode input::placeholder,
-    body.dark-mode textarea::placeholder {
-        color: #c0c0c0 !important;
-        opacity: 1;
-    }
-
-    body.dark-mode .search-bar,
-    body.dark-mode .search-container {
-        background: #232527 !important;
-        color: #fff !important;
-        border: 1px solid #444 !important;
-    }
-
-    body.dark-mode .dropdown-menu,
-    body.dark-mode .dropdown-content {
-        background: #232527 !important;
-        color: #fff !important;
-    }
-
-    body.dark-mode .results-popup,
-    body.dark-mode .search-results,
-    body.dark-mode .modal-content {
-        background: #232527 !important;
-        color: #fff !important;
-        border: 1px solid #333 !important;
-    }
-
-    body.dark-mode .overview-card,
-    body.dark-mode .stat-box,
-    body.dark-mode .season-overview-box {
-        background: #232527 !important;
-        color: #e0e0e0 !important;
-        border: 1px solid #333;
-    }
-    body.dark-mode .overview-card *,
-    body.dark-mode .stat-box *,
-    body.dark-mode .season-overview-box * {
-        color: #e0e0e0 !important;
-    }
-    body.dark-mode .model-selector,
-    body.dark-mode .season-overview,
-    body.dark-mode .overview-stat,
-    body.dark-mode .results-card {
-        background: #232527 !important;
-        color: #e0e0e0 !important;
-        border: 1px solid #333;
-    }
-    body.dark-mode .overview-stat-value,
-    body.dark-mode .overview-stat-label {
-        color: #fff !important;
-    }
-    body.dark-mode select {
-        color: #fff !important;
-        background: #232527 !important;
-        border: 1px solid #444 !important;
-        /* Remove default arrow */
-        appearance: none;
-        -webkit-appearance: none;
-        -moz-appearance: none;
-        background-image: url('data:image/svg+xml;utf8,<svg fill="%23fff" height="20" viewBox="0 0 20 20" width="20" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
-        background-repeat: no-repeat;
-        background-position: right 0.75rem center;
-        background-size: 1.2em;
-        padding-right: 2.5em;
-    }
-    /* Dark mode results table rows and cells */
-    body.dark-mode .results-table,
-    body.dark-mode .results-table thead,
-    body.dark-mode .results-table tbody,
-    body.dark-mode .results-table tr,
-    body.dark-mode .results-table td,
-    body.dark-mode .results-table th {
-        background: #232527 !important;
-        color: #e0e0e0 !important;
-        border-color: #333 !important;
-    }
-    body.dark-mode .results-table th {
-        color: #fff !important;
-    }
-    /* Ensure model selector dropdown arrow is white in dark mode */
-    body.dark-mode .model-dropdown {
-        color: #fff !important;
-        background: #232527 !important;
-        border: 1px solid #444 !important;
-        appearance: none;
-        -webkit-appearance: none;
-        -moz-appearance: none;
-        background-image: url('data:image/svg+xml;utf8,<svg fill="%23fff" height="20" viewBox="0 0 20 20" width="20" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
-        background-repeat: no-repeat;
-        background-position: right 0.75rem center;
-        background-size: 1.2em;
-        padding-right: 2.5em;
-    }
-    /* Dark mode for performance metrics */
-    body.dark-mode .model-stats,
-    body.dark-mode .stats-grid,
-    body.dark-mode .stat-card {
-        background: #232527 !important;
-        color: #e0e0e0 !important;
-        border: 1px solid #333;
-    }
-    body.dark-mode .stat-card * {
-        color: #e0e0e0 !important;
-    }
-    body.dark-mode .stat-card .stat-value {
-        color: #ffd700 !important;
-    }
-.predictions-blur {
+.prediction-header {
+    background: var(--f1-gradient);
+    color: white;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border-radius: 12px;
+    text-align: center;
+}
+.content-box {
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    margin-bottom: 2rem;
+    padding: 2rem 1.5rem;
+}
+.model-selector .form-select {
+    border-radius: 8px;
+    min-height: 44px;
+    font-size: 1.1rem;
+    background: #fff;
+    color: #232527;
+    border: 1.5px solid #e9ecef;
+}
+body.dark-mode .model-selector .form-select {
+    background: #232527;
+    color: #fff;
+    border: 1.5px solid #444;
+}
+.overview-stats {
+    display: flex;
+    justify-content: center;
+    gap: 2.5rem;
+    margin-top: 1.5rem;
+}
+.overview-stat {
+    text-align: center;
+    flex: 1;
+}
+.overview-stat-value {
+    font-size: 2.2rem;
+    font-weight: bold;
+    margin-bottom: 0.2rem;
+}
+body.light-mode .overview-stat-value { color: var(--f1-red); }
+body.dark-mode .overview-stat-value { color: var(--f1-gold); }
+.overview-stat-label {
+    font-size: 1rem;
+    color: #6b7280;
+}
+body.dark-mode .overview-stat-label { color: #ccc; }
+.table th, .table td {
+    vertical-align: middle;
+    font-size: 1rem;
+    padding: 0.9rem 1.2rem;
+}
+.table th {
+    background: #f8f9fa;
+    color: var(--f1-red);
+    font-weight: 700;
+    border-bottom: 2px solid #e9ecef;
+}
+body.dark-mode .table th {
+    background: #232527 !important;
+    color: #fff !important;
+    border-color: #333 !important;
+}
+body.dark-mode .table td {
+    background: #232527 !important;
+    color: #fff !important;
+    border-color: #333 !important;
+}
+.table tbody tr:hover {
+    background: rgba(220, 20, 60, 0.06);
+}
+body.dark-mode .table tbody tr:hover {
+    background: rgba(255,255,255,0.04) !important;
+}
+.team-badge {
+    display: inline-block;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #fff;
+}
+.team-mercedes { background: #00D2BE; }
+.team-ferrari { background: #DC0000; }
+/* Add more team colors as needed */
+.race-details-content {
+    display: none;
+    margin-top: 1.5rem;
+}
+.race-card {
+    background: var(--f1-white);
+    border-radius: 20px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    margin-bottom: 2rem;
+    padding: 2rem 2.5rem 1.5rem 2.5rem;
+    position: relative;
+    transition: box-shadow 0.2s;
+    cursor: pointer;
+}
+body.dark-mode .race-card {
+    background: #232527;
+}
+.race-title {
+    font-size: 1.6rem;
+    font-weight: bold;
+    color: var(--f1-red);
+    margin-bottom: 0.5rem;
+}
+.race-meta {
+    color: #6b7280;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+    margin-bottom: 1rem;
+}
+.race-meta i { margin-right: 0.3em; }
+.race-divider {
+    border: none;
+    border-top: 1px solid #e9ecef;
+    margin: 1.2rem 0 0.5rem 0;
+}
+body.dark-mode .race-divider {
+    border-top: 1px solid #333;
+}
+.round-badge {
     position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(255,255,255,0.7);
-    z-index: 10;
-    filter: blur(2px);
-    pointer-events: none;
+    top: 2rem;
+    right: 3.5rem;
+    background: var(--f1-red);
+    color: #fff;
+    border-radius: 999px;
+    padding: 0.5em 1.3em;
+    font-weight: bold;
+    font-size: 1rem;
+    box-shadow: 0 2px 8px rgba(220,20,60,0.08);
+    z-index: 2;
+}
+.race-dropdown-arrow {
+    position: absolute;
+    top: 2rem;
+    right: 1rem;
+    font-size: 1.5rem;
+    color: var(--f1-red);
+    background: none;
+    border: none;
+    cursor: pointer;
+    z-index: 3;
+    transition: transform 0.2s;
+}
+.race-dropdown-arrow.rotated {
+    transform: rotate(180deg);
+}
+.correct-prediction {
+    background: #eafbe7;
+}
+.incorrect-prediction {
+    background: #fff4f4;
+}
+body.dark-mode .correct-prediction,
+body.dark-mode .incorrect-prediction {
+    background: #232527 !important;
 }
 .predictions-content-blur {
-    filter: blur(4px) grayscale(0.5) opacity(0.5);
+    filter: blur(6px) brightness(0.7);
     pointer-events: none;
+    user-select: none;
+    transition: filter 0.3s;
 }
 .predictions-locked-overlay {
     position: fixed;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 20000;
-    background: rgba(255,255,255,0.95);
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(20, 20, 30, 0.55);
+    z-index: 2000;
+}
+.locked-prompt {
+    background: var(--f1-card-gradient, #23232b);
     border-radius: 18px;
-    box-shadow: 0 8px 32px rgba(220,20,60,0.10), 0 1.5px 8px rgba(0,0,0,0.06);
-    padding: 2.5rem 2rem 2rem 2rem;
+    box-shadow: 0 4px 32px 0 rgba(0,0,0,0.25);
+    padding: 2.5rem 2.5rem 2rem 2.5rem;
+    min-width: 320px;
+    max-width: 90vw;
     text-align: center;
-    max-width: 350px;
+    color: var(--f1-dark, #fff);
 }
-.locked-title {
+.locked-prompt h4 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
     color: var(--f1-red, #dc143c);
-    font-weight: bold;
-    margin-bottom: 1.5rem;
 }
-.locked-btn-group {
-    display: flex;
-    justify-content: center;
-    gap: 1.5rem;
-}
-.btn-login-locked, .btn-register-locked {
-    background: var(--f1-gradient);
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    font-weight: bold;
-    padding: 0.7em 2em;
+.locked-prompt p {
+    color: #b0b0b0;
     font-size: 1.1rem;
-    transition: background 0.2s;
-    text-decoration: none;
+    margin-bottom: 2rem;
 }
-.btn-login-locked:hover, .btn-register-locked:hover {
-    background: var(--f1-red, #dc143c);
+.locked-prompt .btn-group {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+.locked-prompt .btn-primary {
+    background: var(--f1-gradient, #dc143c);
+    border: none;
     color: #fff;
+    font-weight: 600;
+    font-size: 1.1rem;
+    border-radius: 8px 0 0 8px;
+    padding: 0.7rem 2.2rem;
 }
-body.dark-mode .predictions-blur {
-    background: rgba(35,37,39,0.7);
-}
-body.dark-mode .predictions-locked-overlay {
-    background: rgba(35,37,39,0.98);
+.locked-prompt .btn-secondary {
+    background: var(--f1-silver, #6b7280);
+    border: none;
     color: #fff;
-    border: 1.5px solid #333;
+    font-weight: 600;
+    font-size: 1.1rem;
+    border-radius: 0 8px 8px 0;
+    padding: 0.7rem 2.2rem;
+}
+body.dark-mode .season-stat-card {
+    background: #23232b !important;
+    color: #fff !important;
+    border: 1px solid #333;
+}
+body.dark-mode .season-stat-card .stat-label {
+    color: #b0b0b0 !important;
+}
+@media (max-width: 900px) {
+    .overview-stats { flex-direction: column; gap: 1.2rem; }
+}
+@media (max-width: 600px) {
+    .locked-prompt { padding: 1.2rem 0.5rem; min-width: 0; }
+    .locked-prompt h4 { font-size: 1.3rem; }
+    .locked-prompt p { font-size: 1rem; }
+    .locked-prompt .btn-primary, .locked-prompt .btn-secondary { font-size: 1rem; padding: 0.6rem 1.2rem; }
 }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="results-header">
-    <div class="container text-center">
-        <h1><i class="fas fa-chart-line me-2"></i>F1 2025 Season Predictions</h1>
-        <p class="lead">{{ model_name }} Model - Complete Season Overview</p>
-    </div>
+<div class="prediction-header">
+    <h1><i class="fas fa-chart-line me-2"></i>F1 Predictions</h1>
+    <p class="lead">Season Overview & Race Predictions</p>
 </div>
 
-<div class="container position-relative">
-    {% if predictions_locked %}
-    <div class="predictions-blur"></div>
-    <div class="predictions-locked-overlay">
-        <h2 class="locked-title">Sign up or log in to view predictions</h2>
-        <div class="locked-btn-group">
-            <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-login-locked">Login</a>
-            <a href="{% url 'register' %}?next={{ request.path }}" class="btn btn-register-locked">Register</a>
+<div class="prediction-content-wrapper" style="position: relative;">
+    <div class="{% if not is_authenticated %}predictions-content-blur{% endif %}">
+        <div class="content-box model-selector mb-4">
+            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
+                <span style="font-size: 1.5rem; color: var(--f1-red);"><i class="fas fa-brain"></i></span>
+                <span style="font-size: 1.2rem; font-weight: bold; color: var(--f1-red);">Select Prediction Model</span>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+                <span style="color: #6b7280; font-size: 1rem;">Choose which machine learning model to view predictions from</span>
+                <select class="form-select" style="max-width: 320px; min-width: 180px;" onchange="window.location.href='?model=' + this.value">
+                    {% for key, model in available_models.items %}
+                    <option value="{{ key }}" {% if key == selected_model_key %}selected{% endif %}>{{ model.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="content-box mb-4">
+            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.2rem;">
+                <span style="font-size: 2rem; color: var(--f1-red);"><i class="fas fa-trophy"></i></span>
+                <span style="font-size: 1.4rem; font-weight: bold; color: var(--f1-red);">2025 Season Overview</span>
+                {% if model_status == 'coming_soon' %}
+                    <span class="model-badge model-badge-coming-soon">{{ model_name }} - Coming Soon</span>
+                {% else %}
+                    <span class="model-badge model-badge-active">{{ model_name }}</span>
+                {% endif %}
+            </div>
+            <div style="display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap;">
+                <div class="season-stat-card" style="background: #f8f9fa; border-radius: 12px; padding: 1.2rem 2.2rem; min-width: 120px; text-align: center;">
+                    <div style="font-size: 2rem; font-weight: bold; color: var(--f1-red);">{{ total_races }}</div>
+                    <div style="color: #6b7280; font-size: 1rem;">Total Races</div>
+                </div>
+                <div class="season-stat-card" style="background: #f8f9fa; border-radius: 12px; padding: 1.2rem 2.2rem; min-width: 120px; text-align: center;">
+                    <div style="font-size: 2rem; font-weight: bold; color: var(--f1-red);">{{ races_with_predictions }}</div>
+                    <div style="color: #6b7280; font-size: 1rem;">Races with Predictions</div>
+                </div>
+                <div class="season-stat-card" style="background: #f8f9fa; border-radius: 12px; padding: 1.2rem 2.2rem; min-width: 120px; text-align: center;">
+                    <div style="font-size: 2rem; font-weight: bold; color: var(--f1-red);">{{ available_rounds_display }}</div>
+                    <div style="color: #6b7280; font-size: 1rem;">Available Rounds</div>
+                </div>
+                <div class="season-stat-card" style="background: #f8f9fa; border-radius: 12px; padding: 1.2rem 2.2rem; min-width: 120px; text-align: center;">
+                    <div style="font-size: 2rem; font-weight: bold; color: var(--f1-red);">{{ model_name }}</div>
+                    <div style="color: #6b7280; font-size: 1rem;">Model Used</div>
+                </div>
+            </div>
+        </div>
+
+        {% if is_authenticated %}
+            {% if model_status == 'coming_soon' %}
+                <div class="content-box" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 320px; max-width: 600px; margin: 3rem auto 2.5rem auto; text-align: center;">
+                    <span class="model-badge model-badge-coming-soon" style="font-size: 1.1rem; margin-bottom: 1.2rem;"><i class="fas fa-tools"></i> Predictions Coming Soon!</span>
+                    <div style="color: var(--f1-red); font-weight: 600; font-size: 1.2rem; margin-bottom: 0.5em;">The {{ model_name }} model is currently in development.</div>
+                    <div style="color: #6b7280; font-size: 1.05rem;">Predictions will be available soon. Please check back later!</div>
+                </div>
+            {% else %}
+                {% for race_data in results %}
+                    <div class="race-card" onclick="if(event.target.classList.contains('race-dropdown-arrow') || event.target.closest('.race-dropdown-arrow')) return; toggleRaceDetails({{ forloop.counter }});">
+                        <div class="race-title">{{ race_data.event.name }}</div>
+                        <div class="race-meta">
+                            <span><i class="fas fa-map-marker-alt"></i>{{ race_data.event.circuit.location|default:'-' }}</span>
+                            <span><i class="fas fa-calendar"></i>{{ race_data.event.date|date:"F j, Y" }}</span>
+                            <span><i class="fas fa-flag-checkered"></i>{{ race_data.event.circuit.name }}</span>
+                        </div>
+                        <span class="round-badge">Round {{ race_data.event.round }}</span>
+                        <button class="race-dropdown-arrow" id="arrow-{{ forloop.counter }}" onclick="toggleRaceDetails({{ forloop.counter }}); event.stopPropagation();">
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <hr class="race-divider" />
+                        <div class="race-details-content" id="details-{{ forloop.counter }}">
+                            {% if not race_data.show_coming_soon %}
+                                <div class="table-responsive">
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th>Pos</th>
+                                                <th>Driver</th>
+                                                <th>Team</th>
+                                                <th>Predicted</th>
+                                                <th>Actual</th>
+                                                <th>Difference</th>
+                                                <th>Confidence</th>
+                                                <th>Points</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in race_data.comparison %}
+                                            <tr class="{% if item.is_correct %}correct-prediction{% elif item.actual != 'N/A' and not item.is_correct %}incorrect-prediction{% endif %}">
+                                                <td class="text-center">{{ forloop.counter }}</td>
+                                                <td>{{ item.driver }}</td>
+                                                <td><span class="team-badge" style="background-color:{{ item.team_color }};">{{ item.team }}</span></td>
+                                                <td class="text-center">{{ item.predicted }}</td>
+                                                <td class="text-center">{{ item.actual }}</td>
+                                                <td class="text-center">{{ item.difference }}</td>
+                                                <td class="text-center">{{ item.confidence }}</td>
+                                                <td class="text-center fw-bold">{{ item.points|default:'0' }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="coming-soon-table-message">
+                                    <span class="model-badge model-badge-coming-soon"><i class="fas fa-tools"></i> Predictions Coming Soon!</span>
+                                    <div style="margin-top: 0.5em; color: var(--f1-red); font-weight: 500;">This race's predictions are not yet available.</div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endif %}
+    </div>
+    {% if not is_authenticated %}
+    <div class="predictions-locked-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: rgba(20, 20, 30, 0.55); z-index: 2000;">
+        <div class="locked-prompt">
+            <h4>View Full Predictions</h4>
+            <p>Create an account or log in to see detailed race predictions.</p>
+            <div class="btn-group">
+                <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-primary">Login</a>
+                <a href="{% url 'register' %}?next={{ request.path }}" class="btn btn-secondary">Register</a>
+            </div>
         </div>
     </div>
     {% endif %}
-    <div class="predictions-content{% if predictions_locked %} predictions-content-blur{% endif %}">
-        <!-- Model Selector Section -->
-        <div class="model-selector">
-            <div class="row align-items-center">
-                <div class="col-md-6">
-                    <h4 class="mb-0">
-                        <i class="fas fa-brain me-2"></i>Select Prediction Model
-                    </h4>
-                    <small class="text-muted">Choose which machine learning model to view predictions from</small>
-                </div>
-                <div class="col-md-6 text-md-end">
-                    <select class="form-select model-dropdown d-inline-block" onchange="changeModel(this.value)">
-                        {% for key, model in available_models.items %}
-                        <option value="{{ key }}" {% if key == selected_model_key %}selected{% endif %}>
-                            {{ model.name }}
-                            {% if model.status == 'coming_soon' %} (Coming Soon){% endif %}
-                        </option>
-                        {% endfor %}
-                    </select>
-                </div>
-            </div>
-            
-            {% if model_status == 'coming_soon' %}
-            <div class="coming-soon-model-text">
-                <i class="fas fa-cogs fa-2x mb-2"></i>
-                <p class="mb-0">{{ model_name }} model is currently in development</p>
-                <small>Predictions will be available soon!</small>
-            </div>
-            {% endif %}
-        </div>
-
-        <!-- Season Overview Section -->
-        <div class="season-overview">
-            <h3 class="results-title">
-                <i class="fas fa-trophy me-2"></i>2025 Season Overview
-                <span class="model-status-badge {% if model_status == 'active' %}status-active{% else %}status-coming-soon{% endif %}">
-                    {{ model_name }}
-                    {% if model_status == 'coming_soon' %} - Coming Soon{% endif %}
-                </span>
-            </h3>
-            <div class="overview-stats">
-                <div class="overview-stat">
-                    <div class="overview-stat-value">{{ total_races }}</div>
-                    <div class="overview-stat-label">Total Races</div>
-                </div>
-                <div class="overview-stat">
-                    <div class="overview-stat-value">{{ races_with_predictions }}</div>
-                    <div class="overview-stat-label">Races with Predictions</div>
-                </div>
-                <div class="overview-stat">
-                    <div class="overview-stat-value">{{ available_rounds_display }}</div>
-                    <div class="overview-stat-label">Available Rounds</div>
-                </div>
-                <div class="overview-stat">
-                    <div class="overview-stat-value">{{ model_name }}</div>
-                    <div class="overview-stat-label">Model Used</div>
-                </div>
-            </div>
-        </div>
-
-        {% if error %}
-            <div class="alert alert-danger">{{ error }}</div>
-        {% elif model_status == 'coming_soon' %}
-            <!-- Model Coming Soon - Show message for entire model -->
-            <div class="results-card coming-soon-card">
-                <div class="coming-soon-content">
-                    <div class="coming-soon-icon">
-                        <i class="fas fa-cogs fa-3x"></i>
-                    </div>
-                    <div class="coming-soon-text">{{ model_name }} Model Coming Soon</div>
-                    <div class="coming-soon-subtitle">
-                        This model is currently in development and will provide predictions soon
-                    </div>
-                </div>
-            </div>
-        {% else %}
-            <!-- Model is active - Show race results -->
-            {% for race_data in results %}
-            <div class="results-card {% if race_data.coming_soon %}coming-soon-card{% endif %}">
-                <div class="race-info {% if not race_data.coming_soon %}clickable{% endif %}" 
-                     {% if not race_data.coming_soon %}onclick="toggleRaceDetails({{ race_data.event.round }})"{% endif %}>
-                    <div class="race-info-content">
-                        <div class="race-name">{{ race_data.event.name }}</div>
-                        <div class="race-details">
-                            <i class="fas fa-map-marker-alt me-1"></i>{{ race_data.event.circuit.name }}
-                            <span class="mx-2">•</span>
-                            <i class="fas fa-calendar me-1"></i>{{ race_data.event.date }}
-                            <span class="mx-2">•</span>
-                            <i class="fas fa-flag-checkered me-1"></i>{{ race_data.event.name }}
-                        </div>
-                    </div>
-                    <div class="race-status-controls">
-                        <span class="round-badge">Round {{ race_data.event.round }}</span>
-                        {% if not race_data.coming_soon %}
-                            <i class="fas fa-chevron-down dropdown-arrow" id="arrow-{{ race_data.event.round }}"></i>
-                        {% endif %}
-                    </div>
-                </div>
-                
-                {% if race_data.coming_soon %}
-                    <div class="coming-soon-content">
-                        <div class="coming-soon-icon">
-                            <i class="fas fa-clock"></i>
-                        </div>
-                        <div class="coming-soon-text">Predictions Coming Soon</div>
-                        <div class="coming-soon-subtitle">
-                            Model predictions will be available closer to race weekend
-                        </div>
-                    </div>
-                {% else %}
-                    <div class="race-details-content" id="details-{{ race_data.event.round }}" style="display: none;">
-                        <div class="table-responsive">
-                            <table class="results-table">
-                                <thead>
-                                    <tr>
-                                        <th>Pos</th>
-                                        <th>Driver</th>
-                                        <th>Team</th>
-                                        <th>Predicted</th>
-                                        <th>Actual</th>
-                                        <th>Difference</th>
-                                        <th>Confidence</th>
-                                        <th>Points</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for item in race_data.comparison %}
-                                    <tr class="{% if item.is_correct %}correct-prediction{% else %}incorrect-prediction{% endif %}">
-                                        <td class="position-cell">{{ forloop.counter }}</td>
-                                        <td class="driver-cell">
-                                            <div class="driver-number">{{ item.driver_number }}</div>
-                                            <div>{{ item.driver }}</div>
-                                        </td>
-                                        <td>
-                                            <span class="team-badge {{ item.team_class }}">{{ item.team }}</span>
-                                        </td>
-                                        <td>{{ item.predicted }}</td>
-                                        <td>{{ item.actual }}</td>
-                                        <td>
-                                            {% if item.difference != 'N/A' %}
-                                                {% if item.difference == 0 %}
-                                                    <span class="difference-badge diff-perfect">±0</span>
-                                                {% elif item.difference <= 2 and item.difference >= -2 %}
-                                                    <span class="difference-badge diff-close">
-                                                        {% if item.difference > 0 %}+{% endif %}{{ item.difference }}
-                                                    </span>
-                                                {% else %}
-                                                    <span class="difference-badge diff-far">
-                                                        {% if item.difference > 0 %}+{% endif %}{{ item.difference }}
-                                                    </span>
-                                                {% endif %}
-                                            {% else %}
-                                                {{ item.difference }}
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            {% if item.confidence %}
-                                                <div class="confidence-bar">
-                                                    <div class="confidence-fill" style="width: {{ item.confidence }}%"></div>
-                                                </div>
-                                                <small class="text-muted">{{ item.confidence }}%</small>
-                                            {% else %}
-                                                N/A
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            {% if item.points is not None %}
-                                                {{ item.points|floatformat:0 }}
-                                            {% else %}
-                                                N/A
-                                            {% endif %}
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                        
-                        {% if race_data.accuracy_stats %}
-                        <div class="model-stats">
-                            <h5 class="mb-3"><i class="fas fa-tachometer-alt me-2"></i>Round {{ race_data.event.round }} Performance Metrics</h5>
-                            <div class="stats-grid">
-                                <div class="stat-card">
-                                    <div class="stat-value">{{ race_data.accuracy_stats.top10_accuracy }}</div>
-                                    <div class="stat-label">Top 10 Accuracy</div>
-                                </div>
-                                <div class="stat-card">
-                                    <div class="stat-value">{{ race_data.accuracy_stats.top3_accuracy }}</div>
-                                    <div class="stat-label">Top 3 Accuracy</div>
-                                </div>
-                                <div class="stat-card">
-                                    <div class="stat-value">{{ race_data.accuracy_stats.avg_position_diff }}</div>
-                                    <div class="stat-label">Avg Position Diff</div>
-                                </div>
-                            </div>
-                        </div>
-                        {% endif %}
-                    </div>
-                {% endif %}
-            </div>
-            {% endfor %}
-        {% endif %}
-    </div>
-</div>
-
-<!-- Scroll to top button -->
-<div class="scroll-indicator" onclick="scrollToTop()" style="display: none;">
-    <i class="fas fa-chevron-up"></i>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Add hover effects to table rows
-    const tableRows = document.querySelectorAll('.results-table tbody tr');
-    tableRows.forEach(row => {
-        row.addEventListener('mouseenter', function() {
-            this.style.transform = 'scale(1.01)';
-            this.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
-        });
-        
-        row.addEventListener('mouseleave', function() {
-            this.style.transform = '';
-            this.style.boxShadow = '';
-        });
-    });
-    
-    // Show/hide scroll indicator
-    const scrollIndicator = document.querySelector('.scroll-indicator');
-    
-    window.addEventListener('scroll', function() {
-        if (window.pageYOffset > 300) {
-            scrollIndicator.style.display = 'block';
-        } else {
-            scrollIndicator.style.display = 'none';
-        }
-    });
-    
-    // Smooth scrolling for race cards
-    const raceCards = document.querySelectorAll('.results-card');
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.style.opacity = '1';
-                entry.target.style.transform = 'translateY(0)';
-            }
-        });
-    }, {
-        threshold: 0.1
-    });
-    
-    raceCards.forEach(card => {
-        card.style.opacity = '0';
-        card.style.transform = 'translateY(20px)';
-        card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-        observer.observe(card);
-    });
-});
-
-function toggleRaceDetails(round) {
-    const detailsElement = document.getElementById(`details-${round}`);
-    const arrowElement = document.getElementById(`arrow-${round}`);
-    
-    if (detailsElement.style.display === 'none' || detailsElement.style.display === '') {
-        detailsElement.style.display = 'block';
-        arrowElement.classList.add('rotated');
+function toggleRaceDetails(idx) {
+    var details = document.getElementById('details-' + idx);
+    var arrow = document.getElementById('arrow-' + idx);
+    if (details.style.display === 'block') {
+        details.style.display = 'none';
+        arrow.classList.remove('rotated');
     } else {
-        detailsElement.style.display = 'none';
-        arrowElement.classList.remove('rotated');
+        details.style.display = 'block';
+        arrow.classList.add('rotated');
     }
-}
-
-function scrollToTop() {
-    window.scrollTo({
-        top: 0,
-        behavior: 'smooth'
-    });
-}
-
-function changeModel(modelKey) {
-    // Get current URL and update the model parameter
-    const url = new URL(window.location);
-    url.searchParams.set('model', modelKey);
-    
-    // Redirect to updated URL
-    window.location.href = url.toString();
 }
 </script>
 {% endblock %}
