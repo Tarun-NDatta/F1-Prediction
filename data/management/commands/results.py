@@ -1,16 +1,17 @@
 import os
 import time
+import pandas as pd
 from datetime import timedelta
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils.dateparse import parse_date
 from django.utils import timezone
 import fastf1
-from data.models import Circuit, Team, Driver, Event, Session, SessionType, RaceResult
+from data.models import Circuit, Team, Driver, Event, Session, SessionType, RaceResult, PitStop
 
 
 class Command(BaseCommand):
-    help = 'Fetch and store F1 race results using FastF1'
+    help = 'Fetch and store F1 race results, pit stops, and weather data using FastF1'
 
     def add_arguments(self, parser):
         parser.add_argument('--years', nargs='+', type=int, default=[2022, 2023, 2024],
@@ -32,7 +33,6 @@ class Command(BaseCommand):
         fastf1.Cache.enable_cache(cache_dir)
         self.stdout.write(f"Using cache directory: {os.path.abspath(cache_dir)}")
 
-        # Handle both singular and plural arguments
         if options['year']:
             years = [options['year']]
         else:
@@ -46,7 +46,6 @@ class Command(BaseCommand):
         force_refresh = options['force']
         debug_mode = options['debug']
 
-        # Ensure session type exists for race
         session_type, _ = SessionType.objects.get_or_create(
             session_type='RACE', defaults={'name': 'Race'}
         )
@@ -62,11 +61,8 @@ class Command(BaseCommand):
                     self.stdout.write("\nAll events:")
                     for _, event in schedule.iterrows():
                         self.stdout.write(f"Round {event['RoundNumber']}: {event['EventName']} - Format: {event.get('EventFormat', 'Unknown')}")
-                
-                # Don't filter by EventFormat - include all race weekends
-                # The main race ('R') session exists for both conventional and sprint weekends
-                events = schedule
 
+                events = schedule
                 if specific_rounds:
                     events = events[events['RoundNumber'].isin(specific_rounds)]
                     self.stdout.write(f"Filtered to rounds: {specific_rounds}")
@@ -78,13 +74,9 @@ class Command(BaseCommand):
                     self.stdout.write(f"[{i}/{len(events)}] Round {round_num}: {event_data['EventName']}")
 
                     try:
-                        # Always get the main race session ('R') - exists for all weekend formats
                         session = fastf1.get_session(year, round_num, 'R')
-
-                        # Load session data with minimal overhead
-                        load_params = {'telemetry': False, 'weather': False, 'messages': False}
+                        load_params = {'telemetry': False, 'weather': True, 'messages': False}
                         if force_refresh:
-                            # Try different force parameters depending on FastF1 version
                             for param in ['force_rerun', 'force', 'force_restore']:
                                 try:
                                     load_params[param] = True
@@ -97,12 +89,13 @@ class Command(BaseCommand):
                         else:
                             session.load(**load_params)
 
-                        # Check if session loaded successfully and has results
                         if not hasattr(session, 'results') or session.results is None or session.results.empty:
                             self.stdout.write(self.style.WARNING(f"No race results data available for Round {round_num}"))
                             continue
 
                         self.process_race_results(session, event_data, session_type, event_format)
+                        self.process_pit_stops(session, session_type)
+                        self.process_weather_data(session, event_data)
                         time.sleep(0.5)
 
                     except Exception as e:
@@ -119,44 +112,33 @@ class Command(BaseCommand):
                     self.stdout.write(self.style.ERROR(traceback.format_exc()))
 
     def get_or_create_driver(self, row):
-        """
-        Safely get or create a driver, handling potential conflicts
-        """
-        driver_number = row['DriverNumber']
-        driver_ref = row['Abbreviation'].strip()
-        
-        # Try to find existing driver by driver_id first
         try:
-            driver = Driver.objects.get(driver_id=driver_number)
-            # Update existing driver with latest info
-            driver.driver_ref = driver_ref
-            driver.given_name = row['FirstName']
-            driver.family_name = row['LastName']
-            driver.nationality = row.get('Country', '')
-            driver.code = row['Abbreviation']
-            driver.permanent_number = driver_number
-            driver.save()
-            return driver
-        except Driver.DoesNotExist:
-            pass
-        
-        # Try to find by driver_ref
-        try:
-            driver = Driver.objects.get(driver_ref=driver_ref)
-            # Update existing driver with latest info
-            driver.driver_id = driver_number
-            driver.given_name = row['FirstName']
-            driver.family_name = row['LastName']
-            driver.nationality = row.get('Country', '')
-            driver.code = row['Abbreviation']
-            driver.permanent_number = driver_number
-            driver.save()
-            return driver
-        except Driver.DoesNotExist:
-            pass
-        
-        # Create new driver
-        try:
+            driver_number = row['DriverNumber']
+            driver_ref = row['Abbreviation'].strip()
+            try:
+                driver = Driver.objects.get(driver_id=driver_number)
+                driver.driver_ref = driver_ref
+                driver.given_name = row['FirstName']
+                driver.family_name = row['LastName']
+                driver.nationality = row.get('Country', '')
+                driver.code = row['Abbreviation']
+                driver.permanent_number = driver_number
+                driver.save()
+                return driver
+            except Driver.DoesNotExist:
+                pass
+            try:
+                driver = Driver.objects.get(driver_ref=driver_ref)
+                driver.driver_id = driver_number
+                driver.given_name = row['FirstName']
+                driver.family_name = row['LastName']
+                driver.nationality = row.get('Country', '')
+                driver.code = row['Abbreviation']
+                driver.permanent_number = driver_number
+                driver.save()
+                return driver
+            except Driver.DoesNotExist:
+                pass
             driver = Driver.objects.create(
                 driver_id=driver_number,
                 driver_ref=driver_ref,
@@ -169,7 +151,6 @@ class Command(BaseCommand):
             return driver
         except Exception as e:
             self.stdout.write(self.style.ERROR(f"Error creating driver {driver_ref}: {e}"))
-            # As a last resort, try to find any existing driver with same name
             try:
                 driver = Driver.objects.get(
                     given_name=row['FirstName'],
@@ -180,9 +161,6 @@ class Command(BaseCommand):
                 raise e
 
     def process_race_results(self, session, event_data, session_type, event_format='conventional'):
-        """
-        Process race results for all race weekend formats (conventional, sprint, etc.)
-        """
         circuit, _ = Circuit.objects.update_or_create(
             circuit_ref=event_data.get('CircuitKey', event_data['Location'].lower().replace(' ', '_')),
             defaults={
@@ -193,7 +171,6 @@ class Command(BaseCommand):
         )
 
         with transaction.atomic():
-            # Determine event format for database
             if event_format in ['sprint_qualifying', 'sprint', 'sprint_shootout']:
                 db_event_format = 'SPRINT'
             else:
@@ -211,7 +188,6 @@ class Command(BaseCommand):
                 }
             )
 
-            # Handle timezone-aware datetime for session date
             session_date = session.date
             if session_date and timezone.is_naive(session_date):
                 session_date = timezone.make_aware(session_date)
@@ -255,19 +231,20 @@ class Command(BaseCommand):
                         driver=driver,
                         defaults={
                             'team': team,
-                            'position': int(row['Position']) if row['Position'] else None,
+                            'position': int(row['Position']) if pd.notna(row['Position']) else None,
                             'position_text': str(row.get('Status', '')),
-                            'points': float(row.get('Points', 0)),
+                            'points': float(row.get('Points', 0)) if pd.notna(row.get('Points')) else 0,
                             'status': row.get('Status', ''),
-                            'laps': row.get('Laps'),
+                            'laps': int(row.get('Laps')) if pd.notna(row.get('Laps')) else None,
                             'time': to_duration(row.get('Time')),
-                            'fastest_lap_rank': row.get('FastestLapRank'),
+                            'time_millis': int(row.get('Time').total_seconds() * 1000) if pd.notna(row.get('Time')) and isinstance(row.get('Time'), timedelta) else None,
+                            'fastest_lap_rank': int(row.get('FastestLapRank')) if pd.notna(row.get('FastestLapRank')) else None,
                             'fastest_lap_time': to_duration(row.get('FastestLapTime')),
-                            'fastest_lap_speed': row.get('FastestLapSpeed'),
-                            'pit_stops': row.get('PitStops'),
-                            'grid_position': grid_pos,
+                            'fastest_lap_speed': float(row.get('FastestLapSpeed')) if pd.notna(row.get('FastestLapSpeed')) else None,
+                            'pit_stops': int(row.get('PitStops')) if pd.notna(row.get('PitStops')) else None,
+                            'grid_position': int(grid_pos) if pd.notna(grid_pos) else None,
                             'position_gain': position_gain,
-                            'tyre_stints': row.get('TyreStints'),
+                            'tyre_stints': row.get('TyreStints', None)
                         }
                     )
                     processed_count += 1
@@ -277,3 +254,86 @@ class Command(BaseCommand):
                     continue
 
             self.stdout.write(self.style.SUCCESS(f"Saved {processed_count} race results for {event_obj.name} Round {event_obj.round}"))
+
+    def process_pit_stops(self, session, session_type):
+        try:
+            # Workaround for fastf1 v3.5.3: Filter laps where PitInTime or PitOutTime is not null
+            laps = session.laps
+            pit_stops = laps[laps['PitInTime'].notna() | laps['PitOutTime'].notna()].copy()
+            if pit_stops.empty:
+                self.stdout.write(self.style.WARNING(f"No pit stop data for {session.event['EventName']}"))
+                return
+
+            session_obj = Session.objects.get(
+                event__year=session.event['EventDate'].year,
+                event__round=session.event['RoundNumber'],
+                session_type=session_type
+            )
+
+            processed_count = 0
+            for _, pit in pit_stops.iterrows():
+                try:
+                    driver = Driver.objects.get(driver_ref=pit['Driver'].strip())
+                    team = Team.objects.get(team_ref=pit['Team'].lower().replace(' ', '_'))
+                    # Estimate pit stop duration using LapTime or fallback to 25 seconds
+                    duration = pit.get('LapTime', None)
+                    if pd.isna(duration) or not isinstance(duration, pd.Timedelta):
+                        duration = timedelta(seconds=25)  # Default duration
+                    else:
+                        duration = timedelta(seconds=duration.total_seconds())
+                    time_ms = int(duration.total_seconds() * 1000) if isinstance(duration, timedelta) else 25000
+
+                    PitStop.objects.update_or_create(
+                        session=session_obj,
+                        driver=driver,
+                        lap=int(pit['LapNumber']) if pd.notna(pit['LapNumber']) else 1,
+                        defaults={
+                            'team': team,
+                            'time_millis': time_ms,
+                            'duration': duration,
+                            'tyre_compound': pit.get('Compound', None)
+                        }
+                    )
+                    processed_count += 1
+
+                except (Driver.DoesNotExist, Team.DoesNotExist) as e:
+                    self.stdout.write(self.style.WARNING(f"Skipping pit stop for {pit.get('Driver', 'Unknown')}: {e}"))
+                    continue
+                except Exception as e:
+                    self.stdout.write(self.style.ERROR(f"Error processing pit stop for {pit.get('Driver', 'Unknown')}: {e}"))
+                    continue
+
+            self.stdout.write(self.style.SUCCESS(f"Saved {processed_count} pit stops for {session.event['EventName']}"))
+
+        except Exception as e:
+            self.stdout.write(self.style.ERROR(f"Error processing pit stops for {session.event['EventName']}: {e}"))
+
+    def process_weather_data(self, session, event_data):
+        try:
+            weather = session.weather_data
+            if weather is None or weather.empty:
+                self.stdout.write(self.style.WARNING(f"No weather data for {event_data['EventName']}"))
+                return
+
+            event_obj = Event.objects.get(
+                year=event_data['EventDate'].year,
+                round=event_data['RoundNumber']
+            )
+
+            # Aggregate weather data by taking the mean for numeric fields
+            weather_data = {
+                'rain': bool(weather['Rainfall'].mean() > 0.1) if 'Rainfall' in weather.columns else False,
+                'safety_car': False,  # Placeholder, as FastF1 doesn't provide this
+                'air_temp': float(weather['AirTemp'].mean()) if 'AirTemp' in weather.columns and pd.notna(weather['AirTemp']).any() else None,
+                'track_temp': float(weather['TrackTemp'].mean()) if 'TrackTemp' in weather.columns and pd.notna(weather['TrackTemp']).any() else None,
+                'humidity': float(weather['Humidity'].mean()) if 'Humidity' in weather.columns and pd.notna(weather['Humidity']).any() else None,
+                'wind_speed': float(weather['WindSpeed'].mean()) if 'WindSpeed' in weather.columns and pd.notna(weather['WindSpeed']).any() else None,
+                'wind_direction': float(weather['WindDirection'].mean()) if 'WindDirection' in weather.columns and pd.notna(weather['WindDirection']).any() else None
+            }
+
+            event_obj.weather_data = weather_data
+            event_obj.save()
+            self.stdout.write(self.style.SUCCESS(f"Saved weather data for {event_data['EventName']}"))
+
+        except Exception as e:
+            self.stdout.write(self.style.ERROR(f"Error processing weather data for {event_data['EventName']}: {e}"))

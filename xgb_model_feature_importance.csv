@@ -1,0 +1,17 @@
+feature,importance
+points_per_race,0.23149633
+qualifying_avg,0.21732715
+moving_avg_5,0.100772545
+rivalry_performance,0.07705763
+position_variance,0.06049003
+circuit_affinity,0.056897
+teammate_battle,0.05369306
+quali_improvement,0.053494826
+development_slope,0.052834686
+reliability_score,0.051884193
+position_momentum,0.04405258
+dnf_rate,0.0
+pit_stop_std,0.0
+pit_stop_avg,0.0
+wet_weather_perf,0.0
+quali_race_delta,0.0

@@ -16,6 +16,7 @@ class F1DataPipeline:
         self.test_size = test_size
         self.random_state = random_state
         self.impute_strategy = impute_strategy
+        self.feature_names_ = None  # Store actual feature names used
         
         # Define driver-specific and team-specific features
         self.driver_features = [
@@ -52,8 +53,11 @@ class F1DataPipeline:
         )
     
     def get_feature_names(self):
-        """Return feature names after transformation"""
-        return list(set(self.all_features))
+        """Return feature names used in the last data preparation"""
+        if self.feature_names_ is None:
+            # Return potential feature names if not yet fitted
+            return list(set(self.all_features))
+        return self.feature_names_
     
     def get_required_features(self):
         return (
@@ -104,8 +108,9 @@ class F1DataPipeline:
                 TeamPerformance.objects.all().values(*team_fields)
             )
             
-            # Handle missing grid positions
-            race_results['grid_position'] = race_results['grid_position'].fillna(20)
+            # Handle missing grid positions - fix pandas warning
+            race_results['grid_position'] = race_results['grid_position'].fillna(20).astype('int64')
+            #race_results['grid_position'] = race_results['grid_position'].astype('int64')
             
             # Merge data with suffix handling
             logger.info("Merging datasets...")
@@ -224,7 +229,7 @@ class F1DataPipeline:
     def _select_features(self, df):
         """Select the best available version of each feature"""
         selected_features = []
-        for feature in self.get_feature_names():
+        for feature in list(set(self.all_features)):
             # Handle team-specific features
             if feature in ['reliability_score', 'development_slope', 'pit_stop_std']:
                 col = f"{feature}_team"  # Always use team version
@@ -238,6 +243,9 @@ class F1DataPipeline:
                 if col in df.columns:
                     selected_features.append(col)
                     break
+        
+        # Store the actual feature names used
+        self.feature_names_ = selected_features
         return selected_features
 
     def _get_split_indices(self, df):
@@ -255,8 +263,8 @@ class F1DataPipeline:
         )
         return train_indices, test_indices
 
-    def _split_data(self, df):
-        """Split data into features and target"""
+    def _split_data(self, df, return_dataframes=False):
+        """Split data into features and target with option to return DataFrames"""
         feature_columns = self._select_features(df)
         
         if not feature_columns:
@@ -265,21 +273,38 @@ class F1DataPipeline:
         # Get indices for consistent splitting
         train_indices, test_indices = self._get_split_indices(df)
         
-        X = df[feature_columns].values
-        y = df['position'].values
-        
-        X_train = X[train_indices]
-        X_test = X[test_indices]
-        y_train = y[train_indices]
-        y_test = y[test_indices]
+        if return_dataframes:
+            # Return DataFrames (useful for getting column names)
+            X = df[feature_columns]
+            y = df['position']
+            
+            X_train = X.iloc[train_indices]
+            X_test = X.iloc[test_indices]
+            y_train = y.iloc[train_indices]
+            y_test = y.iloc[test_indices]
+        else:
+            # Return numpy arrays (for Ridge regression compatibility)
+            X = df[feature_columns].values
+            y = df['position'].values
+            
+            X_train = X[train_indices]
+            X_test = X[test_indices]
+            y_train = y[train_indices]
+            y_test = y[test_indices]
         
         logger.info(
             f"Data split complete - Train: {len(X_train)}, Test: {len(X_test)}"
         )
         return X_train, X_test, y_train, y_test
 
-    def prepare_training_data(self, include_years=False):
-        """Prepare training data with year preservation"""
+    def prepare_training_data(self, include_years=False, return_dataframes=False):
+        """
+        Prepare training data with options for different output formats
+        
+        Args:
+            include_years: If True, also return year information
+            return_dataframes: If True, return DataFrames instead of numpy arrays
+        """
         try:
             df = self.load_data()
             
@@ -293,7 +318,7 @@ class F1DataPipeline:
             years = df['year'].values if 'year' in df.columns else None
             
             # Split data
-            X_train, X_test, y_train, y_test = self._split_data(df)
+            X_train, X_test, y_train, y_test = self._split_data(df, return_dataframes)
             
             if include_years and years is not None:
                 # Get indices for train/test split
@@ -307,7 +332,6 @@ class F1DataPipeline:
         except Exception as e:
             logger.error(f"Error preparing training data: {str(e)}", exc_info=True)
             raise
-
 
     def create_enhanced_features(self, df):
         """Add these to your existing feature pipeline"""
@@ -333,7 +357,6 @@ class F1DataPipeline:
         
         return df
     
-    
     def get_preprocessing_pipeline(self):
         """Get preprocessing pipeline with optional imputation"""
         steps = []
@@ -344,5 +367,3 @@ class F1DataPipeline:
         steps.append(('scaler', StandardScaler()))
         
         return Pipeline(steps)
-
-

@@ -430,3 +430,16 @@ class ridgeregression(models.Model):
 
     def __str__(self):
         return f"{self.model_name.upper()} | {self.driver} | {self.event} → Predicted: {self.predicted_position:.2f}"
+
+class xgboostprediction(models.Model):
+    event = models.ForeignKey('Event', on_delete=models.CASCADE)
+    driver = models.ForeignKey('Driver', on_delete=models.CASCADE)
+    predicted_position = models.PositiveIntegerField()
+
+    class Meta:
+        unique_together = ('event', 'driver')
+        verbose_name = "XGBoost Prediction"
+        verbose_name_plural = "XGBoost Predictions"
+
+    def __str__(self):
+        return f"{self.driver} - {self.event} - Pos {self.predicted_position}"

@@ -1,5 +1,6 @@
 import os
 import time
+import pandas as pd
 from datetime import timedelta
 from django.core.management.base import BaseCommand
 from django.db import transaction
@@ -32,7 +33,6 @@ class Command(BaseCommand):
         fastf1.Cache.enable_cache(cache_dir)
         self.stdout.write(f"Using cache directory: {os.path.abspath(cache_dir)}")
 
-        # Handle both singular and plural arguments
         if options['year']:
             years = [options['year']]
         else:
@@ -46,7 +46,6 @@ class Command(BaseCommand):
         force_refresh = options['force']
         debug_mode = options['debug']
 
-        # Ensure session type exists for qualifying
         session_type, _ = SessionType.objects.get_or_create(
             session_type='QUALIFYING', defaults={'name': 'Qualifying'}
         )
@@ -62,11 +61,8 @@ class Command(BaseCommand):
                     self.stdout.write("\nAll events:")
                     for _, event in schedule.iterrows():
                         self.stdout.write(f"Round {event['RoundNumber']}: {event['EventName']} - Format: {event.get('EventFormat', 'Unknown')}")
-                
-                # Don't filter by EventFormat - include all race weekends
-                # Qualifying ('Q') session exists for both conventional and sprint weekends
-                events = schedule
 
+                events = schedule
                 if specific_rounds:
                     events = events[events['RoundNumber'].isin(specific_rounds)]
                     self.stdout.write(f"Filtered to rounds: {specific_rounds}")
@@ -78,13 +74,9 @@ class Command(BaseCommand):
                     self.stdout.write(f"[{i}/{len(events)}] Round {round_num}: {event_data['EventName']} (Format: {event_format})")
 
                     try:
-                        # Always get the main qualifying session ('Q') - exists for all weekend formats
                         session = fastf1.get_session(year, round_num, 'Q')
-
-                        # Load session data with minimal overhead
                         load_params = {'telemetry': False, 'weather': False, 'messages': False}
                         if force_refresh:
-                            # Try different force parameters depending on FastF1 version
                             for param in ['force_rerun', 'force', 'force_restore']:
                                 try:
                                     load_params[param] = True
@@ -97,7 +89,6 @@ class Command(BaseCommand):
                         else:
                             session.load(**load_params)
 
-                        # Check if session loaded successfully and has results
                         if not hasattr(session, 'results') or session.results is None or session.results.empty:
                             self.stdout.write(self.style.WARNING(f"No qualifying results data available for Round {round_num}"))
                             continue
@@ -119,44 +110,33 @@ class Command(BaseCommand):
                     self.stdout.write(self.style.ERROR(traceback.format_exc()))
 
     def get_or_create_driver(self, row):
-        """
-        Safely get or create a driver, handling potential conflicts
-        """
-        driver_number = row['DriverNumber']
-        driver_ref = row['Abbreviation'].strip()
-        
-        # Try to find existing driver by driver_id first
         try:
-            driver = Driver.objects.get(driver_id=driver_number)
-            # Update existing driver with latest info
-            driver.driver_ref = driver_ref
-            driver.given_name = row['FirstName']
-            driver.family_name = row['LastName']
-            driver.nationality = row.get('Country', '')
-            driver.code = row['Abbreviation']
-            driver.permanent_number = driver_number
-            driver.save()
-            return driver
-        except Driver.DoesNotExist:
-            pass
-        
-        # Try to find by driver_ref
-        try:
-            driver = Driver.objects.get(driver_ref=driver_ref)
-            # Update existing driver with latest info
-            driver.driver_id = driver_number
-            driver.given_name = row['FirstName']
-            driver.family_name = row['LastName']
-            driver.nationality = row.get('Country', '')
-            driver.code = row['Abbreviation']
-            driver.permanent_number = driver_number
-            driver.save()
-            return driver
-        except Driver.DoesNotExist:
-            pass
-        
-        # Create new driver
-        try:
+            driver_number = row['DriverNumber']
+            driver_ref = row['Abbreviation'].strip()
+            try:
+                driver = Driver.objects.get(driver_id=driver_number)
+                driver.driver_ref = driver_ref
+                driver.given_name = row['FirstName']
+                driver.family_name = row['LastName']
+                driver.nationality = row.get('Country', '')
+                driver.code = row['Abbreviation']
+                driver.permanent_number = driver_number
+                driver.save()
+                return driver
+            except Driver.DoesNotExist:
+                pass
+            try:
+                driver = Driver.objects.get(driver_ref=driver_ref)
+                driver.driver_id = driver_number
+                driver.given_name = row['FirstName']
+                driver.family_name = row['LastName']
+                driver.nationality = row.get('Country', '')
+                driver.code = row['Abbreviation']
+                driver.permanent_number = driver_number
+                driver.save()
+                return driver
+            except Driver.DoesNotExist:
+                pass
             driver = Driver.objects.create(
                 driver_id=driver_number,
                 driver_ref=driver_ref,
@@ -169,7 +149,6 @@ class Command(BaseCommand):
             return driver
         except Exception as e:
             self.stdout.write(self.style.ERROR(f"Error creating driver {driver_ref}: {e}"))
-            # As a last resort, try to find any existing driver with same name
             try:
                 driver = Driver.objects.get(
                     given_name=row['FirstName'],
@@ -180,9 +159,6 @@ class Command(BaseCommand):
                 raise e
 
     def process_qualifying(self, session, event_data, session_type, event_format='conventional'):
-        """
-        Process qualifying results for all race weekend formats (conventional, sprint, etc.)
-        """
         circuit, _ = Circuit.objects.update_or_create(
             circuit_ref=event_data.get('CircuitKey', event_data['Location'].lower().replace(' ', '_')),
             defaults={
@@ -193,7 +169,6 @@ class Command(BaseCommand):
         )
 
         with transaction.atomic():
-            # Determine event format for database
             if event_format in ['sprint_qualifying', 'sprint', 'sprint_shootout']:
                 db_event_format = 'SPRINT'
             else:
@@ -211,7 +186,6 @@ class Command(BaseCommand):
                 }
             )
 
-            # Handle timezone-aware datetime for session date
             session_date = session.date
             if session_date and timezone.is_naive(session_date):
                 session_date = timezone.make_aware(session_date)
@@ -227,6 +201,15 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.WARNING(f"No qualifying data for {event_obj}"))
                 return
 
+            # Find pole position time (fastest Q3 time, or Q2/Q1 if no Q3 times)
+            pole_time = None
+            for times in ['Q3', 'Q2', 'Q1']:
+                valid_times = [t for t in qualifying_results[times] if pd.notna(t) and isinstance(t, pd.Timedelta)]
+                if valid_times:
+                    pole_time = min(valid_times)
+                    break
+            pole_time_ms = int(pole_time.total_seconds() * 1000) if pole_time else None
+
             processed_count = 0
             for _, row in qualifying_results.iterrows():
                 try:
@@ -238,23 +221,41 @@ class Command(BaseCommand):
                     driver = self.get_or_create_driver(row)
 
                     def to_duration(val):
-                        return val if isinstance(val, timedelta) else None
+                        return val if isinstance(val, pd.Timedelta) else None
+
+                    # Convert Q1, Q2, Q3 times to milliseconds
+                    q1 = to_duration(row.get('Q1'))
+                    q2 = to_duration(row.get('Q2'))
+                    q3 = to_duration(row.get('Q3'))
+                    q1_ms = int(q1.total_seconds() * 1000) if q1 and isinstance(q1, pd.Timedelta) else None
+                    q2_ms = int(q2.total_seconds() * 1000) if q2 and isinstance(q2, pd.Timedelta) else None
+                    q3_ms = int(q3.total_seconds() * 1000) if q3 and isinstance(q3, pd.Timedelta) else None
+
+                    # Calculate pole_delta (difference from pole time in milliseconds)
+                    fastest_time = None
+                    if q3_ms is not None:
+                        fastest_time = q3_ms
+                    elif q2_ms is not None:
+                        fastest_time = q2_ms
+                    elif q1_ms is not None:
+                        fastest_time = q1_ms
+                    pole_delta = (fastest_time - pole_time_ms) if fastest_time and pole_time_ms else None
 
                     QualifyingResult.objects.update_or_create(
                         session=session_obj,
                         driver=driver,
                         defaults={
                             'team': team,
-                            'position': int(row['Position']) if row['Position'] else None,
-                            'q1': to_duration(row.get('Q1')),
-                            'q2': to_duration(row.get('Q2')),
-                            'q3': to_duration(row.get('Q3')),
-                            'q1_millis': row.get('Q1Millis'),
-                            'q2_millis': row.get('Q2Millis'),
-                            'q3_millis': row.get('Q3Millis'),
-                            'pole_delta': None,
+                            'position': int(row['Position']) if pd.notna(row['Position']) else None,
+                            'q1': q1,
+                            'q2': q2,
+                            'q3': q3,
+                            'q1_millis': q1_ms,
+                            'q2_millis': q2_ms,
+                            'q3_millis': q3_ms,
+                            'pole_delta': pole_delta,
                             'status': row.get('Status', ''),
-                            'laps': row.get('Laps', None),
+                            'laps': int(row.get('Laps')) if pd.notna(row.get('Laps')) else None,
                         }
                     )
                     processed_count += 1

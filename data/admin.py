@@ -4,7 +4,7 @@ from .models import (
     QualifyingResult, RaceResult,
     Session, SessionType,
     DriverPerformance, TeamPerformance, TrackCharacteristics,
-    PredictionModel, RacePrediction,ridgeregression
+    PredictionModel, RacePrediction,ridgeregression,xgboostprediction
 )
 
 @admin.register(Event)
@@ -67,3 +67,5 @@ class RacePredictionAdmin(admin.ModelAdmin):
 
 
 admin.site.register(ridgeregression)
+
+admin.site.register(xgboostprediction)
