@@ -2,7 +2,7 @@ from django.shortcuts import get_object_or_404, render, get_list_or_404
 from django.db.models import Count, Avg, Q, Max, Sum
 from data.models import (
     Event, RaceResult, QualifyingResult, Circuit, Team, Driver, 
-    Session, SessionType, ridgeregression
+    Session, SessionType, ridgeregression, xgboostprediction  # Added xgboostprediction
 )
 from django.core.paginator import Paginator
 from django.http import JsonResponse
@@ -248,25 +248,29 @@ def get_team_class(team_name):
 
 def prediction(request):
     predictions_locked = not request.user.is_authenticated
-    # Available models configuration
+    
+    # Available models configuration - UPDATED to include XGBoost
     AVAILABLE_MODELS = {
         'ridge_regression': {
             'name': 'Ridge Regression',
             'model_class': ridgeregression,
             'available_rounds': list(range(1, 12)),  # Rounds 1-11
-            'status': 'active'
+            'status': 'active',
+            'model_name_filter': 'ridge_regression'  # Added for database filtering
         },
         'xgboost': {
             'name': 'XGBoost',
-            'model_class': None,  # Will be added when model is ready
-            'available_rounds': [],  # No rounds available yet
-            'status': 'coming_soon'
+            'model_class': xgboostprediction,  # Now available
+            'available_rounds': list(range(1, 12)),  # Update based on your available data
+            'status': 'active',  # Changed from 'coming_soon' to 'active'
+            'model_name_filter': 'xgboost_regression'  # Added for database filtering
         },
         'lightgbm': {
             'name': 'LightGBM', 
             'model_class': None,  # Will be added when model is ready
             'available_rounds': [],  # No rounds available yet
-            'status': 'coming_soon'
+            'status': 'coming_soon',
+            'model_name_filter': 'lightgbm_regression'
         }
     }
     
@@ -294,13 +298,20 @@ def prediction(request):
     
     for event in all_events:
         # Get predictions and actual results for this event
-        predictions_qs = selected_model['model_class'].objects.filter(
-            event=event,
-            model_name=selected_model_key,
-            year=2025,
-            round_number=event.round
-        ) if (selected_model['model_class'] is not None) else selected_model['model_class']
-        predictions = list(predictions_qs) if predictions_qs else []
+        if selected_model['model_class'] is not None:
+            # Updated query to use model_name_filter for better filtering
+            predictions_qs = selected_model['model_class'].objects.filter(
+                event=event,
+                year=2025,
+                round_number=event.round
+            )
+            # Additional filtering by model_name if the field exists
+            if hasattr(selected_model['model_class'], 'model_name'):
+                predictions_qs = predictions_qs.filter(model_name=selected_model['model_name_filter'])
+            
+            predictions = list(predictions_qs)
+        else:
+            predictions = []
 
         # Get actual results for this event (RaceResult)
         from data.models import RaceResult
@@ -323,29 +334,49 @@ def prediction(request):
             pred = pred_map.get(driver_id)
             act = act_map.get(driver_id)
             driver = pred.driver if pred else (act.driver if act else None)
+            
+            # Get team information
             team_name = 'N/A'
             team_class = 'team-default'
+            team_color = '#666666'  # Default color
             points = None
+            
             if act and act.team:
                 team_name = act.team.name
                 team_class = f"team-{act.team.name.lower().replace(' ', '')}"
+                # You can add team colors here based on team name
+                team_colors = {
+                    'Mercedes': '#00D2BE',
+                    'Ferrari': '#DC0000',
+                    'Red Bull': '#0600EF',
+                    'McLaren': '#FF8700',
+                    'Alpine': '#0090FF',
+                    'Aston Martin': '#006F62',
+                    'Williams': '#005AFF',
+                    'AlphaTauri': '#2B4562',
+                    'Alfa Romeo': '#900000',
+                    'Haas': '#FFFFFF'
+                }
+                team_color = team_colors.get(act.team.name, '#666666')
                 points = act.points
             elif pred:
                 # Try to get team from prediction if available
                 team_name = getattr(pred, 'team', 'N/A')
                 team_class = 'team-default'
                 points = getattr(pred, 'points', None)
+            
             comparison.append({
                 'driver': f"{driver.given_name} {driver.family_name}" if driver else 'N/A',
-                'predicted': round(pred.predicted_position, 2) if pred else 'N/A',
+                'predicted': int(round(pred.predicted_position)) if pred else 'N/A',  # Convert to int for cleaner display
                 'actual': act.position if act and act.position is not None else (pred.actual_position if pred and pred.actual_position is not None else 'N/A'),
-                'difference': (act.position - round(pred.predicted_position)) if pred and act and act.position is not None and pred.predicted_position is not None else 'N/A',
+                'difference': (act.position - int(round(pred.predicted_position))) if pred and act and act.position is not None and pred.predicted_position is not None else 'N/A',
                 'driver_number': driver.permanent_number if driver and driver.permanent_number else '',
                 'team': team_name,
                 'team_class': team_class,
+                'team_color': team_color,  # Added team color
                 'team_slug': '',
                 'confidence': round(pred.confidence * 100, 1) if pred and hasattr(pred, 'confidence') and pred.confidence else 'N/A',
-                'is_correct': (act.position == round(pred.predicted_position)) if pred and act and act.position is not None and pred.predicted_position is not None else False,
+                'is_correct': (act.position == int(round(pred.predicted_position))) if pred and act and act.position is not None and pred.predicted_position is not None else False,
                 'points': points if points is not None else 'N/A',
             })
 

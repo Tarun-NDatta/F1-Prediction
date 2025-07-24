@@ -1,4 +1,6 @@
 from django.db import models
+from pytz import timezone
+from django.utils import timezone
 
 class Circuit(models.Model):
     name = models.CharField(max_length=100)
@@ -432,14 +434,21 @@ class ridgeregression(models.Model):
         return f"{self.model_name.upper()} | {self.driver} | {self.event} → Predicted: {self.predicted_position:.2f}"
 
 class xgboostprediction(models.Model):
-    event = models.ForeignKey('Event', on_delete=models.CASCADE)
-    driver = models.ForeignKey('Driver', on_delete=models.CASCADE)
-    predicted_position = models.PositiveIntegerField()
+    driver = models.ForeignKey(Driver, on_delete=models.CASCADE)
+    event = models.ForeignKey(Event, on_delete=models.CASCADE)
+    
+    year = models.IntegerField()  # Temporary default
+    round_number = models.IntegerField()  # Temporary default
 
+    predicted_position = models.FloatField()
+    actual_position = models.IntegerField(null=True, blank=True)
+
+    model_name = models.CharField(max_length=100, default='xgboost_regression')
     class Meta:
         unique_together = ('event', 'driver')
         verbose_name = "XGBoost Prediction"
         verbose_name_plural = "XGBoost Predictions"
 
     def __str__(self):
-        return f"{self.driver} - {self.event} - Pos {self.predicted_position}"
+        actual = f" (Actual: {self.actual_position})" if self.actual_position else ""
+        return f"{self.driver} - {self.event} - Pred: {self.predicted_position}{actual}"
