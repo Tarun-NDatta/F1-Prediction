@@ -1,6 +1,9 @@
 from django.db import models
 from pytz import timezone
 from django.utils import timezone
+import logging
+
+logger = logging.getLogger(__name__)
 
 class Circuit(models.Model):
     name = models.CharField(max_length=100)
@@ -452,3 +455,424 @@ class xgboostprediction(models.Model):
     def __str__(self):
         actual = f" (Actual: {self.actual_position})" if self.actual_position else ""
         return f"{self.driver} - {self.event} - Pred: {self.predicted_position}{actual}"
+    
+
+
+# Add these classes to your existing models.py file
+
+class TrackSpecialization(models.Model):
+    """Track categorization for specialized predictions"""
+    
+    TRACK_CATEGORIES = [
+        ('POWER', 'Power Circuits'),
+        ('TECHNICAL', 'Technical Circuits'),
+        ('STREET', 'Street Circuits'),
+        ('HYBRID', 'Hybrid Circuits'),
+        ('HIGH_SPEED', 'High Speed Circuits'),
+    ]
+    
+    circuit = models.OneToOneField(Circuit, on_delete=models.CASCADE)
+    category = models.CharField(max_length=20, choices=TRACK_CATEGORIES)
+    
+    overtaking_difficulty = models.FloatField(
+        default=5.0,
+        help_text="Scale 1-10, where 10 is very difficult to overtake"
+    )
+    tire_degradation_rate = models.FloatField(
+        default=5.0,
+        help_text="Scale 1-10, where 10 is very high degradation"
+    )
+    qualifying_importance = models.FloatField(
+        default=5.0,
+        help_text="Scale 1-10, where 10 means qualifying position is crucial"
+    )
+    power_sensitivity = models.FloatField(
+        default=5.0,
+        help_text="Scale 1-10, where 10 means engine power is very important"
+    )
+    aero_sensitivity = models.FloatField(
+        default=5.0,
+        help_text="Scale 1-10, where 10 means aerodynamics are crucial"
+    )
+    weather_impact = models.FloatField(
+        default=5.0,
+        help_text="Scale 1-10, where 10 means weather greatly affects results"
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Track Specialization"
+        verbose_name_plural = "Track Specializations"
+    
+    def __str__(self):
+        return f"{self.circuit.name} - {self.get_category_display()}"
+    
+    @classmethod
+    def initialize_track_data(cls):
+        """Initialize track specializations with realistic F1 circuit data"""
+        track_data = {
+            'Monza': {
+                'search_terms': ['Monza', 'Italian', 'Italy'],
+                'category': 'POWER',
+                'overtaking_difficulty': 3.0,
+                'tire_degradation_rate': 4.0,
+                'qualifying_importance': 7.0,
+                'power_sensitivity': 9.0,
+                'aero_sensitivity': 3.0,
+                'weather_impact': 6.0
+            },
+            'Spa-Francorchamps': {
+                'search_terms': ['Spa', 'Belgian', 'Belgium', 'Francorchamps'],
+                'category': 'POWER',
+                'overtaking_difficulty': 4.0,
+                'tire_degradation_rate': 6.0,
+                'qualifying_importance': 6.0,
+                'power_sensitivity': 8.0,
+                'aero_sensitivity': 6.0,
+                'weather_impact': 9.0
+            },
+            'Silverstone': {
+                'search_terms': ['Silverstone', 'British', 'Britain', 'UK', 'Great Britain'],
+                'category': 'HIGH_SPEED',
+                'overtaking_difficulty': 4.0,
+                'tire_degradation_rate': 8.0,
+                'qualifying_importance': 6.0,
+                'power_sensitivity': 7.0,
+                'aero_sensitivity': 8.0,
+                'weather_impact': 8.0
+            },
+            'Monaco': {
+                'search_terms': ['Monaco', 'Monte Carlo', 'Monte-Carlo'],
+                'category': 'TECHNICAL',
+                'overtaking_difficulty': 10.0,
+                'tire_degradation_rate': 2.0,
+                'qualifying_importance': 10.0,
+                'power_sensitivity': 2.0,
+                'aero_sensitivity': 6.0,
+                'weather_impact': 9.0
+            },
+            'Hungary': {
+                'search_terms': ['Hungary', 'Hungarian', 'Hungaroring', 'Budapest'],
+                'category': 'TECHNICAL',
+                'overtaking_difficulty': 8.0,
+                'tire_degradation_rate': 6.0,
+                'qualifying_importance': 8.0,
+                'power_sensitivity': 4.0,
+                'aero_sensitivity': 7.0,
+                'weather_impact': 7.0
+            },
+            'Singapore': {
+                'search_terms': ['Singapore', 'Marina Bay'],
+                'category': 'STREET',
+                'overtaking_difficulty': 8.0,
+                'tire_degradation_rate': 5.0,
+                'qualifying_importance': 8.0,
+                'power_sensitivity': 4.0,
+                'aero_sensitivity': 6.0,
+                'weather_impact': 8.0
+            },
+            'Baku': {
+                'search_terms': ['Baku', 'Azerbaijan', 'Azerbaijan Grand Prix'],
+                'category': 'STREET',
+                'overtaking_difficulty': 4.0,
+                'tire_degradation_rate': 5.0,
+                'qualifying_importance': 7.0,
+                'power_sensitivity': 8.0,
+                'aero_sensitivity': 5.0,
+                'weather_impact': 6.0
+            },
+            'Jeddah': {
+                'search_terms': ['Jeddah', 'Saudi', 'Saudi Arabia', 'Arabian'],
+                'category': 'STREET',
+                'overtaking_difficulty': 5.0,
+                'tire_degradation_rate': 6.0,
+                'qualifying_importance': 7.0,
+                'power_sensitivity': 7.0,
+                'aero_sensitivity': 7.0,
+                'weather_impact': 4.0
+            },
+            'Suzuka': {
+                'search_terms': ['Suzuka', 'Japanese', 'Japan'],
+                'category': 'HIGH_SPEED',
+                'overtaking_difficulty': 6.0,
+                'tire_degradation_rate': 7.0,
+                'qualifying_importance': 7.0,
+                'power_sensitivity': 6.0,
+                'aero_sensitivity': 9.0,
+                'weather_impact': 8.0
+            },
+            'Interlagos': {
+                'search_terms': ['Interlagos', 'Brazilian', 'Brazil', 'São Paulo', 'Sao Paulo'],
+                'category': 'HIGH_SPEED',
+                'overtaking_difficulty': 5.0,
+                'tire_degradation_rate': 6.0,
+                'qualifying_importance': 6.0,
+                'power_sensitivity': 6.0,
+                'aero_sensitivity': 7.0,
+                'weather_impact': 9.0
+            },
+            'Bahrain': {
+                'search_terms': ['Bahrain', 'Sakhir'],
+                'category': 'HYBRID',
+                'overtaking_difficulty': 4.0,
+                'tire_degradation_rate': 7.0,
+                'qualifying_importance': 6.0,
+                'power_sensitivity': 6.0,
+                'aero_sensitivity': 6.0,
+                'weather_impact': 3.0
+            },
+            'Barcelona': {
+                'search_terms': ['Barcelona', 'Spanish', 'Spain', 'Catalunya', 'Catalonia'],
+                'category': 'HYBRID',
+                'overtaking_difficulty': 7.0,
+                'tire_degradation_rate': 8.0,
+                'qualifying_importance': 7.0,
+                'power_sensitivity': 5.0,
+                'aero_sensitivity': 8.0,
+                'weather_impact': 5.0
+            },
+            'Austria': {
+                'search_terms': ['Austria', 'Austrian', 'Red Bull Ring', 'Spielberg'],
+                'category': 'POWER',
+                'overtaking_difficulty': 3.0,
+                'tire_degradation_rate': 6.0,
+                'qualifying_importance': 5.0,
+                'power_sensitivity': 8.0,
+                'aero_sensitivity': 6.0,
+                'weather_impact': 7.0
+            },
+            'Imola': {
+                'search_terms': ['Imola', 'Enzo', 'Ferrari', 'San Marino', 'Emilia'],
+                'category': 'TECHNICAL',
+                'overtaking_difficulty': 8.0,
+                'tire_degradation_rate': 5.0,
+                'qualifying_importance': 8.0,
+                'power_sensitivity': 4.0,
+                'aero_sensitivity': 7.0,
+                'weather_impact': 6.0
+            },
+            'Miami': {
+                'search_terms': ['Miami', 'Florida', 'United States'],
+                'category': 'STREET',
+                'overtaking_difficulty': 6.0,
+                'tire_degradation_rate': 7.0,
+                'qualifying_importance': 7.0,
+                'power_sensitivity': 6.0,
+                'aero_sensitivity': 6.0,
+                'weather_impact': 7.0
+            },
+            'Canada': {
+                'search_terms': ['Canada', 'Canadian', 'Montreal', 'Gilles Villeneuve', 'Notre Dame'],
+                'category': 'POWER',
+                'overtaking_difficulty': 4.0,
+                'tire_degradation_rate': 5.0,
+                'qualifying_importance': 6.0,
+                'power_sensitivity': 8.0,
+                'aero_sensitivity': 5.0,
+                'weather_impact': 7.0
+            },
+            'France': {
+                'search_terms': ['France', 'French', 'Paul Ricard', 'Le Castellet'],
+                'category': 'HYBRID',
+                'overtaking_difficulty': 5.0,
+                'tire_degradation_rate': 8.0,
+                'qualifying_importance': 6.0,
+                'power_sensitivity': 6.0,
+                'aero_sensitivity': 6.0,
+                'weather_impact': 5.0
+            },
+            'Netherlands': {
+                'search_terms': ['Netherlands', 'Dutch', 'Zandvoort'],
+                'category': 'HIGH_SPEED',
+                'overtaking_difficulty': 6.0,
+                'tire_degradation_rate': 6.0,
+                'qualifying_importance': 7.0,
+                'power_sensitivity': 6.0,
+                'aero_sensitivity': 8.0,
+                'weather_impact': 8.0
+            },
+            'Mexico': {
+                'search_terms': ['Mexico', 'Mexican', 'Rodriguez', 'Mexico City'],
+                'category': 'HYBRID',
+                'overtaking_difficulty': 4.0,
+                'tire_degradation_rate': 6.0,
+                'qualifying_importance': 6.0,
+                'power_sensitivity': 7.0,
+                'aero_sensitivity': 7.0,
+                'weather_impact': 5.0
+            },
+            'Las Vegas': {
+                'search_terms': ['Las Vegas', 'Vegas', 'Nevada'],
+                'category': 'POWER',
+                'overtaking_difficulty': 4.0,
+                'tire_degradation_rate': 4.0,
+                'qualifying_importance': 6.0,
+                'power_sensitivity': 9.0,
+                'aero_sensitivity': 4.0,
+                'weather_impact': 3.0
+            },
+            'Qatar': {
+                'search_terms': ['Qatar', 'Losail', 'Doha'],
+                'category': 'HYBRID',
+                'overtaking_difficulty': 5.0,
+                'tire_degradation_rate': 7.0,
+                'qualifying_importance': 6.0,
+                'power_sensitivity': 6.0,
+                'aero_sensitivity': 7.0,
+                'weather_impact': 4.0
+            },
+            'Abu Dhabi': {
+                'search_terms': ['Abu Dhabi', 'UAE', 'Emirates', 'Yas Marina', 'United Arab Emirates'],
+                'category': 'HYBRID',
+                'overtaking_difficulty': 6.0,
+                'tire_degradation_rate': 5.0,
+                'qualifying_importance': 7.0,
+                'power_sensitivity': 6.0,
+                'aero_sensitivity': 6.0,
+                'weather_impact': 3.0
+            }
+        }
+        
+        def find_circuit(search_terms):
+            """Find circuit using multiple search strategies"""
+            for term in search_terms:
+                circuit = Circuit.objects.filter(name__icontains=term).first()
+                if circuit:
+                    logger.info(f"Found circuit for {term}: {circuit.name}")
+                    return circuit
+                circuit = Circuit.objects.filter(location__icontains=term).first()
+                if circuit:
+                    logger.info(f"Found circuit for {term}: {circuit.name}")
+                    return circuit
+                circuit = Circuit.objects.filter(country__icontains=term).first()
+                if circuit:
+                    logger.info(f"Found circuit for {term}: {circuit.name}")
+                    return circuit
+            logger.warning(f"No circuit found for search terms: {search_terms}")
+            return None
+        
+        created_count = 0
+        updated_count = 0
+        not_found = []
+        
+        for circuit_name, config in track_data.items():
+            try:
+                circuit = find_circuit(config['search_terms'])
+                
+                if not circuit:
+                    not_found.append(f"{circuit_name} (searched: {config['search_terms']})")
+                    continue
+                
+                data = {k: v for k, v in config.items() if k != 'search_terms'}
+                
+                specialization, created = cls.objects.get_or_create(
+                    circuit=circuit,
+                    defaults=data
+                )
+                
+                if created:
+                    created_count += 1
+                    logger.info(f"Created track specialization for {circuit_name} -> {circuit.name}")
+                else:
+                    for key, value in data.items():
+                        setattr(specialization, key, value)
+                    specialization.save()
+                    updated_count += 1
+                    logger.info(f"Updated track specialization for {circuit_name} -> {circuit.name}")
+                    
+            except Exception as e:
+                logger.error(f"Error processing {circuit_name}: {str(e)}", exc_info=True)
+        
+        if not_found:
+            logger.warning(f"Could not find circuits for: {not_found}")
+        
+        logger.info(f"Track specialization initialization complete: {created_count} created, {updated_count} updated")
+        return created_count, updated_count
+
+
+class DriverSpecialization(models.Model):
+    """Driver specialization characteristics"""
+    
+    SPECIALIZATION_TYPES = [
+        ('OVERTAKING', 'Overtaking Specialist'),
+        ('QUALIFYING', 'Qualifying Specialist'), 
+        ('CONSISTENCY', 'Consistency Specialist'),
+        ('WET_WEATHER', 'Wet Weather Specialist'),
+        ('TIRE_MANAGEMENT', 'Tire Management Specialist'),
+        ('TECHNICAL', 'Technical Circuit Specialist'),
+        ('POWER', 'Power Circuit Specialist'),
+    ]
+    
+    driver = models.ForeignKey(Driver, on_delete=models.CASCADE)
+    specialization_type = models.CharField(max_length=20, choices=SPECIALIZATION_TYPES)
+    strength_score = models.FloatField(
+        help_text="Strength in this specialization (1-10 scale)"
+    )
+    
+    # Track type performance modifiers
+    power_circuit_modifier = models.FloatField(default=1.0)
+    technical_circuit_modifier = models.FloatField(default=1.0)
+    street_circuit_modifier = models.FloatField(default=1.0)
+    wet_weather_modifier = models.FloatField(default=1.0)
+    
+    year = models.IntegerField(help_text="Year this specialization applies to")
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ('driver', 'specialization_type', 'year')
+        indexes = [
+            models.Index(fields=['driver', 'year']),
+        ]
+    
+    def __str__(self):
+        return f"{self.driver} - {self.get_specialization_type_display()} ({self.year})"
+
+
+# Enhanced prediction model for the new pipeline
+class CatBoostPrediction(models.Model):
+    """CatBoost predictions with track specialization"""
+    driver = models.ForeignKey(Driver, on_delete=models.CASCADE)
+    event = models.ForeignKey(Event, on_delete=models.CASCADE)
+    
+    year = models.IntegerField()
+    round_number = models.IntegerField()
+    
+    # Base model predictions (inputs to CatBoost)
+    ridge_prediction = models.FloatField(null=True, blank=True)
+    xgboost_prediction = models.FloatField(null=True, blank=True)
+    ensemble_prediction = models.FloatField(null=True, blank=True)
+    
+    # Track specialization features
+    track_category = models.CharField(max_length=20, null=True, blank=True)
+    track_power_sensitivity = models.FloatField(null=True, blank=True)
+    track_overtaking_difficulty = models.FloatField(null=True, blank=True)
+    track_qualifying_importance = models.FloatField(null=True, blank=True)
+    
+    # Final CatBoost prediction
+    predicted_position = models.FloatField()
+    prediction_confidence = models.FloatField(null=True, blank=True)
+    
+    # Actual results for comparison
+    actual_position = models.IntegerField(null=True, blank=True)
+    
+    # OpenF1 integration flags
+    used_live_data = models.BooleanField(default=False)
+    weather_condition = models.CharField(max_length=20, null=True, blank=True)
+    tire_strategy_available = models.BooleanField(default=False)
+    
+    model_name = models.CharField(max_length=100, default='catboost_ensemble')
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ('driver', 'event', 'model_name')
+        indexes = [
+            models.Index(fields=['year', 'round_number']),
+            models.Index(fields=['event', 'track_category']),
+        ]
+        ordering = ['predicted_position']
+    
+    def __str__(self):
+        actual = f" (Actual: {self.actual_position})" if self.actual_position else ""
+        return f"CatBoost | {self.driver} | {self.event} → {self.predicted_position:.2f}{actual}"
