@@ -1,7 +1,11 @@
 # prediction/management/commands/check_sessions.py
 from django.core.management.base import BaseCommand
 from data.models import Session, SessionType, RaceResult
-
+from prediction.management.commands.enhanced_pipeline import EnhancedF1Pipeline
+import os
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'development')
+import django
+django.setup()
 class Command(BaseCommand):
     help = 'Check session data'
 
@@ -17,7 +21,8 @@ class Command(BaseCommand):
         for st in SessionType.objects.all():
             count = Session.objects.filter(session_type=st).count()
             self.stdout.write(f"{st.session_type}: {count} sessions")
-
+        pipeline = EnhancedF1Pipeline()
+        print("Track Features for Circuit 3:", pipeline.get_track_specialization_features(3))
         # Check race results
         self.stdout.write("\n=== Race Results ===")
         self.stdout.write(f"Total RaceResult records: {RaceResult.objects.count()}")
@@ -29,3 +34,8 @@ class Command(BaseCommand):
         if race_sessions.exists():
             race_results = RaceResult.objects.filter(session__in=race_sessions, position__isnull=False)
             self.stdout.write(f"RaceResults in Race sessions with position: {race_results.count()}")
+        
+        df = pipeline.prepare_catboost_training_data()
+        print("Training Features:", df.columns.tolist())
+        print("Category Counts:", df['category'].value_counts())
+

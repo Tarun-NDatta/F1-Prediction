@@ -509,6 +509,8 @@ class TrackSpecialization(models.Model):
     def __str__(self):
         return f"{self.circuit.name} - {self.get_category_display()}"
     
+
+    # [Previous models.py content up to initialize_track_data]
     @classmethod
     def initialize_track_data(cls):
         """Initialize track specializations with realistic F1 circuit data"""
@@ -732,8 +734,40 @@ class TrackSpecialization(models.Model):
                 'power_sensitivity': 6.0,
                 'aero_sensitivity': 6.0,
                 'weather_impact': 3.0
+            },
+            'Melbourne': {
+                'search_terms': ['Melbourne', 'Australian', 'Australia', 'Albert Park'],
+                'category': 'HIGH_SPEED',
+                'overtaking_difficulty': 5.5,
+                'tire_degradation_rate': 7.0,
+                'qualifying_importance': 6.5,
+                'power_sensitivity': 7.5,
+                'aero_sensitivity': 6.5,
+                'weather_impact': 4.0
+            },
+            'Austin': {
+                'search_terms': ['Austin', 'United States', 'COTA', 'Circuit of the Americas'],
+                'category': 'TECHNICAL',
+                'overtaking_difficulty': 6.0,
+                'tire_degradation_rate': 6.0,
+                'qualifying_importance': 7.0,
+                'power_sensitivity': 6.5,
+                'aero_sensitivity': 7.5,
+                'weather_impact': 5.5
+            },
+            'Shanghai': {
+                'search_terms': ['Shanghai', 'Chinese', 'China'],
+                'category': 'TECHNICAL',
+                'overtaking_difficulty': 5.5,
+                'tire_degradation_rate': 7.0,
+                'qualifying_importance': 6.5,
+                'power_sensitivity': 6.5,
+                'aero_sensitivity': 6.5,
+                'weather_impact': 4.5
             }
         }
+        # [Rest of initialize_track_data implementation unchanged]
+# [Rest of models.py unchanged]
         
         def find_circuit(search_terms):
             """Find circuit using multiple search strategies"""

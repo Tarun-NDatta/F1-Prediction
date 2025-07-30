@@ -4,6 +4,8 @@ from data.models import Event, TrackSpecialization
 from .enhanced_pipeline import EnhancedF1Pipeline
 import traceback
 import logging
+import pandas as pd
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -12,10 +14,10 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('--mode', type=str, required=True,
-                        choices=['initialize', 'train', 'predict', 'evaluate', 'analyze', 'generate'],
-                        help='Mode of operation')
+                            choices=['initialize', 'train', 'predict', 'evaluate', 'analyze', 'generate'],
+                            help='Mode of operation')
         parser.add_argument('--year', type=int,
-                            help='Year for prediction or evaluation')
+                            help='Year for prediction or generation')
         parser.add_argument('--round', type=int,
                             help='Round number for prediction or evaluation')
         parser.add_argument('--model-dir', type=str,
@@ -25,7 +27,8 @@ class Command(BaseCommand):
                             help='Use OpenF1 live data for predictions (future feature)')
         parser.add_argument('--save-model', action='store_true',
                             help='Save trained CatBoost model')
-        
+        parser.add_argument('--compare', action='store_true',
+                            help='Compare predictions with actual results when making predictions')
 
     def handle(self, *args, **options):
         try:
@@ -39,7 +42,13 @@ class Command(BaseCommand):
                 if not options['year'] or not options['round']:
                     self.stdout.write(self.style.ERROR("Year and round required for prediction"))
                     return
-                self.make_predictions(pipeline, options['year'], options['round'], options['use_openf1'])
+                self.make_predictions(
+                    pipeline, 
+                    options['year'], 
+                    options['round'], 
+                    options['use_openf1'],
+                    options.get('compare', False)
+                )
             elif options['mode'] == 'evaluate':
                 if not options['year'] or not options['round']:
                     self.stdout.write(self.style.ERROR("Year and round required for evaluation"))
@@ -48,21 +57,25 @@ class Command(BaseCommand):
             elif options['mode'] == 'analyze':
                 self.analyze_track_performance(pipeline)
             elif options['mode'] == 'generate':
-                self.generate_base_predictions(pipeline)
-
+                if not options['year']:
+                    self.stdout.write(self.style.ERROR("Year required for generation"))
+                    return
+                self.generate_base_predictions(pipeline, options['year'])
         except Exception as e:
             self.stdout.write(self.style.ERROR(f"Error: {str(e)}"))
             logger.error(f"Command error: {str(e)}", exc_info=True)
             traceback.print_exc()
-    def generate_base_predictions(self, pipeline):
-        """Generate base model predictions for historical races"""
-        self.stdout.write("Generating base model predictions for 2022-2024...")
+
+    def generate_base_predictions(self, pipeline, year):
+        """Generate base model predictions for a specific year"""
+        self.stdout.write(f"Generating base model predictions for {year}...")
         try:
-            saved_count = pipeline.generate_base_predictions(start_year=2024, end_year=2024)  # Start with 2024
-            self.stdout.write(self.style.SUCCESS(f"Generated {saved_count} predictions"))
+            saved_count = pipeline.generate_base_predictions(start_year=year, end_year=year)
+            self.stdout.write(self.style.SUCCESS(f"Generated and saved {saved_count} predictions for {year}"))
         except Exception as e:
             self.stdout.write(self.style.ERROR(f"Error generating predictions: {str(e)}"))
             logger.error(f"Generate predictions error: {str(e)}", exc_info=True)
+            raise
     
     def initialize_track_data(self):
         """Initialize track specialization data"""
@@ -118,7 +131,7 @@ class Command(BaseCommand):
             logger.error(f"Training error: {str(e)}", exc_info=True)
             raise
 
-    def make_predictions(self, pipeline, year, round_num, use_openf1=False):
+    def make_predictions(self, pipeline, year, round_num, use_openf1=False, compare=False):
         """Make predictions for a specific race"""
         try:
             event = Event.objects.get(year=year, round=round_num)
@@ -135,8 +148,11 @@ class Command(BaseCommand):
             # Make predictions
             predictions_df = pipeline.predict_race(year, round_num, use_openf1)
             
-            # Display predictions
-            self.display_predictions(predictions_df, event)
+            # Display predictions (with or without comparison)
+            if compare:
+                self.display_predictions_with_comparison(predictions_df, event)
+            else:
+                self.display_predictions(predictions_df, event)
             
             # Save to database
             saved_count = pipeline.save_predictions_to_db(predictions_df, event, use_openf1)
@@ -177,6 +193,168 @@ class Command(BaseCommand):
         self.stdout.write(f"Power Sensitivity: {predictions_df.iloc[0]['track_power_sensitivity']:.1f}/10")
         self.stdout.write(f"Overtaking Difficulty: {predictions_df.iloc[0]['track_overtaking_difficulty']:.1f}/10")
         self.stdout.write(f"Qualifying Importance: {predictions_df.iloc[0]['track_qualifying_importance']:.1f}/10")
+
+    def display_predictions_with_comparison(self, predictions_df, event):
+        """Display race predictions with actual results comparison"""
+        from data.models import RaceResult
+        
+        self.stdout.write(f"\n=== CatBoost Predictions vs Actual Results for {event.name} ===")
+        self.stdout.write(f"Track Category: {predictions_df.iloc[0]['track_category']}")
+        self.stdout.write("")
+        
+        # Get actual race results
+        race_results = RaceResult.objects.filter(
+            session__event=event,
+            position__isnull=False
+        ).select_related('driver').order_by('position')
+        
+        if not race_results.exists():
+            self.stdout.write(self.style.WARNING("No actual race results available - showing predictions only"))
+            self.display_predictions(predictions_df, event)
+            return
+        
+        # Create actual results mapping
+        actual_results = {}
+        for result in race_results:
+            driver_name = f"{result.driver.given_name} {result.driver.family_name}"
+            actual_results[driver_name] = result.position
+        
+        # Add actual results to predictions dataframe
+        predictions_df['actual_position'] = predictions_df['driver'].map(actual_results)
+        predictions_df['position_difference'] = predictions_df['final_predicted_position'] - predictions_df['actual_position']
+        
+        # Header with actual results
+        self.stdout.write(f"{'Pos':<4} {'Driver':<20} {'CatBoost':<9} {'Ensemble':<9} {'Ridge':<8} {'XGBoost':<8} {'Qual':<5} {'Actual':<6} {'Diff':<6}")
+        self.stdout.write("-" * 80)
+        
+        # Sort by actual position for better comparison (handle NaN values)
+        display_df = predictions_df.sort_values('actual_position', na_position='last')
+        
+        # Predictions with comparison
+        for _, row in display_df.iterrows():
+            actual_pos = int(row['actual_position']) if pd.notna(row['actual_position']) else 'N/A'
+            diff = f"{row['position_difference']:+.0f}" if pd.notna(row['position_difference']) else 'N/A'
+            
+            # Color code the difference
+            if pd.notna(row['position_difference']):
+                if abs(row['position_difference']) <= 2:
+                    diff_colored = self.style.SUCCESS(diff)
+                elif abs(row['position_difference']) <= 5:
+                    diff_colored = self.style.WARNING(diff)
+                else:
+                    diff_colored = self.style.ERROR(diff)
+            else:
+                diff_colored = diff
+            
+            self.stdout.write(
+                f"{int(row['final_predicted_position']):<4} "
+                f"{row['driver']:<20} "
+                f"{row['catboost_prediction']:<9.2f} "
+                f"{row['ensemble_prediction']:<9.2f} "
+                f"{row['ridge_prediction']:<8.2f} "
+                f"{row['xgboost_prediction']:<8.2f} "
+                f"{int(row['qualifying_position']):<5} "
+                f"{actual_pos:<6} "
+                f"{diff_colored}"
+            )
+        
+        # Track characteristics
+        self.stdout.write(f"\n=== Track Characteristics ===")
+        self.stdout.write(f"Power Sensitivity: {predictions_df.iloc[0]['track_power_sensitivity']:.1f}/10")
+        self.stdout.write(f"Overtaking Difficulty: {predictions_df.iloc[0]['track_overtaking_difficulty']:.1f}/10")
+        self.stdout.write(f"Qualifying Importance: {predictions_df.iloc[0]['track_qualifying_importance']:.1f}/10")
+        
+        # Calculate and display comparison metrics
+        self.display_comparison_metrics(predictions_df)
+        
+        # Update database with actual results
+        self.update_predictions_with_actual_results(predictions_df, event)
+
+    def display_comparison_metrics(self, predictions_df):
+        """Display comparison metrics between predictions and actual results"""
+        # Filter out rows without actual results
+        comparison_df = predictions_df.dropna(subset=['actual_position'])
+        
+        if len(comparison_df) == 0:
+            return
+        
+        from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+        from scipy.stats import spearmanr
+        
+        y_true = comparison_df['actual_position']
+        catboost_pred = comparison_df['final_predicted_position']
+        ensemble_pred = comparison_df['ensemble_prediction']
+        
+        # Calculate metrics
+        catboost_mae = mean_absolute_error(y_true, catboost_pred)
+        catboost_rmse = np.sqrt(mean_squared_error(y_true, catboost_pred))
+        catboost_r2 = r2_score(y_true, catboost_pred)
+        catboost_spearman = spearmanr(y_true, catboost_pred)[0]
+        
+        ensemble_mae = mean_absolute_error(y_true, ensemble_pred)
+        ensemble_rmse = np.sqrt(mean_squared_error(y_true, ensemble_pred))
+        ensemble_r2 = r2_score(y_true, ensemble_pred)
+        ensemble_spearman = spearmanr(y_true, ensemble_pred)[0]
+        
+        self.stdout.write(f"\n=== Performance Metrics ({len(comparison_df)} drivers) ===")
+        self.stdout.write(f"{'Metric':<20} {'CatBoost':<10} {'Ensemble':<10} {'Improvement':<12}")
+        self.stdout.write("-" * 55)
+        self.stdout.write(f"{'MAE':<20} {catboost_mae:<10.3f} {ensemble_mae:<10.3f} {ensemble_mae - catboost_mae:+12.3f}")
+        self.stdout.write(f"{'RMSE':<20} {catboost_rmse:<10.3f} {ensemble_rmse:<10.3f} {ensemble_rmse - catboost_rmse:+12.3f}")
+        self.stdout.write(f"{'R²':<20} {catboost_r2:<10.3f} {ensemble_r2:<10.3f} {catboost_r2 - ensemble_r2:+12.3f}")
+        self.stdout.write(f"{'Spearman':<20} {catboost_spearman:<10.3f} {ensemble_spearman:<10.3f} {catboost_spearman - ensemble_spearman:+12.3f}")
+        
+        # Top-N accuracy
+        for n in [3, 5, 10]:
+            if len(comparison_df) >= n:
+                top_n_actual = set(y_true.nsmallest(n).index)
+                top_n_catboost = set(catboost_pred.nsmallest(n).index)
+                top_n_ensemble = set(ensemble_pred.nsmallest(n).index)
+                
+                catboost_accuracy = len(top_n_actual & top_n_catboost) / n
+                ensemble_accuracy = len(top_n_actual & top_n_ensemble) / n
+                
+                self.stdout.write(f"{'Top-' + str(n) + ' Accuracy':<20} {catboost_accuracy:<10.1%} {ensemble_accuracy:<10.1%} {catboost_accuracy - ensemble_accuracy:+12.1%}")
+        
+        # Determine which model performed better
+        if catboost_mae < ensemble_mae:
+            self.stdout.write(self.style.SUCCESS(f"\nCatBoost outperformed ensemble by {ensemble_mae - catboost_mae:.3f} MAE"))
+        else:
+            self.stdout.write(self.style.WARNING(f"\nEnsemble outperformed CatBoost by {catboost_mae - ensemble_mae:.3f} MAE"))
+
+    def update_predictions_with_actual_results(self, predictions_df, event):
+        """Update CatBoostPrediction records with actual results"""
+        from data.models import CatBoostPrediction, Driver
+        
+        updated_count = 0
+        for _, row in predictions_df.iterrows():
+            if pd.isna(row['actual_position']):
+                continue
+                
+            # Find the driver
+            given_name, *family_parts = row['driver'].split()
+            family_name = ' '.join(family_parts) if family_parts else given_name
+            
+            try:
+                driver = Driver.objects.get(given_name=given_name, family_name=family_name)
+                
+                # Update the CatBoostPrediction record
+                CatBoostPrediction.objects.filter(
+                    event=event,
+                    driver=driver
+                ).update(actual_position=int(row['actual_position']))
+                
+                updated_count += 1
+                
+            except Driver.DoesNotExist:
+                self.stdout.write(self.style.WARNING(f"Driver {row['driver']} not found in database"))
+                continue
+            except Exception as e:
+                self.stdout.write(self.style.ERROR(f"Error updating {row['driver']}: {str(e)}"))
+                continue
+        
+        if updated_count > 0:
+            self.stdout.write(self.style.SUCCESS(f"Updated {updated_count} predictions with actual results"))
 
     def evaluate_predictions(self, pipeline, year, round_num):
         """Evaluate predictions against actual results"""

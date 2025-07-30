@@ -28,22 +28,16 @@ class EnhancedF1Pipeline:
     def __init__(self, model_dir=None, random_state=42):
         self.random_state = random_state
         self.model_dir = model_dir or r"C:\Users\tarun\diss\td188"
-        
-        # Store loaded models
         self.ridge_model = None
         self.xgboost_model = None
         self.catboost_model = None
         self.preprocessor = None
-        
-        # Feature names
         self.base_features = None
         self.track_features = [
-            'track_category', 'overtaking_difficulty', 'tire_degradation_rate',
+            'category', 'overtaking_difficulty', 'tire_degradation_rate',
             'qualifying_importance', 'power_sensitivity', 'aero_sensitivity',
             'weather_impact'
         ]
-        
-        # OpenF1 integration features (to be implemented)
         self.openf1_features = [
             'live_weather_condition', 'current_tire_strategy', 
             'safety_car_probability', 'track_temperature', 'air_temperature'
@@ -75,23 +69,30 @@ class EnhancedF1Pipeline:
                 logger.warning(f"No track specialization found for circuit {circuit_id}")
                 return self._get_default_track_features()
             
+            # Ensure category is always a string
+            category_value = track_spec.category
+            if pd.isna(category_value) or category_value is None:
+                category_str = 'HYBRID'
+            else:
+                category_str = str(category_value)
+            
             return {
-                'track_category': track_spec.category,
-                'overtaking_difficulty': track_spec.overtaking_difficulty,
-                'tire_degradation_rate': track_spec.tire_degradation_rate,
-                'qualifying_importance': track_spec.qualifying_importance,
-                'power_sensitivity': track_spec.power_sensitivity,
-                'aero_sensitivity': track_spec.aero_sensitivity,
-                'weather_impact': track_spec.weather_impact,
+                'category': category_str,  # Always return as string
+                'overtaking_difficulty': float(track_spec.overtaking_difficulty or 5.0),
+                'tire_degradation_rate': float(track_spec.tire_degradation_rate or 5.0),
+                'qualifying_importance': float(track_spec.qualifying_importance or 5.0),
+                'power_sensitivity': float(track_spec.power_sensitivity or 5.0),
+                'aero_sensitivity': float(track_spec.aero_sensitivity or 5.0),
+                'weather_impact': float(track_spec.weather_impact or 5.0),
             }
         except Exception as e:
             logger.error(f"Error getting track features: {str(e)}", exc_info=True)
             return self._get_default_track_features()
-    
+
     def _get_default_track_features(self):
         """Default track features when specialization data is missing"""
         return {
-            'track_category': 'HYBRID',
+            'category': 'HYBRID',  # Always return as string
             'overtaking_difficulty': 5.0,
             'tire_degradation_rate': 5.0,
             'qualifying_importance': 5.0,
@@ -151,91 +152,49 @@ class EnhancedF1Pipeline:
             logger.error(f"Error getting team features: {str(e)}")
             return self._get_default_team_features()
     
+    def _get_default_driver_features(self):
+        """Default driver features when data is missing"""
+        return {
+            'driver_moving_avg_5': 10.0,
+            'driver_position_variance': 5.0,
+            'driver_qualifying_avg': 10.0,
+            'driver_circuit_affinity': 10.0,
+            'driver_quali_improvement': 0.0,
+            'driver_teammate_battle': 0.0,
+            'driver_wet_weather_perf': 0.0,
+            'driver_rivalry_performance': 0.0,
+            'driver_quali_race_delta': 0.0,
+            'driver_position_momentum': 0.0,
+            'driver_dnf_rate': 0.0,
+            'driver_pit_stop_avg': 2.5,
+            'driver_points_per_race': 0.0
+        }
+
     def _get_default_team_features(self):
         """Default team features when data is missing"""
         return {
             'dnf_rate_team': 0.0,
-            'pit_stop_avg_team': 0.0,
+            'pit_stop_avg_team': 2.5,
             'reliability_score_team': 0.5,
-            'development_slope_team': None,  # Will be imputed
-            'pit_stop_std_team': None,
-            'moving_avg_5_team': None,
-            'position_variance_team': None,
-            'qualifying_avg_team': None
+            'development_slope_team': 0.0,
+            'pit_stop_std_team': 0.5,
+            'moving_avg_5_team': 10.0,
+            'position_variance_team': 5.0,
+            'qualifying_avg_team': 10.0
         }
-    
-    def create_lag_features(self, df):
-        """Create lag features for previous race positions per driver"""
-        try:
-            df = df.copy()
-            df.sort_values(['driver_id', 'year', 'round_number'], inplace=True)
-            
-            df['position_last_race'] = df.groupby('driver_id')['position'].shift(1)
-            df['position_2races_ago'] = df.groupby('driver_id')['position'].shift(2)
-            df['position_3races_ago'] = df.groupby('driver_id')['position'].shift(3)
-            
-            df['position_last_race'] = df['position_last_race'].fillna(20)
-            df['position_2races_ago'] = df['position_2races_ago'].fillna(20)
-            df['position_3races_ago'] = df['position_3races_ago'].fillna(20)
-            
-            return df
-        
-        except Exception as e:
-            logger.error(f"Error creating lag features: {str(e)}")
-            raise
-    
-    def create_enhanced_features(self, df):
-        """Create enhanced features matching F1DataPipeline"""
-        try:
-            df = df.copy()
-            
-            # Weighted form
-            for col in ['position_last_race', 'position_2races_ago', 'position_3races_ago']:
-                if col not in df.columns:
-                    df[col].fillna = 20
-                    logger.warning(f"Missing lag feature {col}, filling with 20")
-                    df[col].values = 20
-            
-            df['weighted_form'] = (
-                0.5 * df['position_last_race'] +
-                0.3 * df['position_2races_ago'] +
-                0.2 * df['position_3races_ago']
-            )
-            
-            # Circuit affinity
-            if {'driver_id', 'circuit_id', 'position'}.issubset(df.columns):
-                df['circuit_affinity'] = df.groupby(['driver_id', 'circuit_id'])['position'].transform(
-                    lambda x: x.rolling(window=3, min_periods=1).mean()
-                )
-                df['circuit_affinity'] = df['circuit_affinity'].fillna(20)
-            else:
-                logger.warning("Missing columns for circuit_affinity, setting to 10")
-                df['circuit_affinity'] = 10
-                
-            # Tire delta (not available, as per F1DataPipeline)
-            df['tire_delta'] = 0  # F1DataPipeline sets to 0 if missing
-            
-            # Teammate gap (requires qualifying_time, not available in QualifyingResult)
-            df['teammate_gap'] = 0  # F1DataPipeline sets to 0 if missing
-            
-            return df
-        
-        except Exception as e:
-            logger.error(f"Error creating enhanced features: {str(e)}")
-            raise
-    
-    def generate_base_predictions(self, start_year=2022, end_year=2024):
+
+    def generate_base_predictions(self, start_year=2022, end_year=2025):
         """Generate Ridge and XGBoost predictions for historical races"""
         try:
             if not self.load_existing_models():
                 raise ValueError("Could not load Ridge/XGBoost models")
             
+            logger.info(f"Expected base features: {self.base_features}")
             events = Event.objects.filter(year__gte=start_year, year__lte=end_year).order_by('year', 'round')
             if not events.exists():
                 raise ValueError(f"No events found for {start_year}–{end_year}")
             
             total_saved = 0
-            # Load race results for lag features
             race_results = pd.DataFrame.from_records(
                 RaceResult.objects.filter(
                     session__event__year__gte=start_year-1,
@@ -304,11 +263,7 @@ class EnhancedF1Pipeline:
                             if feature in event_results.columns:
                                 lag_features[feature] = event_results[feature].iloc[0]
                     
-                    # Initialize feature_dict with all base_features set to None
-                    feature_dict = {feature: None for feature in self.base_features}
-                    
-                    # Update with available features
-                    feature_dict.update({
+                    feature_dict = {
                         'id': qual_result.id or 0,
                         'driver_id': driver.id,
                         'team_id': qual_result.team.id if qual_result.team else 0,
@@ -316,45 +271,49 @@ class EnhancedF1Pipeline:
                         'grid_position': qual_result.position or 20,
                         'year': event.year,
                         'round_number': event.round,
-                        **driver_features,
-                        **team_features,
+                        **self._get_default_driver_features(),
+                        **self._get_default_team_features(),
                         **track_features,
                         **lag_features
-                    })
+                    }
                     
-                    # Log missing features
-                    missing_features = [f for f in self.base_features if feature_dict[f] is None]
-                    if missing_features:
-                        logger.warning(f"Missing features for {driver_name} in {event.name}: {missing_features}")
+                    feature_dict.update(driver_features)
+                    feature_dict.update(team_features)
+                    
+                    for feature in self.base_features:
+                        if feature not in feature_dict:
+                            feature_dict[feature] = 0.0
+                    
+                    logger.debug(f"Feature dict for {driver_name}: {feature_dict}")
                     
                     feature_df = pd.DataFrame([feature_dict])[self.base_features]
                     
-                    # Impute missing values
-                    imputer = SimpleImputer(strategy='median')
+                    imputer = SimpleImputer(strategy='median', add_indicator=False)
                     feature_df_values = imputer.fit_transform(feature_df)
                     
-                    # Ensure all columns are preserved
                     if feature_df_values.shape[1] != len(self.base_features):
                         logger.error(f"Imputation dropped columns. Expected {len(self.base_features)}, got {feature_df_values.shape[1]}")
                         raise ValueError(f"Imputation reduced columns from {len(self.base_features)} to {feature_df_values.shape[1]}")
                     
                     feature_df = pd.DataFrame(feature_df_values, columns=self.base_features)
                     
-                    # Generate predictions
                     processed_features = self.preprocessor.transform(feature_df)
                     ensemble_pred = self.xgboost_model.predict(processed_features)[0]
-                    ridge_pred = ensemble_pred * 1.05  # Adjust if separate Ridge model
-                    xgb_pred = ensemble_pred * 0.95    # Adjust if separate XGBoost model
+                    ridge_pred = ensemble_pred * 1.05
+                    xgb_pred = ensemble_pred * 0.95
                     
-                    # Save to database
                     ridgeregression.objects.update_or_create(
                         driver=driver,
                         event=event,
+                        year=event.year,
+                        round_number=event.round,
                         defaults={'predicted_position': float(ridge_pred)}
                     )
                     xgboostprediction.objects.update_or_create(
                         driver=driver,
                         event=event,
+                        year=event.year,
+                        round_number=event.round,
                         defaults={'predicted_position': float(xgb_pred)}
                     )
                     
@@ -368,12 +327,67 @@ class EnhancedF1Pipeline:
             logger.error(f"Error generating base predictions: {str(e)}", exc_info=True)
             raise
     
+    def create_lag_features(self, df):
+        """Create lag features for previous race positions per driver"""
+        try:
+            df = df.copy()
+            df.sort_values(['driver_id', 'year', 'round_number'], inplace=True)
+            
+            df['position_last_race'] = df.groupby('driver_id')['position'].shift(1)
+            df['position_2races_ago'] = df.groupby('driver_id')['position'].shift(2)
+            df['position_3races_ago'] = df.groupby('driver_id')['position'].shift(3)
+            
+            df['position_last_race'] = df['position_last_race'].fillna(20)
+            df['position_2races_ago'] = df['position_2races_ago'].fillna(20)
+            df['position_3races_ago'] = df['position_3races_ago'].fillna(20)
+            
+            return df
+        
+        except Exception as e:
+            logger.error(f"Error creating lag features: {str(e)}")
+            raise
+    
+    def create_enhanced_features(self, df):
+        """Create enhanced features matching F1DataPipeline"""
+        try:
+            df = df.copy()
+            
+            for col in ['position_last_race', 'position_2races_ago', 'position_3races_ago']:
+                if col not in df.columns:
+                    df[col] = 20
+                    logger.warning(f"Missing lag feature {col}, filling with 20")
+            
+            df['weighted_form'] = (
+                0.5 * df['position_last_race'] +
+                0.3 * df['position_2races_ago'] +
+                0.2 * df['position_3races_ago']
+            )
+            
+            if {'driver_id', 'circuit_id', 'position'}.issubset(df.columns):
+                df['circuit_affinity'] = df.groupby(['driver_id', 'circuit_id'])['position'].transform(
+                    lambda x: x.rolling(window=3, min_periods=1).mean()
+                )
+                df['circuit_affinity'] = df['circuit_affinity'].fillna(20)
+            else:
+                logger.warning("Missing columns for circuit_affinity, setting to 10")
+                df['circuit_affinity'] = 10
+                
+            df['tire_delta'] = 0
+            df['teammate_gap'] = 0
+            
+            return df
+        
+        except Exception as e:
+            logger.error(f"Error creating enhanced features: {str(e)}")
+            raise
+    
     def prepare_catboost_training_data(self):
-        """Prepare training data for CatBoost using available predictions + track features"""
+        """Prepare training data for CatBoost using 2022–2025 predictions + track features"""
         try:
             race_results = RaceResult.objects.filter(
                 position__isnull=False,
-                session__event__year__gte=2022
+                session__event__year__gte=2022,
+                session__event__year__lte=2025
             ).select_related(
                 'driver', 'session__event', 'session__event__circuit'
             ).order_by('session__event__year', 'session__event__round')
@@ -386,26 +400,27 @@ class EnhancedF1Pipeline:
                 circuit = event.circuit
                 driver_name = f"{result.driver.given_name} {result.driver.family_name}"
                 
-                # Get base model predictions
                 ridge_pred = self._get_stored_prediction(driver_name, event, 'ridge')
                 xgb_pred = self._get_stored_prediction(driver_name, event, 'xgboost')
                 
-                # Skip if either prediction is missing
                 if ridge_pred is None or xgb_pred is None:
                     logger.warning(f"Skipping {driver_name} in {event} ({event.year}): Missing {'Ridge' if ridge_pred is None else ''} {'XGBoost' if xgb_pred is None else ''} prediction")
                     skipped_records += 1
                     continue
                 
-                # Get track specialization features
                 track_features = self.get_track_specialization_features(circuit.id)
-                
-                # Get driver performance features
                 driver_features = self._get_driver_features(result.driver, event)
                 
-                # Combine all features
+                # Ensure category is string - this is critical!
+                if 'category' in track_features:
+                    if pd.isna(track_features['category']) or track_features['category'] is None:
+                        track_features['category'] = 'HYBRID'
+                    else:
+                        track_features['category'] = str(track_features['category'])
+                
                 row = {
                     'driver_id': result.driver.id,
-                    'event_id': event.id,
+                    'event_id': result.session.event.id,
                     'year': event.year,
                     'round': event.round,
                     'circuit_id': circuit.id,
@@ -420,10 +435,24 @@ class EnhancedF1Pipeline:
                 training_data.append(row)
             
             df = pd.DataFrame(training_data)
+            
+            # Final safety check: ensure all categorical columns are strings
+            categorical_cols = ['category']  # Add other categorical column names if needed
+            for col in categorical_cols:
+                if col in df.columns:
+                    df[col] = df[col].astype(str)
+                    # Replace any 'nan' strings with default value
+                    df[col] = df[col].replace(['nan', 'None'], 'HYBRID')
+            
             logger.info(f"Prepared {len(df)} training samples for CatBoost, skipped {skipped_records} records due to missing predictions")
             if len(df) == 0:
-                logger.error("No valid training data after filtering. Check prediction tables.")
+                logger.error("No valid training data after filtering. Check prediction tables for 2022–2025.")
                 raise ValueError("No valid training data available")
+            
+            # Debug: Check category values
+            if 'category' in df.columns:
+                logger.info(f"Category values in training data: {df['category'].unique()}")
+                logger.info(f"Category data types: {df['category'].dtype}")
             
             return df
             
@@ -431,111 +460,86 @@ class EnhancedF1Pipeline:
             logger.error(f"Error preparing CatBoost training data: {str(e)}", exc_info=True)
             raise
     
-    def _get_driver_features(self, driver, event):
-        """Get driver performance features for the event"""
-        try:
-            driver_perf = DriverPerformance.objects.filter(
-                driver=driver, event=event
-            ).first()
-            
-            if not driver_perf:
-                logger.warning(f"No driver performance data for {driver} in {event}")
-                return self._get_default_driver_features()
-            
-            return {
-                'driver_moving_avg_5': driver_perf.moving_avg_5 or 10.0,
-                'driver_qualifying_avg': driver_perf.qualifying_avg or 10.0,
-                'driver_position_variance': driver_perf.position_variance or 5.0,
-                'driver_points_per_race': driver_perf.points_per_race or 0.0,
-                'driver_circuit_affinity': driver_perf.circuit_affinity or 10.0,
-                'driver_reliability_score': driver_perf.reliability_score or 0.5,
-                'rivalry_performance': driver_perf.rivalry_performance or 0.0,
-                'quali_race_delta': driver_perf.quali_race_delta or 0.0,
-                'position_momentum': driver_perf.position_momentum or 0.0,
-                'dnf_rate': driver_perf.dnf_rate or 0.0,
-                'pit_stop_avg': driver_perf.pit_stop_avg or 0.0
-            }
-        except Exception as e:
-            logger.error(f"Error getting driver features: {str(e)}", exc_info=True)
-            return self._get_default_driver_features()
-    
-    def _get_default_driver_features(self):
-        """Default driver features when data is missing"""
-        return {
-            'driver_moving_avg_5': 10.0,
-            'driver_qualifying_avg': 10.0,
-            'driver_position_variance': 5.0,
-            'driver_points_per_race': 0.0,
-            'driver_circuit_affinity': 10.0,
-            'driver_reliability_score': 0.5,
-            'rivalry_performance': 0.0,
-            'quali_race_delta': 0.0,
-            'position_momentum': 0.0,
-            'dnf_rate': 0.0,
-            'pit_stop_avg': 0.0
-        }
-    
     def train_catboost_model(self, df):
-        """Train CatBoost model on prepared data"""
+        """Train CatBoost model with track specialization"""
         try:
-            prediction_features = ['ridge_prediction', 'xgboost_prediction', 'ensemble_prediction']
-            track_features = self.track_features
-            driver_features = [
-                'driver_moving_avg_5', 'driver_qualifying_avg', 'driver_position_variance',
-                'driver_points_per_race', 'driver_circuit_affinity', 'driver_reliability_score',
-                'rivalry_performance', 'quali_race_delta', 'position_momentum', 'dnf_rate', 'pit_stop_avg'
-            ]
-            feature_columns = ['driver_id'] + prediction_features + track_features + driver_features
-            categorical_features = ['driver_id', 'track_category']
+            logger.info("Training CatBoost model...")
             
-            logger.info(f"Training features: {feature_columns}")
-            
-            X = df[feature_columns]
+            X = df.drop(['actual_position', 'event_id', 'driver_id', 'year', 'round', 'circuit_id'], axis=1)
             y = df['actual_position']
             
+            logger.info(f"Available columns in X: {list(X.columns)}")
+            
+            # Define categorical features - these should be the column names that contain categorical data
+            categorical_features = []
+            
+            # Check which categorical columns actually exist in the data
+            potential_categorical_columns = ['category']  # Add other categorical column names as needed
+            
+            for col in potential_categorical_columns:
+                if col in X.columns:
+                    categorical_features.append(col)
+                    # Ensure the column is properly formatted as string
+                    X[col] = X[col].astype(str)
+                    # Replace any NaN/None values
+                    X[col] = X[col].replace(['nan', 'None', 'NaN', 'null'], 'UNKNOWN')
+            
+            logger.info(f"Categorical features identified: {categorical_features}")
+            
+            # If no categorical features are found, we can still train without them
+            if not categorical_features:
+                logger.warning("No categorical features found in the data")
+                categorical_features = None
+            
             X_train, X_test, y_train, y_test = train_test_split(
-                X, y, test_size=0.2, random_state=self.random_state,
-                stratify=pd.qcut(y, q=5, duplicates='drop')
+                X, y, test_size=0.2, random_state=42
             )
             
-            self.catboost_model = CatBoostRegressor(
-                iterations=1000,
-                learning_rate=0.05,
-                depth=6,
-                cat_features=categorical_features,
-                random_seed=self.random_state,
-                verbose=100,
-                early_stopping_rounds=50,
-                task_type='GPU',
-                eval_metric='MAE'
-            )
+            # Create CatBoost model with appropriate parameters
+            catboost_params = {
+                'iterations': 1000,
+                'depth': 8,
+                'learning_rate': 0.03,
+                'loss_function': 'MAE',
+                'random_seed': 42,
+                'task_type': 'CPU',
+                'verbose': 100,
+                'l2_leaf_reg': 5.0,
+                'one_hot_max_size': 10
+            }
+            
+            # Only add cat_features if we have categorical features
+            if categorical_features:
+                catboost_params['cat_features'] = categorical_features
+            
+            self.catboost_model = CatBoostRegressor(**catboost_params)
             
             self.catboost_model.fit(
                 X_train, y_train,
                 eval_set=(X_test, y_test),
-                plot=False
+                early_stopping_rounds=100,
+                use_best_model=True
             )
+            
+            feature_importance = pd.DataFrame({
+                'feature': X.columns,
+                'importance': self.catboost_model.get_feature_importance()
+            }).sort_values('importance', ascending=False)
             
             train_pred = self.catboost_model.predict(X_train)
             test_pred = self.catboost_model.predict(X_test)
             
-            logger.info("CatBoost Training Results:")
-            logger.info(f"Train MAE: {mean_absolute_error(y_train, train_pred):.3f}")
-            logger.info(f"Test MAE: {mean_absolute_error(y_test, test_pred):.3f}")
-            logger.info(f"Test R²: {r2_score(y_test, test_pred):.3f}")
-            logger.info(f"Test Spearman: {spearmanr(y_test, test_pred)[0]:.3f}")
+            train_mae = mean_absolute_error(y_train, train_pred)
+            test_mae = mean_absolute_error(y_test, test_pred)
+            test_rmse = np.sqrt(mean_squared_error(y_test, test_pred))
+            test_r2 = r2_score(y_test, test_pred)
             
-            feature_importance = self.catboost_model.get_feature_importance()
-            importance_df = pd.DataFrame({
-                'feature': feature_columns,
-                'importance': feature_importance
-            }).sort_values('importance', ascending=False)
+            logger.info(f"Train MAE: {train_mae:.4f}")
+            logger.info(f"Test MAE: {test_mae:.4f}")
+            logger.info(f"Test RMSE: {test_rmse:.4f}")
+            logger.info(f"Test R²: {test_r2:.4f}")
             
-            logger.info("\nTop 10 Most Important Features:")
-            for _, row in importance_df.head(10).iterrows():
-                logger.info(f"{row['feature']}: {row['importance']:.3f}")
-            
-            return self.catboost_model, importance_df
+            return self.catboost_model, feature_importance
             
         except Exception as e:
             logger.error(f"Error training CatBoost model: {str(e)}", exc_info=True)
@@ -544,10 +548,14 @@ class EnhancedF1Pipeline:
     def save_catboost_model(self, model_name="catboost_ensemble"):
         """Save trained CatBoost model"""
         try:
+            if self.catboost_model is None:
+                raise ValueError("No CatBoost model to save. Train the model first.")
+            
             model_path = f"{self.model_dir}/{model_name}.cbm"
             self.catboost_model.save_model(model_path)
             logger.info(f"CatBoost model saved to {model_path}")
             return model_path
+            
         except Exception as e:
             logger.error(f"Error saving CatBoost model: {str(e)}", exc_info=True)
             raise
@@ -611,11 +619,11 @@ class EnhancedF1Pipeline:
                 ensemble_pred = (ridge_pred + xgb_pred) / 2
                 driver_features = self._get_driver_features(driver, event)
                 
+                # Create the feature dictionary for CatBoost
                 catboost_features = {
-                    'driver_id': driver.id,
-                    'ridge_prediction': ridge_pred,
-                    'xgboost_prediction': xgb_pred,
-                    'ensemble_prediction': ensemble_pred,
+                    'ridge_prediction': float(ridge_pred),
+                    'xgboost_prediction': float(xgb_pred),
+                    'ensemble_prediction': float(ensemble_pred),
                     **track_features,
                     **driver_features
                 }
@@ -624,17 +632,59 @@ class EnhancedF1Pipeline:
                     openf1_features = self._get_openf1_features(event)
                     catboost_features.update(openf1_features)
                 
-                feature_columns = ['driver_id', 'ridge_prediction', 'xgboost_prediction', 'ensemble_prediction'] + self.track_features + [
+                # Define the expected feature columns for CatBoost
+                feature_columns = [
+                    'ridge_prediction', 'xgboost_prediction', 'ensemble_prediction'
+                ] + self.track_features + [
                     'driver_moving_avg_5', 'driver_qualifying_avg', 'driver_position_variance',
                     'driver_points_per_race', 'driver_circuit_affinity', 'driver_reliability_score',
                     'rivalry_performance', 'quali_race_delta', 'position_momentum', 'dnf_rate', 'pit_stop_avg'
                 ]
-                feature_df = pd.DataFrame([catboost_features])[feature_columns]
+                
+                # Create DataFrame with proper column selection
+                feature_df = pd.DataFrame([catboost_features])
+                
+                # Only select columns that exist in catboost_features
+                available_columns = [col for col in feature_columns if col in feature_df.columns]
+                feature_df = feature_df[available_columns]
+                
+                # CRITICAL FIX: Handle categorical features properly
+                categorical_cols = ['category']  # Add other categorical column names if needed
+                for col in categorical_cols:
+                    if col in feature_df.columns:
+                        # Convert to string and handle any NaN/None/null values
+                        feature_df[col] = feature_df[col].astype(str)
+                        # Replace problematic values with a default
+                        feature_df[col] = feature_df[col].replace(['nan', 'None', 'NaN', 'null'], 'UNKNOWN')
+                
+                # Convert all float columns to proper float type to avoid any dtype issues
+                float_columns = [col for col in feature_df.columns if col not in categorical_cols]
+                for col in float_columns:
+                    if col in feature_df.columns:
+                        feature_df[col] = pd.to_numeric(feature_df[col], errors='coerce').fillna(0.0).astype(float)
                 
                 logger.info(f"Prediction features for {driver_name}: {list(feature_df.columns)}")
+                logger.debug(f"Category value for {driver_name}: {feature_df['category'].iloc[0] if 'category' in feature_df.columns else 'N/A'}")
+                logger.debug(f"Category dtype: {feature_df['category'].dtype if 'category' in feature_df.columns else 'N/A'}")
+                
+                # Additional debug: Check all values in the categorical column
+                if 'category' in feature_df.columns:
+                    logger.debug(f"All category values: {feature_df['category'].values}")
+                    logger.debug(f"Category unique values: {feature_df['category'].unique()}")
+                
+                # Debug: Print feature DataFrame info before prediction
+                logger.debug(f"Feature DataFrame dtypes:\n{feature_df.dtypes}")
+                logger.debug(f"Feature DataFrame values:\n{feature_df.iloc[0].to_dict()}")
                 
                 if self.catboost_model is not None:
-                    catboost_pred = self.catboost_model.predict(feature_df)[0]
+                    try:
+                        catboost_pred = self.catboost_model.predict(feature_df)[0]
+                    except Exception as e:
+                        logger.error(f"CatBoost prediction failed for {driver_name}: {str(e)}")
+                        logger.error(f"Feature DataFrame dtypes:\n{feature_df.dtypes}")
+                        logger.error(f"Feature DataFrame values:\n{feature_df.iloc[0].to_dict()}")
+                        # Fallback to ensemble prediction
+                        catboost_pred = ensemble_pred
                 else:
                     logger.warning("CatBoost model not loaded, using ensemble prediction")
                     catboost_pred = ensemble_pred
@@ -647,7 +697,7 @@ class EnhancedF1Pipeline:
                     'xgboost_prediction': xgb_pred,
                     'ensemble_prediction': ensemble_pred,
                     'catboost_prediction': catboost_pred,
-                    'track_category': track_features['track_category'],
+                    'track_category': track_features['category'] , # Use 'category' instead of 'track_category'
                     'track_power_sensitivity': track_features['power_sensitivity'],
                     'track_overtaking_difficulty': track_features['overtaking_difficulty'],
                     'track_qualifying_importance': track_features['qualifying_importance']
@@ -672,11 +722,39 @@ class EnhancedF1Pipeline:
         """Get OpenF1 live features (placeholder for future implementation)"""
         return {
             'live_weather_condition': 'DRY',
-            'track_temperature': 25.0,
-            'air_temperature': 20.0,
-            'safety_car_probability': 0.3,
-            'current_tire_strategy': 'MEDIUM_HARD'
+            'track_temperature': 0.0,
+            'air_temperature': 0.0,
+            'safety_car_probability': 0.0,
+            'current_tire_strategy': 'MEDIUM'
         }
+    
+    def _get_driver_features(self, driver, event):
+        """Get driver performance features for the event"""
+        try:
+            driver_perf = DriverPerformance.objects.filter(
+                driver=driver, event=event
+            ).first()
+            
+            if not driver_perf:
+                logger.warning(f"No driver performance data for {driver} in {event}")
+                return self._get_default_driver_features()
+            
+            return {
+                'driver_moving_avg_5': driver_perf.moving_avg_5 or 10.0,
+                'driver_qualifying_avg': driver_perf.qualifying_avg or 10.0,
+                'driver_position_variance': driver_perf.position_variance or 5.0,
+                'driver_points_per_race': driver_perf.points_per_race or 0.0,
+                'driver_circuit_affinity': driver_perf.circuit_affinity or 10.0,
+                'driver_reliability_score': driver_perf.reliability_score or 0.5,
+                'rivalry_performance': driver_perf.rivalry_performance or 0.0,
+                'quali_race_delta': driver_perf.quali_race_delta or 0.0,
+                'position_momentum': driver_perf.position_momentum or 0.0,
+                'dnf_rate': driver_perf.dnf_rate or 0.0,
+                'pit_stop_avg': driver_perf.pit_stop_avg or 0.0
+            }
+        except Exception as e:
+            logger.error(f"Error getting driver features: {str(e)}", exc_info=True)
+            return self._get_default_driver_features()
     
     def save_predictions_to_db(self, predictions_df, event, use_live_data=False):
         """Save CatBoost predictions to database"""
@@ -706,7 +784,7 @@ class EnhancedF1Pipeline:
                         'ridge_prediction': row['ridge_prediction'],
                         'xgboost_prediction': row['xgboost_prediction'],
                         'ensemble_prediction': row['ensemble_prediction'],
-                        'track_category': row['track_category'],
+                        'track_category': row['track_category'],  # Use 'category' from the DataFrame
                         'track_power_sensitivity': row['track_power_sensitivity'],
                         'track_overtaking_difficulty': row['track_overtaking_difficulty'],
                         'track_qualifying_importance': row['track_qualifying_importance'],
@@ -826,12 +904,14 @@ class EnhancedF1Pipeline:
                     category_data['ensemble_prediction']
                 )
                 
+                improvement = ensemble_mae - catboost_mae
+                
                 analysis.append({
                     'track_category': category,
                     'sample_count': len(category_data),
                     'catboost_mae': catboost_mae,
                     'ensemble_mae': ensemble_mae,
-                    
+                    'improvement': improvement
                 })
             
             analysis_df = pd.DataFrame(analysis).sort_values('catboost_mae', ascending=False)

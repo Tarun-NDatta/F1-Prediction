@@ -143,3 +143,19 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'dattatarun86@gmail.com'
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')  # Use an app password, not your main password
 DEFAULT_FROM_EMAIL = 'F1 Dashboard <dattatarun86@gmail.com>'
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        '': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
+    },
+}
