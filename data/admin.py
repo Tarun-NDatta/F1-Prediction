@@ -4,7 +4,8 @@ from .models import (
     QualifyingResult, RaceResult,
     Session, SessionType,
     DriverPerformance, TeamPerformance, TrackCharacteristics,
-    PredictionModel, RacePrediction,ridgeregression,xgboostprediction
+    PredictionModel, RacePrediction, ridgeregression, xgboostprediction,
+    CatBoostPrediction, UserProfile, CreditTransaction, Bet, Achievement
 )
 
 @admin.register(Event)
@@ -69,3 +70,32 @@ class RacePredictionAdmin(admin.ModelAdmin):
 admin.site.register(ridgeregression)
 
 admin.site.register(xgboostprediction)
+
+admin.site.register(CatBoostPrediction)
+
+@admin.register(UserProfile)
+class UserProfileAdmin(admin.ModelAdmin):
+    list_display = ('user', 'credits', 'total_bets_placed', 'win_rate', 'net_profit', 'join_date')
+    list_filter = ('join_date',)
+    search_fields = ('user__username', 'user__email')
+    readonly_fields = ('win_rate', 'net_profit')
+
+@admin.register(CreditTransaction)
+class CreditTransactionAdmin(admin.ModelAdmin):
+    list_display = ('user', 'transaction_type', 'amount', 'balance_after', 'timestamp')
+    list_filter = ('transaction_type', 'timestamp')
+    search_fields = ('user__username', 'description')
+    readonly_fields = ('timestamp',)
+
+@admin.register(Bet)
+class BetAdmin(admin.ModelAdmin):
+    list_display = ('user', 'event', 'bet_type', 'credits_staked', 'status', 'created_at')
+    list_filter = ('bet_type', 'status', 'created_at')
+    search_fields = ('user__username', 'event__name')
+    readonly_fields = ('created_at',)
+
+@admin.register(Achievement)
+class AchievementAdmin(admin.ModelAdmin):
+    list_display = ('name', 'achievement_type', 'rarity', 'bonus_credits', 'is_active')
+    list_filter = ('achievement_type', 'rarity', 'is_active')
+    search_fields = ('name', 'description')

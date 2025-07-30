@@ -1,0 +1,247 @@
+{% extends 'base.html' %}
+
+{% block title %}My Bets - Betting History{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="content-box">
+                <h1 class="text-center mb-3">
+                    <i class="fas fa-history me-2"></i>My Betting History
+                </h1>
+                <p class="text-center mb-0">
+                    Track your betting performance and manage your active bets.
+                    <span class="text-warning fw-bold">Current Balance: {{ user_credits }} credits</span>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Betting Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="content-box text-center">
+                <h4 class="text-primary">{{ total_bets }}</h4>
+                <p class="mb-0">Total Bets</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="content-box text-center">
+                <h4 class="text-success">{{ won_bets }}</h4>
+                <p class="mb-0">Won Bets</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="content-box text-center">
+                <h4 class="text-info">{{ win_rate|floatformat:1 }}%</h4>
+                <p class="mb-0">Win Rate</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="content-box text-center">
+                <h4 class="{% if net_profit >= 0 %}text-success{% else %}text-danger{% endif %}">
+                    {{ net_profit }}
+                </h4>
+                <p class="mb-0">Net Profit</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Bets -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="content-box">
+                <h3 class="mb-4">
+                    <i class="fas fa-clock me-2"></i>Active Bets
+                </h3>
+                
+                {% if active_bets %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Event</th>
+                                <th>Bet Type</th>
+                                <th>Selection</th>
+                                <th>Staked</th>
+                                <th>Odds</th>
+                                <th>Potential Win</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for bet in active_bets %}
+                            <tr>
+                                <td>
+                                    <strong>{{ bet.event.name }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ bet.event.circuit.name }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary">{{ bet.get_bet_type_display }}</span>
+                                </td>
+                                <td>
+                                    {% if bet.driver %}
+                                        {{ bet.driver.name }}
+                                    {% elif bet.team %}
+                                        {{ bet.team.name }}
+                                    {% elif bet.position %}
+                                        Position {{ bet.position }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>{{ bet.credits_staked }} credits</td>
+                                <td>{{ bet.odds }}</td>
+                                <td class="text-success">
+                                    {{ bet.credits_staked|floatformat:0 }} × {{ bet.odds }} credits
+                                </td>
+                                <td>{{ bet.created_at|date:"M d, Y" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-clock fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">No active bets. Place your first bet in the betting market!</p>
+                    <a href="{% url 'betting' %}" class="btn btn-primary">
+                        <i class="fas fa-coins me-1"></i>Go to Betting
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Completed Bets -->
+    <div class="row">
+        <div class="col-12">
+            <div class="content-box">
+                <h3 class="mb-4">
+                    <i class="fas fa-trophy me-2"></i>Completed Bets
+                </h3>
+                
+                {% if completed_bets %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Event</th>
+                                <th>Bet Type</th>
+                                <th>Selection</th>
+                                <th>Staked</th>
+                                <th>Result</th>
+                                <th>Winnings</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for bet in completed_bets %}
+                            <tr class="{% if bet.status == 'won' %}table-success{% elif bet.status == 'lost' %}table-danger{% endif %}">
+                                <td>
+                                    <strong>{{ bet.event.name }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ bet.event.circuit.name }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary">{{ bet.get_bet_type_display }}</span>
+                                </td>
+                                <td>
+                                    {% if bet.driver %}
+                                        {{ bet.driver.name }}
+                                    {% elif bet.team %}
+                                        {{ bet.team.name }}
+                                    {% elif bet.position %}
+                                        Position {{ bet.position }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>{{ bet.credits_staked }} credits</td>
+                                <td>
+                                    <span class="badge bg-{% if bet.status == 'won' %}success{% else %}danger{% endif %}">
+                                        {{ bet.status|title }}
+                                    </span>
+                                </td>
+                                <td class="{% if bet.status == 'won' %}text-success{% else %}text-danger{% endif %}">
+                                    {% if bet.status == 'won' %}
+                                        +{{ bet.credits_won }} credits
+                                    {% else %}
+                                        -{{ bet.credits_staked }} credits
+                                    {% endif %}
+                                </td>
+                                <td>{{ bet.created_at|date:"M d, Y" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-trophy fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">No completed bets yet. Your betting history will appear here once bets are settled.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Statistics -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="content-box">
+                <h4 class="mb-3">
+                    <i class="fas fa-chart-pie me-2"></i>Betting Summary
+                </h4>
+                <div class="row">
+                    <div class="col-6">
+                        <p class="mb-1"><strong>Total Wagered:</strong></p>
+                        <p class="mb-1"><strong>Total Won:</strong></p>
+                        <p class="mb-1"><strong>Net Profit:</strong></p>
+                    </div>
+                    <div class="col-6 text-end">
+                        <p class="mb-1">{{ total_wagered }} credits</p>
+                        <p class="mb-1 text-success">{{ total_won }} credits</p>
+                        <p class="mb-1 {% if net_profit >= 0 %}text-success{% else %}text-danger{% endif %}">
+                            {{ net_profit }} credits
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="content-box">
+                <h4 class="mb-3">
+                    <i class="fas fa-lightbulb me-2"></i>Betting Tips
+                </h4>
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        Start with small bets to learn the system
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        Research driver and team performance history
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        Consider track characteristics for your predictions
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        Monitor weather conditions for weather bets
+                    </li>
+                    <li>
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        Don't bet more than you can afford to lose
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

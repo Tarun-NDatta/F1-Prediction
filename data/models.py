@@ -1,6 +1,9 @@
 from django.db import models
 from pytz import timezone
 from django.utils import timezone
+from django.contrib.auth.models import User
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 import logging
 
 logger = logging.getLogger(__name__)
@@ -910,3 +913,184 @@ class CatBoostPrediction(models.Model):
     def __str__(self):
         actual = f" (Actual: {self.actual_position})" if self.actual_position else ""
         return f"CatBoost | {self.driver} | {self.event} → {self.predicted_position:.2f}{actual}"
+
+
+# Virtual Credits System Models
+class UserProfile(models.Model):
+    """Extended user profile with credits and betting information"""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    credits = models.IntegerField(default=5000, help_text="Virtual credits for betting")
+    total_bets_placed = models.IntegerField(default=0, help_text="Total number of bets placed")
+    total_credits_won = models.IntegerField(default=0, help_text="Total credits won from bets")
+    total_credits_lost = models.IntegerField(default=0, help_text="Total credits lost from bets")
+    favorite_circuit = models.ForeignKey('Circuit', on_delete=models.SET_NULL, null=True, blank=True)
+    join_date = models.DateTimeField(auto_now_add=True)
+    last_active = models.DateTimeField(auto_now=True)
+    
+    # Achievement tracking
+    circuits_visited = models.ManyToManyField('Circuit', blank=True, related_name='visitors')
+    achievements_unlocked = models.ManyToManyField('Achievement', blank=True, related_name='unlocked_by')
+    
+    class Meta:
+        verbose_name = "User Profile"
+        verbose_name_plural = "User Profiles"
+    
+    def __str__(self):
+        return f"{self.user.username}'s Profile"
+    
+    @property
+    def win_rate(self):
+        """Calculate win rate percentage"""
+        if self.total_bets_placed == 0:
+            return 0
+        return round((self.total_credits_won / (self.total_credits_won + self.total_credits_lost)) * 100, 1)
+    
+    @property
+    def net_profit(self):
+        """Calculate net profit/loss"""
+        return self.total_credits_won - self.total_credits_lost
+
+
+class CreditTransaction(models.Model):
+    """Track all credit transactions for audit trail"""
+    TRANSACTION_TYPES = [
+        ('SIGNUP_BONUS', 'Signup Bonus'),
+        ('BET_PLACED', 'Bet Placed'),
+        ('BET_WON', 'Bet Won'),
+        ('BET_LOST', 'Bet Lost'),
+        ('ACHIEVEMENT_BONUS', 'Achievement Bonus'),
+        ('CIRCUIT_VISIT', 'Circuit Visit Bonus'),
+        ('ADMIN_ADJUSTMENT', 'Admin Adjustment'),
+    ]
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='credit_transactions')
+    transaction_type = models.CharField(max_length=20, choices=TRANSACTION_TYPES)
+    amount = models.IntegerField(help_text="Positive for credits gained, negative for credits spent")
+    description = models.CharField(max_length=200)
+    balance_after = models.IntegerField(help_text="User's credit balance after this transaction")
+    timestamp = models.DateTimeField(auto_now_add=True)
+    
+    # Optional references
+    bet = models.ForeignKey('Bet', on_delete=models.SET_NULL, null=True, blank=True)
+    achievement = models.ForeignKey('Achievement', on_delete=models.SET_NULL, null=True, blank=True)
+    circuit = models.ForeignKey('Circuit', on_delete=models.SET_NULL, null=True, blank=True)
+    
+    class Meta:
+        ordering = ['-timestamp']
+        verbose_name = "Credit Transaction"
+        verbose_name_plural = "Credit Transactions"
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.get_transaction_type_display()} ({self.amount:+d})"
+
+
+class Bet(models.Model):
+    """User betting model for prediction market"""
+    BET_TYPES = [
+        ('PODIUM_FINISH', 'Podium Finish'),
+        ('EXACT_POSITION', 'Exact Position'),
+        ('DNF_PREDICTION', 'DNF Prediction'),
+        ('WEATHER_BET', 'Weather Bet'),
+        ('QUALIFYING_POSITION', 'Qualifying Position'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('PENDING', 'Pending'),
+        ('WON', 'Won'),
+        ('LOST', 'Lost'),
+        ('CANCELLED', 'Cancelled'),
+    ]
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='bets')
+    event = models.ForeignKey('Event', on_delete=models.CASCADE)
+    bet_type = models.CharField(max_length=20, choices=BET_TYPES)
+    driver = models.ForeignKey('Driver', on_delete=models.CASCADE, null=True, blank=True)
+    team = models.ForeignKey('Team', on_delete=models.CASCADE, null=True, blank=True)
+    
+    # Bet details
+    predicted_position = models.IntegerField(null=True, blank=True)
+    credits_staked = models.IntegerField()
+    odds = models.FloatField(help_text="Decimal odds (e.g., 2.5 means 2.5x return)")
+    potential_payout = models.IntegerField(help_text="Credits to be won if bet succeeds")
+    
+    # Result tracking
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='PENDING')
+    actual_result = models.CharField(max_length=50, null=True, blank=True)
+    payout_received = models.IntegerField(default=0)
+    
+    # Metadata
+    created_at = models.DateTimeField(auto_now_add=True)
+    settled_at = models.DateTimeField(null=True, blank=True)
+    notes = models.TextField(blank=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Bet"
+        verbose_name_plural = "Bets"
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.get_bet_type_display()} on {self.event.name}"
+    
+    @property
+    def is_winning_bet(self):
+        """Check if bet is a winning bet"""
+        if self.status != 'WON':
+            return False
+        return self.payout_received > 0
+
+
+class Achievement(models.Model):
+    """Achievement system for user engagement"""
+    ACHIEVEMENT_TYPES = [
+        ('ACCURACY', 'Prediction Accuracy'),
+        ('CIRCUIT_MASTERY', 'Circuit Mastery'),
+        ('BETTING_VOLUME', 'Betting Volume'),
+        ('PROFIT_MAKING', 'Profit Making'),
+        ('EXPLORER', 'Circuit Explorer'),
+        ('SPECIAL', 'Special Achievement'),
+    ]
+    
+    name = models.CharField(max_length=100)
+    description = models.TextField()
+    achievement_type = models.CharField(max_length=20, choices=ACHIEVEMENT_TYPES)
+    icon = models.CharField(max_length=50, help_text="FontAwesome icon class")
+    
+    # Unlock conditions
+    required_accuracy = models.FloatField(null=True, blank=True, help_text="Required prediction accuracy %")
+    required_circuits = models.IntegerField(null=True, blank=True, help_text="Required circuits visited")
+    required_bets = models.IntegerField(null=True, blank=True, help_text="Required number of bets")
+    required_profit = models.IntegerField(null=True, blank=True, help_text="Required profit in credits")
+    
+    # Rewards
+    bonus_credits = models.IntegerField(default=0)
+    special_perks = models.JSONField(default=dict, blank=True)
+    
+    # Display
+    rarity = models.CharField(max_length=20, choices=[
+        ('COMMON', 'Common'),
+        ('RARE', 'Rare'),
+        ('EPIC', 'Epic'),
+        ('LEGENDARY', 'Legendary'),
+    ], default='COMMON')
+    
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name = "Achievement"
+        verbose_name_plural = "Achievements"
+    
+    def __str__(self):
+        return self.name
+
+
+# Signal to create UserProfile when User is created
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        UserProfile.objects.create(user=instance)
+
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    if hasattr(instance, 'profile'):
+        instance.profile.save()

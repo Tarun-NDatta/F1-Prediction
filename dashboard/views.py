@@ -1,8 +1,12 @@
 from django.shortcuts import get_object_or_404, render, get_list_or_404
 from django.db.models import Count, Avg, Q, Max, Sum
+from django.db.models import CharField, Value  # Django's Value, not torch
+from django.db.models.functions import Concat
+
 from data.models import (
     Event, RaceResult, QualifyingResult, Circuit, Team, Driver, 
-    Session, SessionType, ridgeregression, xgboostprediction  # Added xgboostprediction
+    Session, SessionType, ridgeregression, xgboostprediction, CatBoostPrediction,
+    UserProfile, CreditTransaction, Bet, Achievement, TrackSpecialization
 )
 from django.core.paginator import Paginator
 from django.http import JsonResponse
@@ -249,7 +253,7 @@ def get_team_class(team_name):
 def prediction(request):
     predictions_locked = not request.user.is_authenticated
     
-    # Available models configuration - UPDATED to include XGBoost
+    # Available models configuration - UPDATED to include CatBoost
     AVAILABLE_MODELS = {
         'ridge_regression': {
             'name': 'Ridge Regression',
@@ -265,12 +269,12 @@ def prediction(request):
             'status': 'active',  # Changed from 'coming_soon' to 'active'
             'model_name_filter': 'xgboost_regression'  # Added for database filtering
         },
-        'lightgbm': {
-            'name': 'LightGBM', 
-            'model_class': None,  # Will be added when model is ready
-            'available_rounds': [],  # No rounds available yet
-            'status': 'coming_soon',
-            'model_name_filter': 'lightgbm_regression'
+        'catboost': {
+            'name': 'CatBoost Ensemble',
+            'model_class': CatBoostPrediction,  # Now available
+            'available_rounds': list(range(1, 12)),  # Update based on your available data
+            'status': 'active',  # Changed from 'coming_soon' to 'active'
+            'model_name_filter': 'catboost_ensemble'  # Added for database filtering
         }
     }
     
@@ -365,6 +369,20 @@ def prediction(request):
                 team_class = 'team-default'
                 points = getattr(pred, 'points', None)
             
+            # Get CatBoost specific features if available
+            catboost_features = {}
+            if pred and selected_model_key == 'catboost':
+                catboost_features = {
+                    'track_category': getattr(pred, 'track_category', 'N/A'),
+                    'track_power_sensitivity': getattr(pred, 'track_power_sensitivity', 'N/A'),
+                    'track_overtaking_difficulty': getattr(pred, 'track_overtaking_difficulty', 'N/A'),
+                    'track_qualifying_importance': getattr(pred, 'track_qualifying_importance', 'N/A'),
+                    'ridge_prediction': getattr(pred, 'ridge_prediction', 'N/A'),
+                    'xgboost_prediction': getattr(pred, 'xgboost_prediction', 'N/A'),
+                    'ensemble_prediction': getattr(pred, 'ensemble_prediction', 'N/A'),
+                    'prediction_confidence': getattr(pred, 'prediction_confidence', 'N/A'),
+                }
+            
             comparison.append({
                 'driver': f"{driver.given_name} {driver.family_name}" if driver else 'N/A',
                 'predicted': int(round(pred.predicted_position)) if pred else 'N/A',  # Convert to int for cleaner display
@@ -378,6 +396,7 @@ def prediction(request):
                 'confidence': round(pred.confidence * 100, 1) if pred and hasattr(pred, 'confidence') and pred.confidence else 'N/A',
                 'is_correct': (act.position == int(round(pred.predicted_position))) if pred and act and act.position is not None and pred.predicted_position is not None else False,
                 'points': points if points is not None else 'N/A',
+                'catboost_features': catboost_features,  # Add CatBoost specific features
             })
 
         # Sort comparison: if actual results are available, order by actual; else by predicted
@@ -511,3 +530,487 @@ def login_view(request):
 def logout_view(request):
     auth_logout(request)
     return redirect('home')
+
+def statistics(request):
+    """Statistics page showing driver and team analytics"""
+    # Get current year (default to 2025)
+    current_year = request.GET.get('year', '2025')
+    try:
+        year_int = int(current_year)
+    except (ValueError, TypeError):
+        year_int = 2025
+    
+    # Get events for the selected year
+    events = Event.objects.filter(year=year_int)
+    event_ids = events.values_list('id', flat=True)
+    
+    # Driver Statistics
+    driver_stats = (
+        RaceResult.objects
+        .filter(session__event_id__in=event_ids)
+        .values('driver', 'driver__given_name', 'driver__family_name', 'driver__permanent_number', 'team__name')
+        .annotate(
+            total_races=Count('id'),
+            total_points=Sum('points'),
+            avg_points=Avg('points'),
+            wins=Count('id', filter=Q(position=1)),
+            podiums=Count('id', filter=Q(position__lte=3)),
+            dnf_count=Count('id', filter=Q(status__icontains='DNF')),
+            best_position=Max('position'),
+        )
+        .order_by('-total_points', '-wins')
+    )
+    
+    # Team Statistics
+    team_stats = (
+        RaceResult.objects
+        .filter(session__event_id__in=event_ids)
+        .values('team', 'team__name')
+        .annotate(
+            total_races=Count('id'),
+            total_points=Sum('points'),
+            avg_points=Avg('points'),
+            wins=Count('id', filter=Q(position=1)),
+            podiums=Count('id', filter=Q(position__lte=3)),
+            drivers_count=Count('driver', distinct=True),
+        )
+        .order_by('-total_points', '-wins')
+    )
+    
+    # Circuit Statistics - ordered by event round (chronological)
+    circuit_stats = (
+        RaceResult.objects
+        .filter(session__event_id__in=event_ids)
+        .values('session__event__circuit__name', 'session__event__circuit__country', 'session__event__round', 'session__event__circuit__id')
+        .annotate(
+            races_held=Count('session__event', distinct=True),
+            total_drivers=Count('driver', distinct=True),
+            avg_points=Avg('points'),
+        )
+        .order_by('session__event__round')  # Order by round number (chronological)
+    )
+    
+    # Season Overview
+    season_overview = {
+        'total_races': events.count(),
+        'total_drivers': Driver.objects.count(),
+        'total_teams': Team.objects.count(),
+        'total_circuits': Circuit.objects.count(),
+        'year': year_int,
+    }
+    
+    # Available years for filter
+    available_years = sorted(Event.objects.values_list('year', flat=True).distinct(), reverse=True)
+    
+    context = {
+        'driver_stats': driver_stats,
+        'team_stats': team_stats,
+        'circuit_stats': circuit_stats,
+        'season_overview': season_overview,
+        'available_years': available_years,
+        'selected_year': year_int,
+    }
+    
+    return render(request, 'statistics.html', context)
+
+
+def credits(request):
+    """Credits history and transaction page"""
+    if not request.user.is_authenticated:
+        return redirect('login')
+    
+    # Get user profile
+    try:
+        profile = request.user.profile
+    except UserProfile.DoesNotExist:
+        profile = UserProfile.objects.create(user=request.user)
+    
+    # Get recent transactions
+    transactions = CreditTransaction.objects.filter(user=request.user).order_by('-timestamp')[:20]
+    
+    # Calculate summary stats
+    total_earned = sum(t.amount for t in transactions if t.amount > 0)
+    total_spent = abs(sum(t.amount for t in transactions if t.amount < 0))
+    
+    context = {
+        'profile': profile,
+        'transactions': transactions,
+        'total_earned': total_earned,
+        'total_spent': total_spent,
+        'is_authenticated': request.user.is_authenticated,
+    }
+    
+    return render(request, 'credits.html', context)
+
+
+def portfolio(request):
+    """User's betting portfolio and achievements"""
+    if not request.user.is_authenticated:
+        return redirect('login')
+    
+    # Get user profile
+    try:
+        profile = request.user.profile
+    except UserProfile.DoesNotExist:
+        profile = UserProfile.objects.create(user=request.user)
+    
+    # Get user's bets
+    bets = Bet.objects.filter(user=request.user).order_by('-created_at')[:10]
+    
+    # Get achievements
+    achievements = Achievement.objects.filter(is_active=True)
+    unlocked_achievements = profile.achievements_unlocked.all()
+    
+    # Calculate portfolio stats
+    total_bets = profile.total_bets_placed
+    win_rate = profile.win_rate
+    net_profit = profile.net_profit
+    circuits_visited = profile.circuits_visited.count()
+    
+    context = {
+        'profile': profile,
+        'bets': bets,
+        'achievements': achievements,
+        'unlocked_achievements': unlocked_achievements,
+        'total_bets': total_bets,
+        'win_rate': win_rate,
+        'net_profit': net_profit,
+        'circuits_visited': circuits_visited,
+        'is_authenticated': request.user.is_authenticated,
+    }
+    
+    return render(request, 'portfolio.html', context)
+
+
+def circuits(request):
+    """Circuit discovery page showing all circuits with user progress"""
+    # Get all circuits with their characteristics
+    circuits_data = Circuit.objects.all().order_by('name')
+    
+    # Get user progress if authenticated
+    user_progress = {}
+    if request.user.is_authenticated:
+        try:
+            profile = request.user.profile
+            visited_circuits = profile.circuits_visited.all()
+            user_progress = {
+                'visited_count': visited_circuits.count(),
+                'total_circuits': circuits_data.count(),
+                'visited_circuits': set(visited_circuits.values_list('id', flat=True)),
+            }
+        except UserProfile.DoesNotExist:
+            profile = UserProfile.objects.create(user=request.user)
+            user_progress = {
+                'visited_count': 0,
+                'total_circuits': circuits_data.count(),
+                'visited_circuits': set(),
+            }
+    
+    # Get circuit statistics
+    circuit_stats = []
+    for circuit in circuits_data:
+        # Get recent race results for this circuit
+        recent_races = RaceResult.objects.filter(
+            session__event__circuit=circuit
+        ).select_related('driver', 'team', 'session__event').order_by('-session__event__date')[:5]
+        
+        # Get track characteristics if available
+        try:
+            track_spec = TrackSpecialization.objects.get(circuit=circuit)
+            track_data = {
+                'category': track_spec.category,
+                'overtaking_difficulty': track_spec.overtaking_difficulty,
+                'power_sensitivity': track_spec.power_sensitivity,
+                'weather_impact': track_spec.weather_impact,
+            }
+        except TrackSpecialization.DoesNotExist:
+            track_data = None
+        
+        circuit_stats.append({
+            'circuit': circuit,
+            'recent_races': recent_races,
+            'track_data': track_data,
+            'is_visited': circuit.id in user_progress.get('visited_circuits', set()),
+        })
+    
+    context = {
+        'circuits': circuit_stats,
+        'user_progress': user_progress,
+        'is_authenticated': request.user.is_authenticated,
+    }
+    
+    return render(request, 'circuits.html', context)
+
+
+def circuit_detail(request, circuit_id):
+    """Detailed circuit page with track info and historical data"""
+    circuit = get_object_or_404(Circuit, id=circuit_id)
+    
+    # Get track specialization data
+    try:
+        track_spec = TrackSpecialization.objects.get(circuit=circuit)
+    except TrackSpecialization.DoesNotExist:
+        track_spec = None
+    
+    # Get historical race results for this circuit
+    historical_results = RaceResult.objects.filter(
+        session__event__circuit=circuit
+    ).select_related('driver', 'team', 'session__event').order_by('-session__event__date')[:20]
+    
+    # Get qualifying results
+    qualifying_results = QualifyingResult.objects.filter(
+        session__event__circuit=circuit
+    ).select_related('driver', 'team', 'session__event').order_by('-session__event__date')[:10]
+    
+    # Get circuit statistics
+    total_races = RaceResult.objects.filter(session__event__circuit=circuit).count()
+    unique_drivers = RaceResult.objects.filter(session__event__circuit=circuit).values('driver').distinct().count()
+    unique_teams = RaceResult.objects.filter(session__event__circuit=circuit).values('team').distinct().count()
+    
+    # Check if user has visited this circuit
+    user_visited = False
+    if request.user.is_authenticated:
+        try:
+            profile = request.user.profile
+            user_visited = profile.circuits_visited.filter(id=circuit_id).exists()
+        except UserProfile.DoesNotExist:
+            pass
+    
+    # Get recent events at this circuit
+    recent_events = Event.objects.filter(circuit=circuit).order_by('-date')[:5]
+    
+    context = {
+        'circuit': circuit,
+        'track_spec': track_spec,
+        'historical_results': historical_results,
+        'qualifying_results': qualifying_results,
+        'total_races': total_races,
+        'unique_drivers': unique_drivers,
+        'unique_teams': unique_teams,
+        'recent_events': recent_events,
+        'user_visited': user_visited,
+        'is_authenticated': request.user.is_authenticated,
+    }
+    
+    return render(request, 'circuit_detail.html', context)
+
+
+def betting(request):
+    """Prediction market betting interface"""
+    if not request.user.is_authenticated:
+        return redirect('login')
+    
+    # Get upcoming events for betting
+    upcoming_events = Event.objects.filter(
+        year__gte=2025
+    ).select_related('circuit').order_by('date')[:10]
+    
+    # Get user's profile and current credits
+    try:
+        profile = request.user.profile
+    except UserProfile.DoesNotExist:
+        profile = UserProfile.objects.create(user=request.user)
+    
+    # Get recent bets for context
+    recent_bets = Bet.objects.filter(user=request.user).select_related(
+        'event', 'driver', 'team'
+    ).order_by('-created_at')[:5]
+    
+    # Get available drivers and teams for betting
+    drivers = Driver.objects.all().order_by('given_name', 'family_name')
+    teams = Team.objects.all().order_by('name')
+    
+    context = {
+        'upcoming_events': upcoming_events,
+        'drivers': drivers,
+        'teams': teams,
+        'user_credits': profile.credits,
+        'recent_bets': recent_bets,
+        'bet_types': [
+            ('podium', 'Podium Finish'),
+            ('position', 'Exact Position'),
+            ('dnf', 'DNF Prediction'),
+            ('qualifying', 'Qualifying Position'),
+            ('fastest_lap', 'Fastest Lap'),
+            ('weather', 'Weather Impact'),
+        ],
+    }
+    
+    return render(request, 'betting.html', context)
+
+
+def place_bet(request):
+    """Handle bet placement via AJAX"""
+    if not request.user.is_authenticated:
+        return JsonResponse({'success': False, 'error': 'Authentication required'})
+    
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POST method required'})
+    
+    try:
+        # Get bet data from request
+        event_id = request.POST.get('event_id')
+        bet_type = request.POST.get('bet_type')
+        driver_id = request.POST.get('driver_id')
+        team_id = request.POST.get('team_id')
+        position = request.POST.get('position')
+        credits_staked = int(request.POST.get('credits_staked', 0))
+        
+        # Validate required fields
+        if not all([event_id, bet_type, credits_staked]):
+            return JsonResponse({'success': False, 'error': 'Missing required fields'})
+        
+        # Get user profile
+        try:
+            profile = request.user.profile
+        except UserProfile.DoesNotExist:
+            profile = UserProfile.objects.create(user=request.user)
+        
+        # Check if user has enough credits
+        if profile.credits < credits_staked:
+            return JsonResponse({'success': False, 'error': 'Insufficient credits'})
+        
+        # Get related objects
+        event = get_object_or_404(Event, id=event_id)
+        driver = get_object_or_404(Driver, id=driver_id) if driver_id else None
+        team = get_object_or_404(Team, id=team_id) if team_id else None
+        
+        # Calculate odds based on bet type and historical data
+        odds = calculate_bet_odds(bet_type, driver, team, event, position)
+        
+        # Create the bet
+        bet = Bet.objects.create(
+            user=request.user,
+            event=event,
+            bet_type=bet_type,
+            driver=driver,
+            team=team,
+            position=position,
+            credits_staked=credits_staked,
+            odds=odds,
+            status='pending'
+        )
+        
+        # Deduct credits from user
+        profile.credits -= credits_staked
+        profile.total_bets_placed += 1
+        profile.save()
+        
+        # Create credit transaction
+        CreditTransaction.objects.create(
+            user=request.user,
+            transaction_type='bet_placed',
+            amount=-credits_staked,
+            description=f'Bet placed on {event.name} - {bet_type}'
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'bet_id': bet.id,
+            'new_credits': profile.credits,
+            'message': 'Bet placed successfully!'
+        })
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+def my_bets(request):
+    """User's betting history and active bets"""
+    if not request.user.is_authenticated:
+        return redirect('login')
+    
+    # Get user's profile
+    try:
+        profile = request.user.profile
+    except UserProfile.DoesNotExist:
+        profile = UserProfile.objects.create(user=request.user)
+    
+    # Get all user's bets
+    bets = Bet.objects.filter(user=request.user).select_related(
+        'event', 'driver', 'team'
+    ).order_by('-created_at')
+    
+    # Separate active and completed bets
+    active_bets = bets.filter(status='pending')
+    completed_bets = bets.filter(status__in=['won', 'lost'])
+    
+    # Calculate betting statistics
+    total_bets = bets.count()
+    won_bets = completed_bets.filter(status='won').count()
+    win_rate = (won_bets / total_bets * 100) if total_bets > 0 else 0
+    
+    total_wagered = bets.aggregate(total=Sum('credits_staked'))['total'] or 0
+    total_won = completed_bets.filter(status='won').aggregate(total=Sum('credits_won'))['total'] or 0
+    net_profit = total_won - total_wagered
+    
+    context = {
+        'active_bets': active_bets,
+        'completed_bets': completed_bets,
+        'total_bets': total_bets,
+        'won_bets': won_bets,
+        'win_rate': win_rate,
+        'total_wagered': total_wagered,
+        'total_won': total_won,
+        'net_profit': net_profit,
+        'user_credits': profile.credits,
+    }
+    
+    return render(request, 'my_bets.html', context)
+
+
+def calculate_bet_odds(bet_type, driver, team, event, position=None):
+    """Calculate odds for different bet types based on historical data"""
+    base_odds = 2.0  # Default odds
+    
+    if bet_type == 'podium':
+        # Calculate podium finish probability based on driver's recent performance
+        if driver:
+            recent_podiums = RaceResult.objects.filter(
+                driver=driver,
+                position__lte=3
+            ).count()
+            recent_races = RaceResult.objects.filter(driver=driver).count()
+            if recent_races > 0:
+                podium_rate = recent_podiums / recent_races
+                base_odds = max(1.5, min(5.0, 1 / podium_rate))
+    
+    elif bet_type == 'position':
+        # Position-specific odds
+        if position:
+            position = int(position)
+            if position <= 3:
+                base_odds = 3.0
+            elif position <= 10:
+                base_odds = 2.0
+            else:
+                base_odds = 1.5
+    
+    elif bet_type == 'dnf':
+        # DNF odds based on driver's reliability
+        if driver:
+            recent_dnfs = RaceResult.objects.filter(
+                driver=driver,
+                status='DNF'
+            ).count()
+            recent_races = RaceResult.objects.filter(driver=driver).count()
+            if recent_races > 0:
+                dnf_rate = recent_dnfs / recent_races
+                base_odds = max(1.2, min(10.0, 1 / dnf_rate))
+    
+    elif bet_type == 'qualifying':
+        # Qualifying performance odds
+        if driver:
+            recent_qualifying = QualifyingResult.objects.filter(driver=driver).count()
+            if recent_qualifying > 0:
+                avg_qualifying_pos = QualifyingResult.objects.filter(
+                    driver=driver
+                ).aggregate(avg_pos=Avg('position'))['avg_pos']
+                if avg_qualifying_pos and avg_qualifying_pos <= 5:
+                    base_odds = 2.5
+                elif avg_qualifying_pos and avg_qualifying_pos <= 10:
+                    base_odds = 2.0
+                else:
+                    base_odds = 1.8
+    
+    return round(base_odds, 2)

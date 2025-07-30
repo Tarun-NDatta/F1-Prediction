@@ -1,0 +1,351 @@
+{% extends 'base.html' %}
+
+{% block title %}F1 Statistics - {{ selected_year }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stats-card {
+        background: linear-gradient(135deg, rgba(225, 6, 0, 0.1) 0%, rgba(185, 28, 28, 0.1) 100%);
+        border: 1px solid rgba(225, 6, 0, 0.2);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(225, 6, 0, 0.15);
+    }
+    
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: var(--f1-red);
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        font-size: 0.9rem;
+        color: var(--f1-silver);
+        text-transform: uppercase;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+    }
+    
+    .driver-card, .team-card {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-left: 4px solid var(--f1-red);
+        transition: all 0.2s ease;
+    }
+    
+    .driver-card:hover, .team-card:hover {
+        background: rgba(255, 255, 255, 0.1);
+        transform: translateX(5px);
+    }
+    
+    .driver-number {
+        background: var(--f1-red);
+        color: white;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 0.8rem;
+    }
+    
+    .performance-badge {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .badge-win { background: var(--f1-gold); color: var(--f1-dark); }
+    .badge-podium { background: #C0C0C0; color: var(--f1-dark); }
+    .badge-dnf { background: #DC143C; color: white; }
+    
+    .year-filter {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .year-filter select {
+        background: var(--f1-dark);
+        color: var(--f1-white);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 6px;
+        padding: 0.5rem 1rem;
+    }
+    
+    body.dark-mode .year-filter {
+        background: rgba(0, 0, 0, 0.2);
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .chart-container {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    body.dark-mode .chart-container {
+        background: rgba(0, 0, 0, 0.2);
+    }
+    
+    .circuit-link {
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .circuit-link:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(225, 6, 0, 0.2);
+        border-color: var(--f1-red);
+    }
+    
+    .circuit-link:hover h6 {
+        color: var(--f1-red) !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="display-4 text-center mb-3">
+                <i class="fas fa-chart-line"></i> F1 Statistics
+            </h1>
+            <p class="text-center text-muted" style="color: var(--f1-silver) !important;">Comprehensive analytics and performance insights</p>
+        </div>
+    </div>
+
+    <!-- Year Filter -->
+    <div class="year-filter">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h5 class="mb-0">
+                    <i class="fas fa-calendar"></i> Season Filter
+                </h5>
+            </div>
+            <div class="col-md-6">
+                <form method="get" class="d-flex">
+                    <select name="year" class="form-select me-2" onchange="this.form.submit()">
+                        {% for year in available_years %}
+                            <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>
+                                {{ year }} Season
+                            </option>
+                        {% endfor %}
+                    </select>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Season Overview -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h3 class="mb-3">
+                <i class="fas fa-trophy"></i> {{ selected_year }} Season Overview
+            </h3>
+        </div>
+    </div>
+    
+    <div class="stats-grid">
+        <div class="stats-card text-center">
+            <div class="stat-number">{{ season_overview.total_races }}</div>
+            <div class="stat-label">Races</div>
+        </div>
+        <div class="stats-card text-center">
+            <div class="stat-number">{{ season_overview.total_drivers }}</div>
+            <div class="stat-label">Drivers</div>
+        </div>
+        <div class="stats-card text-center">
+            <div class="stat-number">{{ season_overview.total_teams }}</div>
+            <div class="stat-label">Teams</div>
+        </div>
+        <div class="stats-card text-center">
+            <div class="stat-number">{{ season_overview.total_circuits }}</div>
+            <div class="stat-label">Circuits</div>
+        </div>
+    </div>
+
+    <!-- Driver Statistics -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h3 class="mb-3">
+                <i class="fas fa-user"></i> Driver Performance
+            </h3>
+        </div>
+    </div>
+    
+    <div class="row">
+        {% for driver in driver_stats %}
+        <div class="col-md-6 col-lg-4">
+            <div class="driver-card">
+                <div class="d-flex align-items-center mb-2">
+                    <div class="driver-number me-3">{{ driver.driver__permanent_number|default:"?" }}</div>
+                    <div>
+                        <h6 class="mb-0">{{ driver.driver__given_name }} {{ driver.driver__family_name }}</h6>
+                        <small class="text-muted">{{ driver.team__name }}</small>
+                    </div>
+                </div>
+                
+                <div class="row text-center">
+                    <div class="col-4">
+                        <div class="stat-number">{{ driver.total_points|default:0 }}</div>
+                        <div class="stat-label">Points</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="stat-number">{{ driver.wins|default:0 }}</div>
+                        <div class="stat-label">Wins</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="stat-number">{{ driver.podiums|default:0 }}</div>
+                        <div class="stat-label">Podiums</div>
+                    </div>
+                </div>
+                
+                <div class="mt-2">
+                    {% if driver.wins > 0 %}
+                        <span class="performance-badge badge-win">{{ driver.wins }} Win{{ driver.wins|pluralize }}</span>
+                    {% endif %}
+                    {% if driver.podiums > 0 %}
+                        <span class="performance-badge badge-podium">{{ driver.podiums }} Podium{{ driver.podiums|pluralize }}</span>
+                    {% endif %}
+                    {% if driver.dnf_count > 0 %}
+                        <span class="performance-badge badge-dnf">{{ driver.dnf_count }} DNF{{ driver.dnf_count|pluralize }}</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="text-center text-muted">
+                <i class="fas fa-info-circle fa-3x mb-3"></i>
+                <p>No driver statistics available for {{ selected_year }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Team Statistics -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h3 class="mb-3">
+                <i class="fas fa-users"></i> Team Performance
+            </h3>
+        </div>
+    </div>
+    
+    <div class="row">
+        {% for team in team_stats %}
+        <div class="col-md-6 col-lg-4">
+            <div class="team-card">
+                <h6 class="mb-3">{{ team.team__name }}</h6>
+                
+                <div class="row text-center">
+                    <div class="col-4">
+                        <div class="stat-number">{{ team.total_points|default:0 }}</div>
+                        <div class="stat-label">Points</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="stat-number">{{ team.wins|default:0 }}</div>
+                        <div class="stat-label">Wins</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="stat-number">{{ team.podiums|default:0 }}</div>
+                        <div class="stat-label">Podiums</div>
+                    </div>
+                </div>
+                
+                <div class="mt-2">
+                    <small class="text-muted">
+                        <i class="fas fa-user"></i> {{ team.drivers_count }} Driver{{ team.drivers_count|pluralize }}
+                    </small>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="text-center text-muted">
+                <i class="fas fa-info-circle fa-3x mb-3"></i>
+                <p>No team statistics available for {{ selected_year }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Circuit Links -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h3 class="mb-3">
+                <i class="fas fa-road"></i> Season Calendar
+            </h3>
+            <p class="text-center text-muted" style="color: var(--f1-silver) !important;">Click on any circuit to view its race results</p>
+        </div>
+    </div>
+    
+    <div class="row">
+        {% for circuit in circuit_stats %}
+        <div class="col-md-6 col-lg-4">
+            <a href="{% url 'results' %}?year={{ selected_year }}&circuit={{ circuit.session__event__circuit__id }}&session=race" class="text-decoration-none">
+                <div class="stats-card circuit-link">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="mb-0">{{ circuit.session__event__circuit__name }}</h6>
+                        <span class="badge bg-primary">R{{ circuit.session__event__round }}</span>
+                    </div>
+                    <p class="text-muted mb-2" style="color: var(--f1-silver) !important;">{{ circuit.session__event__circuit__country }}</p>
+                    <div class="circuit-info">
+                        <small class="text-muted" style="color: var(--f1-silver) !important;">
+                            <i class="fas fa-calendar"></i> Round {{ circuit.session__event__round }}
+                        </small>
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="text-center text-muted">
+                <i class="fas fa-info-circle fa-3x mb-3"></i>
+                <p>No circuits available for {{ selected_year }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Add any interactive features here
+    document.addEventListener('DOMContentLoaded', function() {
+        // Auto-submit form when year changes
+        const yearSelect = document.querySelector('select[name="year"]');
+        if (yearSelect) {
+            yearSelect.addEventListener('change', function() {
+                this.form.submit();
+            });
+        }
+    });
+</script>
+{% endblock %} 

@@ -24,8 +24,16 @@ urlpatterns = [
     path('results/', view.results, name='results'),
     path('prediction/', view.prediction, name='prediction'),
     path('standings/', view.standings, name='standings'),
+    path('statistics/', view.statistics, name='statistics'),
+    path('credits/', view.credits, name='credits'),
+    path('portfolio/', view.portfolio, name='portfolio'),
+    path('circuits/', view.circuits, name='circuits'),
+    path('circuit/<int:circuit_id>/', view.circuit_detail, name='circuit_detail'),
+    path('betting/', view.betting, name='betting'),
+    path('place_bet/', view.place_bet, name='place_bet'),
+    path('my_bets/', view.my_bets, name='my_bets'),
     path('register/', view.register, name='register'),
     path('login/', view.login_view, name='login'),
     path('logout/', view.logout_view, name='logout'),
     path('activate/<uidb64>/<token>/', view.activate, name='activate'),
-    ]
+]

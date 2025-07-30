@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+
+{% block title %}Credits History{% endblock %}
+
+{% block extra_css %}
+<style>
+    .credits-header {
+        background: var(--f1-gradient);
+        color: white;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        border-radius: 12px;
+        text-align: center;
+    }
+    
+    .balance-card {
+        background: linear-gradient(135deg, rgba(255, 215, 0, 0.1) 0%, rgba(255, 193, 7, 0.1) 100%);
+        border: 1px solid rgba(255, 215, 0, 0.3);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+    
+    .balance-amount {
+        font-size: 3rem;
+        font-weight: bold;
+        color: #ffd700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background: var(--f1-white);
+        border-radius: 12px;
+        padding: 1.5rem;
+        text-align: center;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        transition: transform 0.2s ease;
+    }
+    
+    body.dark-mode .stat-card {
+        background: var(--f1-card-dark);
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-2px);
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-value.positive { color: #28a745; }
+    .stat-value.negative { color: #dc3545; }
+    .stat-value.neutral { color: var(--f1-red); }
+    
+    .stat-label {
+        color: #6b7280;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        font-weight: 600;
+    }
+    
+    .transaction-item {
+        background: var(--f1-white);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 0.5rem;
+        border-left: 4px solid;
+        transition: transform 0.2s ease;
+    }
+    
+    body.dark-mode .transaction-item {
+        background: var(--f1-card-dark);
+    }
+    
+    .transaction-item:hover {
+        transform: translateX(4px);
+    }
+    
+    .transaction-item.positive { border-left-color: #28a745; }
+    .transaction-item.negative { border-left-color: #dc3545; }
+    .transaction-item.neutral { border-left-color: var(--f1-red); }
+    
+    .transaction-amount {
+        font-weight: bold;
+        font-size: 1.1rem;
+    }
+    
+    .transaction-amount.positive { color: #28a745; }
+    .transaction-amount.negative { color: #dc3545; }
+    .transaction-amount.neutral { color: var(--f1-red); }
+    
+    .transaction-type {
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        font-weight: 600;
+        color: #6b7280;
+    }
+    
+    .transaction-time {
+        font-size: 0.8rem;
+        color: #9ca3af;
+    }
+    
+    .no-transactions {
+        text-align: center;
+        padding: 3rem;
+        color: #6b7280;
+    }
+    
+    .no-transactions i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        color: #d1d5db;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="credits-header">
+    <h1><i class="fas fa-coins me-2"></i>Credits History</h1>
+    <p class="lead">Track your virtual credits and transaction history</p>
+</div>
+
+<div class="balance-card">
+    <div class="balance-amount">{{ profile.credits }}</div>
+    <div style="color: #ffd700; font-weight: 600;">Current Balance</div>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-value positive">{{ total_earned }}</div>
+        <div class="stat-label">Total Earned</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value negative">{{ total_spent }}</div>
+        <div class="stat-label">Total Spent</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value neutral">{{ profile.total_bets_placed }}</div>
+        <div class="stat-label">Bets Placed</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value {% if profile.win_rate >= 50 %}positive{% else %}negative{% endif %}">{{ profile.win_rate }}%</div>
+        <div class="stat-label">Win Rate</div>
+    </div>
+</div>
+
+<div class="content-box">
+    <h3 class="mb-3">
+        <i class="fas fa-history me-2"></i>Recent Transactions
+    </h3>
+    
+    {% if transactions %}
+        {% for transaction in transactions %}
+        <div class="transaction-item {% if transaction.amount > 0 %}positive{% elif transaction.amount < 0 %}negative{% else %}neutral{% endif %}">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="transaction-amount {% if transaction.amount > 0 %}positive{% elif transaction.amount < 0 %}negative{% else %}neutral{% endif %}">
+                        {% if transaction.amount > 0 %}+{% endif %}{{ transaction.amount }}
+                    </div>
+                    <div class="transaction-type">{{ transaction.get_transaction_type_display }}</div>
+                    <div class="transaction-time">{{ transaction.timestamp|date:"M j, Y g:i A" }}</div>
+                </div>
+                <div class="text-end">
+                    <div style="font-size: 0.9rem; color: #6b7280;">Balance: {{ transaction.balance_after }}</div>
+                    <div style="font-size: 0.8rem; color: #9ca3af;">{{ transaction.description }}</div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="no-transactions">
+            <i class="fas fa-coins"></i>
+            <h4>No Transactions Yet</h4>
+            <p>Start betting to see your transaction history here!</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %} 

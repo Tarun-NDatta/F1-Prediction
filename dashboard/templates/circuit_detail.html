@@ -1,0 +1,350 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ circuit.name }} - Circuit Details{% endblock %}
+
+{% block extra_css %}
+<style>
+    .circuit-header {
+        background: var(--f1-gradient);
+        color: white;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        border-radius: 12px;
+        text-align: center;
+    }
+    
+    .circuit-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background: var(--f1-white);
+        border-radius: 8px;
+        padding: 1rem;
+        text-align: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    body.dark-mode .stat-card {
+        background: var(--f1-card-dark);
+    }
+    
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: var(--f1-red);
+        margin-bottom: 0.25rem;
+    }
+    
+    .stat-label {
+        font-size: 0.8rem;
+        color: #6b7280;
+        text-transform: uppercase;
+        font-weight: 600;
+    }
+    
+    .track-info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .track-characteristic {
+        background: var(--f1-white);
+        border-radius: 8px;
+        padding: 1rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    body.dark-mode .track-characteristic {
+        background: var(--f1-card-dark);
+    }
+    
+    .characteristic-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+    
+    .characteristic-name {
+        font-weight: 600;
+        color: var(--f1-red);
+    }
+    
+    .characteristic-value {
+        font-weight: bold;
+        color: #6b7280;
+    }
+    
+    .difficulty-bar {
+        width: 100%;
+        height: 8px;
+        background: #e5e7eb;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-top: 0.5rem;
+    }
+    
+    .difficulty-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #10b981, #f59e0b, #ef4444);
+        transition: width 0.3s ease;
+    }
+    
+    .historical-results {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    
+    .result-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem;
+        border-bottom: 1px solid #e5e7eb;
+        transition: background-color 0.2s ease;
+    }
+    
+    .result-item:hover {
+        background-color: rgba(220, 38, 38, 0.05);
+    }
+    
+    .result-position {
+        font-weight: bold;
+        color: var(--f1-red);
+        min-width: 30px;
+    }
+    
+    .result-driver {
+        flex: 1;
+        margin-left: 1rem;
+    }
+    
+    .result-team {
+        color: #6b7280;
+        font-size: 0.9rem;
+    }
+    
+    .result-year {
+        color: #9ca3af;
+        font-size: 0.8rem;
+        min-width: 60px;
+        text-align: right;
+    }
+    
+    .visit-button {
+        background: linear-gradient(135deg, #ffd700, #ffed4e);
+        border: none;
+        color: #000;
+        font-weight: 600;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        transition: transform 0.2s ease;
+    }
+    
+    .visit-button:hover {
+        transform: translateY(-2px);
+        background: linear-gradient(135deg, #ffed4e, #ffd700);
+    }
+    
+    .visit-button.visited {
+        background: #10b981;
+        color: white;
+    }
+    
+    .visit-button.visited:hover {
+        background: #059669;
+    }
+    
+    .category-badge {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        margin-bottom: 1rem;
+    }
+    
+    .category-power { background: #fef3c7; color: #92400e; }
+    .category-technical { background: #dbeafe; color: #1e40af; }
+    .category-street { background: #f3e8ff; color: #7c3aed; }
+    .category-hybrid { background: #dcfce7; color: #166534; }
+    .category-high_speed { background: #fce7f3; color: #be185d; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="circuit-header">
+    <h1><i class="fas fa-road me-2"></i>{{ circuit.name }}</h1>
+    <p class="lead">{{ circuit.location }}, {{ circuit.country }}</p>
+    {% if track_spec %}
+        <div class="category-badge category-{{ track_spec.category|lower }}">
+            {{ track_spec.category }} Circuit
+        </div>
+    {% endif %}
+</div>
+
+<div class="circuit-stats">
+    <div class="stat-card">
+        <div class="stat-value">{{ total_races }}</div>
+        <div class="stat-label">Total Races</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ unique_drivers }}</div>
+        <div class="stat-label">Unique Drivers</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ unique_teams }}</div>
+        <div class="stat-label">Unique Teams</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ recent_events.count }}</div>
+        <div class="stat-label">Recent Events</div>
+    </div>
+</div>
+
+{% if track_spec %}
+<div class="content-box">
+    <h3 class="mb-3">
+        <i class="fas fa-chart-line me-2"></i>Track Characteristics
+    </h3>
+    
+    <div class="track-info-grid">
+        <div class="track-characteristic">
+            <div class="characteristic-header">
+                <span class="characteristic-name">Overtaking Difficulty</span>
+                <span class="characteristic-value">{{ track_spec.overtaking_difficulty }}/10</span>
+            </div>
+            <div class="difficulty-bar">
+                <div class="difficulty-fill" style="width: {{ track_spec.overtaking_difficulty|floatformat:0 }}%"></div>
+            </div>
+        </div>
+        
+        <div class="track-characteristic">
+            <div class="characteristic-header">
+                <span class="characteristic-name">Power Sensitivity</span>
+                <span class="characteristic-value">{{ track_spec.power_sensitivity }}/10</span>
+            </div>
+            <div class="difficulty-bar">
+                <div class="difficulty-fill" style="width: {{ track_spec.power_sensitivity|floatformat:0 }}%"></div>
+            </div>
+        </div>
+        
+        <div class="track-characteristic">
+            <div class="characteristic-header">
+                <span class="characteristic-name">Tire Degradation</span>
+                <span class="characteristic-value">{{ track_spec.tire_degradation_rate }}/10</span>
+            </div>
+            <div class="difficulty-bar">
+                <div class="difficulty-fill" style="width: {{ track_spec.tire_degradation_rate|floatformat:0 }}%"></div>
+            </div>
+        </div>
+        
+        <div class="track-characteristic">
+            <div class="characteristic-header">
+                <span class="characteristic-name">Qualifying Importance</span>
+                <span class="characteristic-value">{{ track_spec.qualifying_importance }}/10</span>
+            </div>
+            <div class="difficulty-bar">
+                <div class="difficulty-fill" style="width: {{ track_spec.qualifying_importance|floatformat:0 }}%"></div>
+            </div>
+        </div>
+        
+        <div class="track-characteristic">
+            <div class="characteristic-header">
+                <span class="characteristic-name">Aero Sensitivity</span>
+                <span class="characteristic-value">{{ track_spec.aero_sensitivity }}/10</span>
+            </div>
+            <div class="difficulty-bar">
+                <div class="difficulty-fill" style="width: {{ track_spec.aero_sensitivity|floatformat:0 }}%"></div>
+            </div>
+        </div>
+        
+        <div class="track-characteristic">
+            <div class="characteristic-header">
+                <span class="characteristic-name">Weather Impact</span>
+                <span class="characteristic-value">{{ track_spec.weather_impact }}/10</span>
+            </div>
+            <div class="difficulty-bar">
+                <div class="difficulty-fill" style="width: {{ track_spec.weather_impact|floatformat:0 }}%"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="content-box">
+            <h3 class="mb-3">
+                <i class="fas fa-trophy me-2"></i>Historical Race Results
+            </h3>
+            
+            <div class="historical-results">
+                {% for result in historical_results %}
+                <div class="result-item">
+                    <div class="result-position">{{ result.position }}</div>
+                    <div class="result-driver">
+                        <div>{{ result.driver.given_name }} {{ result.driver.family_name }}</div>
+                        <div class="result-team">{{ result.team.name }}</div>
+                    </div>
+                    <div class="result-year">{{ result.session.event.year }}</div>
+                </div>
+                {% empty %}
+                <p class="text-center text-muted">No historical results available</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="content-box">
+            <h3 class="mb-3">
+                <i class="fas fa-flag-checkered me-2"></i>Recent Events
+            </h3>
+            
+            {% for event in recent_events %}
+            <div class="result-item">
+                <div class="result-driver">
+                    <div>{{ event.name }}</div>
+                    <div class="result-team">{{ event.date|date:"M j, Y" }}</div>
+                </div>
+                <div class="result-year">Round {{ event.round }}</div>
+            </div>
+            {% empty %}
+            <p class="text-center text-muted">No recent events available</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+{% if is_authenticated %}
+<div class="content-box text-center">
+    <h4 class="mb-3">Track Your Progress</h4>
+    <button class="visit-button {% if user_visited %}visited{% endif %}" 
+            onclick="markCircuitVisited({{ circuit.id }})">
+        {% if user_visited %}
+            <i class="fas fa-check me-2"></i>Circuit Visited
+        {% else %}
+            <i class="fas fa-map-marker-alt me-2"></i>Mark as Visited
+        {% endif %}
+    </button>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function markCircuitVisited(circuitId) {
+    // This would typically make an AJAX call to mark the circuit as visited
+    // For now, we'll just show a simple alert
+    alert('Circuit marked as visited! This feature will be fully implemented with the betting system.');
+}
+</script>
+{% endblock %} 

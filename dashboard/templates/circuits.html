@@ -1,0 +1,273 @@
+{% extends 'base.html' %}
+
+{% block title %}Circuit Discovery{% endblock %}
+
+{% block extra_css %}
+<style>
+    .circuits-header {
+        background: var(--f1-gradient);
+        color: white;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        border-radius: 12px;
+        text-align: center;
+    }
+    
+    .progress-card {
+        background: linear-gradient(135deg, rgba(255, 215, 0, 0.1) 0%, rgba(255, 193, 7, 0.1) 100%);
+        border: 1px solid rgba(255, 215, 0, 0.3);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+    
+    .progress-bar {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 10px;
+        height: 20px;
+        margin: 1rem 0;
+        overflow: hidden;
+    }
+    
+    .progress-fill {
+        background: linear-gradient(90deg, #ffd700, #ffed4e);
+        height: 100%;
+        transition: width 0.3s ease;
+    }
+    
+    .circuit-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .circuit-card {
+        background: var(--f1-white);
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border: 2px solid transparent;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    body.dark-mode .circuit-card {
+        background: var(--f1-card-dark);
+    }
+    
+    .circuit-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    }
+    
+    .circuit-card.visited {
+        border-color: #ffd700;
+        background: linear-gradient(135deg, rgba(255, 215, 0, 0.05) 0%, rgba(255, 193, 7, 0.05) 100%);
+    }
+    
+    .circuit-card.visited::before {
+        content: "✓";
+        position: absolute;
+        top: 10px;
+        right: 15px;
+        background: #ffd700;
+        color: #000;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 12px;
+    }
+    
+    .circuit-name {
+        font-size: 1.3rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+        color: var(--f1-red);
+    }
+    
+    .circuit-location {
+        color: #6b7280;
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+    }
+    
+    .track-characteristics {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .characteristic {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.8rem;
+    }
+    
+    .characteristic-label {
+        color: #6b7280;
+    }
+    
+    .characteristic-value {
+        font-weight: 600;
+        color: var(--f1-red);
+    }
+    
+    .difficulty-bar {
+        width: 60px;
+        height: 6px;
+        background: #e5e7eb;
+        border-radius: 3px;
+        overflow: hidden;
+    }
+    
+    .difficulty-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #10b981, #f59e0b, #ef4444);
+        transition: width 0.3s ease;
+    }
+    
+    .recent-races {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid #e5e7eb;
+    }
+    
+    .recent-races h6 {
+        font-size: 0.9rem;
+        color: #6b7280;
+        margin-bottom: 0.5rem;
+    }
+    
+    .race-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.8rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .race-winner {
+        font-weight: 600;
+        color: var(--f1-red);
+    }
+    
+    .race-year {
+        color: #9ca3af;
+    }
+    
+    .category-badge {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        margin-bottom: 0.5rem;
+    }
+    
+    .category-power { background: #fef3c7; color: #92400e; }
+    .category-technical { background: #dbeafe; color: #1e40af; }
+    .category-street { background: #f3e8ff; color: #7c3aed; }
+    .category-hybrid { background: #dcfce7; color: #166534; }
+    .category-high_speed { background: #fce7f3; color: #be185d; }
+    
+    .no-track-data {
+        color: #9ca3af;
+        font-style: italic;
+        font-size: 0.9rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="circuits-header">
+    <h1><i class="fas fa-road me-2"></i>Circuit Discovery</h1>
+    <p class="lead">Explore F1 circuits and track your progress</p>
+</div>
+
+{% if user_progress %}
+<div class="progress-card">
+    <h4>Your Circuit Progress</h4>
+    <div class="progress-bar">
+        <div class="progress-fill" style="width: {% widthratio user_progress.visited_count user_progress.total_circuits 100 %}%"></div>
+    </div>
+    <div class="d-flex justify-content-between">
+        <span>{{ user_progress.visited_count }} visited</span>
+        <span>{{ user_progress.total_circuits }} total</span>
+    </div>
+</div>
+{% endif %}
+
+<div class="circuit-grid">
+    {% for circuit_data in circuits %}
+    <div class="circuit-card {% if circuit_data.is_visited %}visited{% endif %}">
+        <div class="circuit-name">{{ circuit_data.circuit.name }}</div>
+        <div class="circuit-location">{{ circuit_data.circuit.location }}, {{ circuit_data.circuit.country }}</div>
+        
+        {% if circuit_data.track_data %}
+            <div class="category-badge category-{{ circuit_data.track_data.category|lower }}">
+                {{ circuit_data.track_data.category }}
+            </div>
+            
+            <div class="track-characteristics">
+                <div class="characteristic">
+                    <span class="characteristic-label">Overtaking</span>
+                    <div class="difficulty-bar">
+                        <div class="difficulty-fill" style="width: {{ circuit_data.track_data.overtaking_difficulty|floatformat:0 }}%"></div>
+                    </div>
+                </div>
+                <div class="characteristic">
+                    <span class="characteristic-label">Power Sens.</span>
+                    <div class="difficulty-bar">
+                        <div class="difficulty-fill" style="width: {{ circuit_data.track_data.power_sensitivity|floatformat:0 }}%"></div>
+                    </div>
+                </div>
+                <div class="characteristic">
+                    <span class="characteristic-label">Weather Impact</span>
+                    <div class="difficulty-bar">
+                        <div class="difficulty-fill" style="width: {{ circuit_data.track_data.weather_impact|floatformat:0 }}%"></div>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="no-track-data">Track characteristics not available</div>
+        {% endif %}
+        
+        {% if circuit_data.recent_races %}
+        <div class="recent-races">
+            <h6>Recent Winners</h6>
+            {% for race in circuit_data.recent_races|slice:":3" %}
+            <div class="race-item">
+                <span class="race-winner">{{ race.driver.given_name }} {{ race.driver.family_name }}</span>
+                <span class="race-year">{{ race.session.event.year }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <div class="mt-3">
+            <a href="{% url 'circuit_detail' circuit_data.circuit.id %}" class="btn btn-primary btn-sm">
+                <i class="fas fa-info-circle me-1"></i>View Details
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if not circuits %}
+<div class="content-box text-center">
+    <i class="fas fa-road" style="font-size: 3rem; color: #d1d5db; margin-bottom: 1rem;"></i>
+    <h4>No Circuits Available</h4>
+    <p>Circuit data will be available once races are added to the system.</p>
+</div>
+{% endif %}
+{% endblock %} 

@@ -1,0 +1,262 @@
+{% extends 'base.html' %}
+
+{% block title %}My Portfolio{% endblock %}
+
+{% block extra_css %}
+<style>
+    .portfolio-header {
+        background: var(--f1-gradient);
+        color: white;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        border-radius: 12px;
+        text-align: center;
+    }
+    
+    .portfolio-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background: var(--f1-white);
+        border-radius: 12px;
+        padding: 1.5rem;
+        text-align: center;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        transition: transform 0.2s ease;
+    }
+    
+    body.dark-mode .stat-card {
+        background: var(--f1-card-dark);
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-2px);
+    }
+    
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-value.positive { color: #28a745; }
+    .stat-value.negative { color: #dc3545; }
+    .stat-value.neutral { color: var(--f1-red); }
+    .stat-value.gold { color: #ffd700; }
+    
+    .stat-label {
+        color: #6b7280;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        font-weight: 600;
+    }
+    
+    .achievement-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .achievement-card {
+        background: var(--f1-white);
+        border-radius: 12px;
+        padding: 1.5rem;
+        text-align: center;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        transition: transform 0.2s ease;
+        border: 2px solid transparent;
+    }
+    
+    body.dark-mode .achievement-card {
+        background: var(--f1-card-dark);
+    }
+    
+    .achievement-card:hover {
+        transform: translateY(-2px);
+    }
+    
+    .achievement-card.unlocked {
+        border-color: #ffd700;
+        background: linear-gradient(135deg, rgba(255, 215, 0, 0.1) 0%, rgba(255, 193, 7, 0.1) 100%);
+    }
+    
+    .achievement-card.locked {
+        opacity: 0.6;
+        filter: grayscale(1);
+    }
+    
+    .achievement-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+    }
+    
+    .achievement-card.unlocked .achievement-icon {
+        color: #ffd700;
+    }
+    
+    .achievement-card.locked .achievement-icon {
+        color: #6b7280;
+    }
+    
+    .achievement-name {
+        font-weight: bold;
+        font-size: 1.1rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .achievement-description {
+        font-size: 0.9rem;
+        color: #6b7280;
+        margin-bottom: 1rem;
+    }
+    
+    .achievement-reward {
+        font-size: 0.8rem;
+        color: #28a745;
+        font-weight: 600;
+    }
+    
+    .bet-item {
+        background: var(--f1-white);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 0.5rem;
+        border-left: 4px solid;
+        transition: transform 0.2s ease;
+    }
+    
+    body.dark-mode .bet-item {
+        background: var(--f1-card-dark);
+    }
+    
+    .bet-item:hover {
+        transform: translateX(4px);
+    }
+    
+    .bet-item.won { border-left-color: #28a745; }
+    .bet-item.lost { border-left-color: #dc3545; }
+    .bet-item.pending { border-left-color: #ffc107; }
+    
+    .bet-status {
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        font-weight: 600;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+    }
+    
+    .bet-status.won { background: #d4edda; color: #155724; }
+    .bet-status.lost { background: #f8d7da; color: #721c24; }
+    .bet-status.pending { background: #fff3cd; color: #856404; }
+    
+    .no-bets {
+        text-align: center;
+        padding: 3rem;
+        color: #6b7280;
+    }
+    
+    .no-bets i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        color: #d1d5db;
+    }
+    
+    .rarity-common { color: #6b7280; }
+    .rarity-rare { color: #3b82f6; }
+    .rarity-epic { color: #8b5cf6; }
+    .rarity-legendary { color: #f59e0b; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="portfolio-header">
+    <h1><i class="fas fa-chart-line me-2"></i>My Portfolio</h1>
+    <p class="lead">Track your betting performance and achievements</p>
+</div>
+
+<div class="portfolio-stats">
+    <div class="stat-card">
+        <div class="stat-value gold">{{ profile.credits }}</div>
+        <div class="stat-label">Current Credits</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value neutral">{{ total_bets }}</div>
+        <div class="stat-label">Total Bets</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value {% if win_rate >= 50 %}positive{% else %}negative{% endif %}">{{ win_rate }}%</div>
+        <div class="stat-label">Win Rate</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value {% if net_profit >= 0 %}positive{% else %}negative{% endif %}">{{ net_profit }}</div>
+        <div class="stat-label">Net Profit</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value neutral">{{ circuits_visited }}</div>
+        <div class="stat-label">Circuits Visited</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value positive">{{ unlocked_achievements.count }}</div>
+        <div class="stat-label">Achievements</div>
+    </div>
+</div>
+
+<div class="content-box">
+    <h3 class="mb-3">
+        <i class="fas fa-trophy me-2"></i>Achievements
+    </h3>
+    
+    <div class="achievement-grid">
+        {% for achievement in achievements %}
+        <div class="achievement-card {% if achievement in unlocked_achievements %}unlocked{% else %}locked{% endif %}">
+            <div class="achievement-icon rarity-{{ achievement.rarity|lower }}">
+                <i class="{{ achievement.icon }}"></i>
+            </div>
+            <div class="achievement-name">{{ achievement.name }}</div>
+            <div class="achievement-description">{{ achievement.description }}</div>
+            {% if achievement.bonus_credits > 0 %}
+            <div class="achievement-reward">+{{ achievement.bonus_credits }} Credits</div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="content-box">
+    <h3 class="mb-3">
+        <i class="fas fa-history me-2"></i>Recent Bets
+    </h3>
+    
+    {% if bets %}
+        {% for bet in bets %}
+        <div class="bet-item {{ bet.status|lower }}">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div style="font-weight: bold; font-size: 1.1rem;">{{ bet.get_bet_type_display }}</div>
+                    <div style="color: #6b7280; font-size: 0.9rem;">{{ bet.event.name }}</div>
+                    <div style="color: #9ca3af; font-size: 0.8rem;">{{ bet.created_at|date:"M j, Y" }}</div>
+                </div>
+                <div class="text-end">
+                    <div class="bet-status {{ bet.status|lower }}">{{ bet.get_status_display }}</div>
+                    <div style="font-weight: bold; color: var(--f1-red);">{{ bet.credits_staked }} Credits</div>
+                    {% if bet.status == 'WON' %}
+                    <div style="color: #28a745; font-weight: bold;">+{{ bet.payout_received }}</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="no-bets">
+            <i class="fas fa-chart-line"></i>
+            <h4>No Bets Yet</h4>
+            <p>Start betting to see your portfolio history here!</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %} 

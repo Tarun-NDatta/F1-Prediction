@@ -278,6 +278,23 @@ body.dark-mode .season-stat-card .stat-label {
                     <span class="model-badge model-badge-active">{{ model_name }}</span>
                 {% endif %}
             </div>
+            
+            {% if selected_model_key == 'catboost' %}
+            <div style="background: rgba(225, 6, 0, 0.1); border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+                <h6 style="color: var(--f1-red); margin-bottom: 0.5rem;"><i class="fas fa-info-circle"></i> CatBoost Ensemble Features</h6>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; font-size: 0.9rem;">
+                    <div>
+                        <strong>Track Category:</strong> Circuit type (Power, Technical, Street, Hybrid)
+                    </div>
+                    <div>
+                        <strong>Power Sensitivity:</strong> How important engine power is (1-10 scale)
+                    </div>
+                    <div>
+                        <strong>Overtaking Difficulty:</strong> How hard it is to overtake (1-10 scale)
+                    </div>
+                </div>
+            </div>
+            {% endif %}
             <div style="display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap;">
                 <div class="season-stat-card" style="background: #f8f9fa; border-radius: 12px; padding: 1.2rem 2.2rem; min-width: 120px; text-align: center;">
                     <div style="font-size: 2rem; font-weight: bold; color: var(--f1-red);">{{ total_races }}</div>
@@ -332,6 +349,11 @@ body.dark-mode .season-stat-card .stat-label {
                                                 <th>Actual</th>
                                                 <th>Difference</th>
                                                 <th>Confidence</th>
+                                                {% if selected_model_key == 'catboost' %}
+                                                <th>Track Category</th>
+                                                <th>Power Sensitivity</th>
+                                                <th>Overtaking Difficulty</th>
+                                                {% endif %}
                                                 <th>Points</th>
                                             </tr>
                                         </thead>
@@ -345,6 +367,29 @@ body.dark-mode .season-stat-card .stat-label {
                                                 <td class="text-center">{{ item.actual }}</td>
                                                 <td class="text-center">{{ item.difference }}</td>
                                                 <td class="text-center">{{ item.confidence }}</td>
+                                                {% if selected_model_key == 'catboost' %}
+                                                <td class="text-center">
+                                                    {% if item.catboost_features.track_category != 'N/A' %}
+                                                        <span class="badge bg-info">{{ item.catboost_features.track_category }}</span>
+                                                    {% else %}
+                                                        -
+                                                    {% endif %}
+                                                </td>
+                                                <td class="text-center">
+                                                    {% if item.catboost_features.track_power_sensitivity != 'N/A' %}
+                                                        {{ item.catboost_features.track_power_sensitivity|floatformat:1 }}
+                                                    {% else %}
+                                                        -
+                                                    {% endif %}
+                                                </td>
+                                                <td class="text-center">
+                                                    {% if item.catboost_features.track_overtaking_difficulty != 'N/A' %}
+                                                        {{ item.catboost_features.track_overtaking_difficulty|floatformat:1 }}
+                                                    {% else %}
+                                                        -
+                                                    {% endif %}
+                                                </td>
+                                                {% endif %}
                                                 <td class="text-center fw-bold">{{ item.points|default:'0' }}</td>
                                             </tr>
                                             {% endfor %}
