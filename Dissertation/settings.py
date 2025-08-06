@@ -151,11 +151,34 @@ LOGGING = {
         'console': {
             'class': 'logging.StreamHandler',
         },
+        'file': {
+            'class': 'logging.FileHandler',
+            'filename': 'live_prediction.log',
+        },
     },
     'loggers': {
         '': {
             'handlers': ['console'],
             'level': 'DEBUG',
         },
+        'live_prediction': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
     },
+}
+
+# Background Task Configuration
+BACKGROUND_TASKS = {
+    'LIVE_PREDICTION_ENABLED': True,
+    'LIVE_PREDICTION_INTERVAL': 30,  # seconds
+    'LIVE_PREDICTION_FINAL_LAP': 15,
+}
+
+# GitHub OpenF1 Configuration
+GITHUB_CONFIG = {
+    'USERNAME': os.getenv('GITHUB_USERNAME', 'mock_username'),
+    'TOKEN': os.getenv('GITHUB_TOKEN', 'mock_token'),
+    'REPO': os.getenv('GITHUB_REPO', 'mock_repo'),
 }

@@ -45,11 +45,22 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class OpenF1Client:
-    """Client for OpenF1 API to get live race data"""
+    """Client for OpenF1 API to get live race data via GitHub"""
     
     def __init__(self):
-        self.base_url = "https://api.openf1.org/v1"
+        # Get GitHub credentials from environment variables with mock defaults
+        self.github_username = os.getenv('GITHUB_USERNAME', 'mock_username')
+        self.github_token = os.getenv('GITHUB_TOKEN', 'mock_token')
+        self.github_repo = os.getenv('GITHUB_REPO', 'mock_repo')
+        
+        # GitHub API base URL
+        self.github_api_url = "https://api.github.com"
         self.session = None
+        
+        # Mock data for testing (remove when real credentials are added)
+        self.use_mock_data = (self.github_username == 'mock_username' or 
+                             self.github_token == 'mock_token' or 
+                             self.github_repo == 'mock_repo')
     
     async def __aenter__(self):
         self.session = aiohttp.ClientSession()
@@ -60,74 +71,222 @@ class OpenF1Client:
             await self.session.close()
     
     async def get_current_session(self) -> Optional[Dict]:
-        """Get current F1 session"""
+        """Get current F1 session from GitHub or mock data"""
         try:
-            async with self.session.get(f"{self.base_url}/sessions") as response:
+            if self.use_mock_data:
+                # Return mock session data
+                return {
+                    'session_id': 12345,
+                    'session_name': 'Dutch Grand Prix Race',
+                    'session_status': 'active',
+                    'session_type': 'Race',
+                    'date': '2025-08-24',
+                    'total_laps': 50
+                }
+            
+            # GitHub API call to get OpenF1 data
+            headers = {
+                'Authorization': f'token {self.github_token}',
+                'Accept': 'application/vnd.github.v3+json'
+            }
+            
+            # This would be the actual GitHub API call to your private repo
+            # For now, returning mock data
+            url = f"{self.github_api_url}/repos/{self.github_username}/{self.github_repo}/contents/openf1/sessions.json"
+            
+            async with self.session.get(url, headers=headers) as response:
                 if response.status == 200:
-                    sessions = await response.json()
+                    data = await response.json()
+                    # Parse the content from GitHub
+                    import base64
+                    import json
+                    content = base64.b64decode(data['content']).decode('utf-8')
+                    sessions = json.loads(content)
+                    
                     # Find current/active session
                     for session in sessions:
                         if session.get('session_status') == 'active':
                             return session
+                else:
+                    logger.warning(f"GitHub API returned status {response.status}")
+                    return None
             return None
         except Exception as e:
             logger.error(f"Error getting current session: {e}")
             return None
     
     async def get_lap_times(self, session_id: int, lap_number: int = None) -> List[Dict]:
-        """Get lap times for a session"""
+        """Get lap times for a session from GitHub or mock data"""
         try:
-            url = f"{self.base_url}/lap_times"
-            params = {'session_id': session_id}
-            if lap_number:
-                params['lap_number'] = lap_number
+            if self.use_mock_data:
+                # Return mock lap times data
+                mock_lap_times = []
+                for driver_num in range(1, 21):  # 20 drivers
+                    mock_lap_times.append({
+                        'driver_number': driver_num,
+                        'lap_number': lap_number or 5,
+                        'lap_duration': 85.0 + (driver_num * 0.5),  # Mock lap times
+                        'sector1_time': 28.0 + (driver_num * 0.1),
+                        'sector2_time': 29.0 + (driver_num * 0.1),
+                        'sector3_time': 28.0 + (driver_num * 0.3),
+                    })
+                return mock_lap_times
             
-            async with self.session.get(url, params=params) as response:
+            # GitHub API call for lap times
+            headers = {
+                'Authorization': f'token {self.github_token}',
+                'Accept': 'application/vnd.github.v3+json'
+            }
+            
+            url = f"{self.github_api_url}/repos/{self.github_username}/{self.github_repo}/contents/openf1/lap_times.json"
+            
+            async with self.session.get(url, headers=headers) as response:
                 if response.status == 200:
-                    return await response.json()
+                    data = await response.json()
+                    import base64
+                    import json
+                    content = base64.b64decode(data['content']).decode('utf-8')
+                    lap_times = json.loads(content)
+                    
+                    # Filter by session_id and lap_number if provided
+                    filtered_times = [lt for lt in lap_times if lt.get('session_id') == session_id]
+                    if lap_number:
+                        filtered_times = [lt for lt in filtered_times if lt.get('lap_number') == lap_number]
+                    
+                    return filtered_times
+                else:
+                    logger.warning(f"GitHub API returned status {response.status}")
+                    return []
             return []
         except Exception as e:
             logger.error(f"Error getting lap times: {e}")
             return []
     
     async def get_driver_positions(self, session_id: int) -> List[Dict]:
-        """Get current driver positions"""
+        """Get current driver positions from GitHub or mock data"""
         try:
-            url = f"{self.base_url}/position"
-            params = {'session_id': session_id}
+            if self.use_mock_data:
+                # Return mock driver positions
+                mock_positions = []
+                for driver_num in range(1, 21):  # 20 drivers
+                    mock_positions.append({
+                        'driver_number': driver_num,
+                        'position': driver_num,  # Mock positions
+                        'last_lap_time': 85.0 + (driver_num * 0.5),
+                        'sector_times': [
+                            28.0 + (driver_num * 0.1),
+                            29.0 + (driver_num * 0.1),
+                            28.0 + (driver_num * 0.3)
+                        ]
+                    })
+                return mock_positions
             
-            async with self.session.get(url, params=params) as response:
+            # GitHub API call for driver positions
+            headers = {
+                'Authorization': f'token {self.github_token}',
+                'Accept': 'application/vnd.github.v3+json'
+            }
+            
+            url = f"{self.github_api_url}/repos/{self.github_username}/{self.github_repo}/contents/openf1/positions.json"
+            
+            async with self.session.get(url, headers=headers) as response:
                 if response.status == 200:
-                    return await response.json()
+                    data = await response.json()
+                    import base64
+                    import json
+                    content = base64.b64decode(data['content']).decode('utf-8')
+                    positions = json.loads(content)
+                    
+                    # Filter by session_id
+                    filtered_positions = [pos for pos in positions if pos.get('session_id') == session_id]
+                    return filtered_positions
+                else:
+                    logger.warning(f"GitHub API returned status {response.status}")
+                    return []
             return []
         except Exception as e:
             logger.error(f"Error getting driver positions: {e}")
             return []
     
     async def get_weather_data(self, session_id: int) -> Optional[Dict]:
-        """Get weather data for session"""
+        """Get weather data for session from GitHub or mock data"""
         try:
-            url = f"{self.base_url}/weather"
-            params = {'session_id': session_id}
+            if self.use_mock_data:
+                # Return mock weather data
+                return {
+                    'air_temp': 22.5,
+                    'track_temp': 28.0,
+                    'humidity': 65.0,
+                    'rain': False,
+                    'wind_speed': 8.5,
+                    'wind_direction': 180
+                }
             
-            async with self.session.get(url, params=params) as response:
+            # GitHub API call for weather data
+            headers = {
+                'Authorization': f'token {self.github_token}',
+                'Accept': 'application/vnd.github.v3+json'
+            }
+            
+            url = f"{self.github_api_url}/repos/{self.github_username}/{self.github_repo}/contents/openf1/weather.json"
+            
+            async with self.session.get(url, headers=headers) as response:
                 if response.status == 200:
-                    weather_data = await response.json()
-                    return weather_data[0] if weather_data else None
+                    data = await response.json()
+                    import base64
+                    import json
+                    content = base64.b64decode(data['content']).decode('utf-8')
+                    weather_data = json.loads(content)
+                    
+                    # Filter by session_id
+                    filtered_weather = [w for w in weather_data if w.get('session_id') == session_id]
+                    return filtered_weather[0] if filtered_weather else None
+                else:
+                    logger.warning(f"GitHub API returned status {response.status}")
+                    return None
             return None
         except Exception as e:
             logger.error(f"Error getting weather data: {e}")
             return None
     
     async def get_tire_data(self, session_id: int) -> List[Dict]:
-        """Get tire compound data"""
+        """Get tire compound data from GitHub or mock data"""
         try:
-            url = f"{self.base_url}/tyres"
-            params = {'session_id': session_id}
+            if self.use_mock_data:
+                # Return mock tire data
+                mock_tire_data = []
+                compounds = ['SOFT', 'MEDIUM', 'HARD', 'INTERMEDIATE', 'WET']
+                for driver_num in range(1, 21):
+                    mock_tire_data.append({
+                        'driver_number': driver_num,
+                        'compound': compounds[driver_num % len(compounds)],
+                        'age': driver_num % 20,  # Mock tire age
+                        'wear': (driver_num * 5) % 100  # Mock tire wear
+                    })
+                return mock_tire_data
             
-            async with self.session.get(url, params=params) as response:
+            # GitHub API call for tire data
+            headers = {
+                'Authorization': f'token {self.github_token}',
+                'Accept': 'application/vnd.github.v3+json'
+            }
+            
+            url = f"{self.github_api_url}/repos/{self.github_username}/{self.github_repo}/contents/openf1/tyres.json"
+            
+            async with self.session.get(url, headers=headers) as response:
                 if response.status == 200:
-                    return await response.json()
+                    data = await response.json()
+                    import base64
+                    import json
+                    content = base64.b64decode(data['content']).decode('utf-8')
+                    tire_data = json.loads(content)
+                    
+                    # Filter by session_id
+                    filtered_tires = [t for t in tire_data if t.get('session_id') == session_id]
+                    return filtered_tires
+                else:
+                    logger.warning(f"GitHub API returned status {response.status}")
+                    return []
             return []
         except Exception as e:
             logger.error(f"Error getting tire data: {e}")
@@ -144,6 +303,7 @@ class LivePredictionSystem:
         self.current_session = None
         self.prediction_interval = 30  # seconds
         self.final_prediction_lap = 15  # Make final prediction with 15 laps to go
+        self.should_stop = False  # Flag to stop gracefully
         
         # Load ML models
         self._load_models()
@@ -560,7 +720,7 @@ class LivePredictionSystem:
                 logger.info(f"Active session found: {session_id}")
                 
                 # Main prediction loop
-                while True:
+                while not self.should_stop:
                     try:
                         # Collect live data
                         live_data = await self._collect_live_data(session_id)

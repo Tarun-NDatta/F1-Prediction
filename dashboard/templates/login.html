@@ -98,5 +98,11 @@ body.dark-mode .login-container input {
         {% endfor %}
         <button class="btn btn-login" type="submit">Login</button>
     </form>
+    
+    <div style="text-align: center; margin-top: 1.5rem;">
+        <a href="{% url 'forgot_password' %}" style="color: var(--f1-red, #dc143c); text-decoration: none;">
+            Forgot your password?
+        </a>
+    </div>
 </div>
 {% endblock %} 

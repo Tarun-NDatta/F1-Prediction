@@ -24,6 +24,21 @@ from django.template.loader import render_to_string
 from django.conf import settings
 from django.utils import timezone
 
+import random
+import string
+from django.core.mail import send_mail
+from django.contrib import messages
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.db.models import Sum, Q
+from django.utils import timezone
+from datetime import datetime, timedelta
+import json
+import logging
+
 # Set up logging to help debug
 logger = logging.getLogger(__name__)
 
@@ -1728,3 +1743,195 @@ def live_updates(request):
     }
     
     return render(request, 'live_updates.html', context)
+
+def forgot_password(request):
+    """Forgot password page - step 1: enter email/username"""
+    # Clear any existing session data to prevent conflicts
+    if 'temp_password' in request.session:
+        del request.session['temp_password']
+    if 'user_id' in request.session:
+        del request.session['user_id']
+    if 'password_sent_time' in request.session:
+        del request.session['password_sent_time']
+    
+    if request.method == 'POST':
+        email_or_username = request.POST.get('email_or_username', '').strip()
+        
+        if not email_or_username:
+            messages.error(request, 'Please enter your email or username.')
+            return render(request, 'forgot_password.html', {'step': 1})
+        
+        # Try to find user by email or username
+        try:
+            from django.contrib.auth.models import User
+            user = User.objects.get(
+                Q(username=email_or_username) | Q(email=email_or_username)
+            )
+            
+            # Generate temporary password
+            temp_password = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
+            
+            # Store temporary password in session
+            request.session['temp_password'] = temp_password
+            request.session['user_id'] = user.id
+            request.session['password_sent_time'] = timezone.now().isoformat()
+            
+            # Send email with temporary password
+            try:
+                send_mail(
+                    'F1 Dashboard - Password Reset',
+                    f'''Hello {user.username},
+
+You requested a password reset for your F1 Dashboard account.
+
+Your temporary password is: {temp_password}
+
+Please enter this password on the next page to reset your password.
+
+If you didn't request this reset, please ignore this email.
+
+Best regards,
+F1 Dashboard Team''',
+                    'dattatarun86@gmail.com',
+                    [user.email],
+                    fail_silently=False,
+                )
+                
+                messages.success(request, f'Password sent to {user.email}')
+                return render(request, 'forgot_password.html', {'step': 2, 'email': user.email})
+                
+            except Exception as e:
+                messages.error(request, 'Failed to send email. Please try again.')
+                return render(request, 'forgot_password.html', {'step': 1})
+                
+        except User.DoesNotExist:
+            messages.error(request, 'No account found with that email or username.')
+            return render(request, 'forgot_password.html', {'step': 1})
+    
+    return render(request, 'forgot_password.html', {'step': 1})
+
+def verify_temp_password(request):
+    """Forgot password page - step 2: verify temporary password"""
+    if request.method == 'POST':
+        temp_password = request.POST.get('temp_password', '').strip()
+        stored_password = request.session.get('temp_password')
+        user_id = request.session.get('user_id')
+        
+        if not temp_password or not stored_password or not user_id:
+            messages.error(request, 'Invalid session. Please try again.')
+            return redirect('forgot_password')
+        
+        # Check if password is correct
+        if temp_password == stored_password:
+            # Check if password is not expired (15 minutes)
+            sent_time = datetime.fromisoformat(request.session.get('password_sent_time', ''))
+            if timezone.now() - sent_time > timedelta(minutes=15):
+                messages.error(request, 'Temporary password has expired. Please request a new one.')
+                return redirect('forgot_password')
+            
+            # Move to step 3: set new password
+            return render(request, 'forgot_password.html', {'step': 3})
+        else:
+            messages.error(request, 'Incorrect temporary password.')
+            return render(request, 'forgot_password.html', {'step': 2})
+    
+    return redirect('forgot_password')
+
+def reset_password(request):
+    """Forgot password page - step 3: set new password"""
+    if request.method == 'POST':
+        new_password = request.POST.get('new_password', '').strip()
+        confirm_password = request.POST.get('confirm_password', '').strip()
+        user_id = request.session.get('user_id')
+        
+        if not new_password or not confirm_password or not user_id:
+            messages.error(request, 'Invalid session. Please try again.')
+            return redirect('forgot_password')
+        
+        # Validate passwords
+        if len(new_password) < 8:
+            messages.error(request, 'Password must be at least 8 characters long.')
+            return render(request, 'forgot_password.html', {'step': 3})
+        
+        if new_password != confirm_password:
+            messages.error(request, 'Passwords do not match.')
+            return render(request, 'forgot_password.html', {'step': 3})
+        
+        # Update user password
+        try:
+            from django.contrib.auth.models import User
+            user = User.objects.get(id=user_id)
+            user.set_password(new_password)
+            user.save()
+            
+            # Clear session data
+            if 'temp_password' in request.session:
+                del request.session['temp_password']
+            if 'user_id' in request.session:
+                del request.session['user_id']
+            if 'password_sent_time' in request.session:
+                del request.session['password_sent_time']
+            
+            # Log user in
+            login(request, user)
+            
+            messages.success(request, 'Password successfully reset! You are now logged in.')
+            return redirect('home')
+            
+        except User.DoesNotExist:
+            messages.error(request, 'User not found. Please try again.')
+            return redirect('forgot_password')
+    
+    return redirect('forgot_password')
+
+@csrf_exempt
+def resend_temp_password(request):
+    """Resend temporary password"""
+    user_id = request.session.get('user_id')
+    
+    if not user_id:
+        messages.error(request, 'Invalid session. Please try again.')
+        return redirect('forgot_password')
+    
+    try:
+        from django.contrib.auth.models import User
+        user = User.objects.get(id=user_id)
+        
+        # Generate new temporary password
+        temp_password = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
+        
+        # Update session
+        request.session['temp_password'] = temp_password
+        request.session['password_sent_time'] = timezone.now().isoformat()
+        
+        # Send new email
+        try:
+            send_mail(
+                'F1 Dashboard - New Password Reset Code',
+                f'''Hello {user.username},
+
+You requested a new password reset code for your F1 Dashboard account.
+
+Your new temporary password is: {temp_password}
+
+Please enter this password on the next page to reset your password.
+
+If you didn't request this reset, please ignore this email.
+
+Best regards,
+F1 Dashboard Team''',
+                'dattatarun86@gmail.com',
+                [user.email],
+                fail_silently=False,
+            )
+            
+            messages.success(request, f'New password sent to {user.email}')
+            return render(request, 'forgot_password.html', {'step': 2, 'email': user.email})
+            
+        except Exception as e:
+            messages.error(request, 'Failed to send email. Please try again.')
+            return render(request, 'forgot_password.html', {'step': 2})
+            
+    except User.DoesNotExist:
+        messages.error(request, 'User not found. Please try again.')
+        return redirect('forgot_password')

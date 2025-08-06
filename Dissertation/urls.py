@@ -42,4 +42,8 @@ urlpatterns = [
     path('login/', view.login_view, name='login'),
     path('logout/', view.logout_view, name='logout'),
     path('activate/<uidb64>/<token>/', view.activate, name='activate'),
+    path('forgot-password/', view.forgot_password, name='forgot_password'),
+    path('verify-temp-password/', view.verify_temp_password, name='verify_temp_password'),
+    path('reset-password/', view.reset_password, name='reset_password'),
+    path('resend-temp-password/', view.resend_temp_password, name='resend_temp_password'),
 ]
