@@ -1,0 +1,427 @@
+{% extends 'base.html' %}
+{% load dashboard_extras %}
+
+{% block title %}Live Updates - F1 Race Commentary{% endblock %}
+
+{% block extra_css %}
+<style>
+.live-header {
+    background: linear-gradient(135deg, #dc0000 0%, #ff6b6b 100%);
+    color: white;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border-radius: 12px;
+    text-align: center;
+}
+
+.live-status {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    margin-top: 1rem;
+}
+
+.commentary-section {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    height: 400px;
+    overflow-y: auto;
+    border: 1px solid #e9ecef;
+}
+
+body.dark-mode .commentary-section {
+    background: #232527;
+    border-color: #333;
+}
+
+.commentary-item {
+    padding: 0.8rem;
+    margin-bottom: 0.8rem;
+    border-left: 3px solid #dc0000;
+    background: white;
+    border-radius: 0 8px 8px 0;
+}
+
+body.dark-mode .commentary-item {
+    background: #2a2d30;
+}
+
+.commentary-time {
+    font-size: 0.8rem;
+    color: #6b7280;
+    font-weight: bold;
+}
+
+.commentary-text {
+    margin-top: 0.3rem;
+    line-height: 1.4;
+}
+
+.prediction-updates {
+    background: #e8f4fd;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    height: 400px;
+    overflow-y: auto;
+    border: 1px solid #bee5eb;
+}
+
+body.dark-mode .prediction-updates {
+    background: #1a1d1f;
+    border-color: #2c3e50;
+}
+
+.prediction-item {
+    padding: 0.8rem;
+    margin-bottom: 0.8rem;
+    background: white;
+    border-radius: 8px;
+    border-left: 3px solid #17a2b8;
+}
+
+body.dark-mode .prediction-item {
+    background: #2a2d30;
+}
+
+.prediction-driver {
+    font-weight: bold;
+    color: #17a2b8;
+}
+
+.prediction-change {
+    font-size: 0.9rem;
+    color: #6b7280;
+}
+
+.betting-section {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+
+body.dark-mode .betting-section {
+    background: #232527;
+}
+
+.active-bet {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-left: 4px solid #28a745;
+}
+
+body.dark-mode .active-bet {
+    background: #2a2d30;
+}
+
+.bet-status {
+    display: inline-block;
+    padding: 0.3rem 0.8rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.bet-status.pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.bet-status.winning {
+    background: #d4edda;
+    color: #155724;
+}
+
+.bet-status.losing {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.race-info {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.race-progress {
+    background: rgba(255, 255, 255, 0.2);
+    height: 8px;
+    border-radius: 4px;
+    margin: 1rem 0;
+    overflow: hidden;
+}
+
+.race-progress-bar {
+    background: #fff;
+    height: 100%;
+    width: 35%;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.coming-soon {
+    text-align: center;
+    padding: 2rem;
+    color: #6b7280;
+}
+
+.coming-soon i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+@media (max-width: 768px) {
+    .commentary-section,
+    .prediction-updates {
+        height: 300px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Live Header -->
+    <div class="live-header">
+        <h1><i class="fas fa-broadcast-tower me-2"></i>Live Race Updates</h1>
+        {% if current_event %}
+            <h3>{{ current_event.name }}</h3>
+            <p class="mb-0">
+                <i class="fas fa-map-marker-alt me-1"></i>{{ current_event.circuit.name }} | 
+                <i class="fas fa-calendar me-1"></i>{{ current_event.date|date:"F j, Y" }}
+            </p>
+            <div class="live-status">
+                <i class="fas fa-circle text-warning me-1"></i>Waiting for Race to Start
+            </div>
+        {% else %}
+            <h3>No Upcoming Races</h3>
+            <p class="mb-0">Check back later for live updates</p>
+        {% endif %}
+    </div>
+
+    <div class="row">
+        <!-- Live Commentary -->
+        <div class="col-lg-8">
+            <div class="commentary-section">
+                <h4 class="mb-3">
+                    <i class="fas fa-microphone me-2"></i>Live Commentary
+                </h4>
+                
+                {% if current_event %}
+                    <div class="commentary-item">
+                        <div class="commentary-time">14:30 - Race Start</div>
+                        <div class="commentary-text">
+                            Welcome to the {{ current_event.name }}! The grid is set and we're ready for an exciting race. 
+                            All drivers are in their positions and the lights are about to go out.
+                        </div>
+                    </div>
+                    
+                    <div class="commentary-item">
+                        <div class="commentary-time">14:25 - Formation Lap</div>
+                        <div class="commentary-text">
+                            The formation lap is complete. Track temperature is 28°C with clear skies. 
+                            Tire strategies are varied across the grid with most teams starting on medium compounds.
+                        </div>
+                    </div>
+                    
+                    <div class="commentary-item">
+                        <div class="commentary-time">14:20 - Grid Walk</div>
+                        <div class="commentary-text">
+                            Final preparations are underway. Teams are making last-minute adjustments 
+                            to wing settings and tire pressures based on track conditions.
+                        </div>
+                    </div>
+                    
+                    <div class="commentary-item">
+                        <div class="commentary-time">14:15 - Pre-Race</div>
+                        <div class="commentary-text">
+                            The national anthem has been played and drivers are making their way to the grid. 
+                            The atmosphere is electric here at {{ current_event.circuit.name }}.
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="coming-soon">
+                        <i class="fas fa-clock"></i>
+                        <h5>No Live Race</h5>
+                        <p>Live commentary will appear here when a race is in progress.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Prediction Updates -->
+        <div class="col-lg-4">
+            <div class="prediction-updates">
+                <h4 class="mb-3">
+                    <i class="fas fa-chart-line me-2"></i>ML Prediction Updates
+                </h4>
+                
+                {% if current_event %}
+                    <div class="prediction-item">
+                        <div class="prediction-driver">Max Verstappen</div>
+                        <div class="prediction-change">
+                            Win probability: <strong>68%</strong> (+2% from pre-race)
+                        </div>
+                    </div>
+                    
+                    <div class="prediction-item">
+                        <div class="prediction-driver">Lando Norris</div>
+                        <div class="prediction-change">
+                            Podium probability: <strong>45%</strong> (+5% from pre-race)
+                        </div>
+                    </div>
+                    
+                    <div class="prediction-item">
+                        <div class="prediction-driver">Charles Leclerc</div>
+                        <div class="prediction-change">
+                            Win probability: <strong>18%</strong> (-3% from pre-race)
+                        </div>
+                    </div>
+                    
+                    <div class="prediction-item">
+                        <div class="prediction-driver">Lewis Hamilton</div>
+                        <div class="prediction-change">
+                            Points probability: <strong>85%</strong> (+8% from pre-race)
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="coming-soon">
+                        <i class="fas fa-robot"></i>
+                        <h5>Coming Soon</h5>
+                        <p>Live prediction model updates will appear here during races.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Race Progress & Active Bets -->
+    <div class="row">
+        <div class="col-lg-8">
+            {% if current_event %}
+                <div class="betting-section">
+                    <h4 class="mb-3">
+                        <i class="fas fa-flag-checkered me-2"></i>Race Progress
+                    </h4>
+                    
+                    <div class="race-info">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <strong>Lap:</strong> 0/53
+                            </div>
+                            <div class="col-md-3">
+                                <strong>Leader:</strong> Grid Formation
+                            </div>
+                            <div class="col-md-3">
+                                <strong>Gap:</strong> ----
+                            </div>
+                            <div class="col-md-3">
+                                <strong>Weather:</strong> Clear
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="race-progress">
+                        <div class="race-progress-bar"></div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <small class="text-muted">Race will begin in approximately 5 minutes</small>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="betting-section">
+                <h4 class="mb-3">
+                    <i class="fas fa-coins me-2"></i>Your Active Bets
+                </h4>
+                
+                {% if active_bets %}
+                    {% for bet in active_bets %}
+                        <div class="active-bet">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong>{{ bet.get_bet_type_display }}</strong>
+                                    {% if bet.driver %}
+                                        <br><small>{{ bet.driver.given_name }} {{ bet.driver.family_name }}</small>
+                                    {% endif %}
+                                    {% if bet.team %}
+                                        <br><small>{{ bet.team.name }}</small>
+                                    {% endif %}
+                                </div>
+                                <div class="text-end">
+                                    <span class="bet-status pending">Pending</span>
+                                    <br><small>{{ bet.credits_staked }} credits</small>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-coins fa-2x text-muted mb-2"></i>
+                        <p class="text-muted">No active bets for this race</p>
+                        <a href="{% url 'betting' %}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-plus me-1"></i>Place Bet
+                        </a>
+                    </div>
+                {% endif %}
+                
+                <div class="mt-3 text-center">
+                    <a href="{% url 'betting' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-edit me-1"></i>Update Betting
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-scroll commentary to bottom
+document.addEventListener('DOMContentLoaded', function() {
+    const commentarySection = document.querySelector('.commentary-section');
+    if (commentarySection) {
+        commentarySection.scrollTop = commentarySection.scrollHeight;
+    }
+    
+    const predictionSection = document.querySelector('.prediction-updates');
+    if (predictionSection) {
+        predictionSection.scrollTop = predictionSection.scrollHeight;
+    }
+});
+
+// Simulate live updates (for demo purposes)
+function addCommentaryUpdate(time, text) {
+    const commentarySection = document.querySelector('.commentary-section');
+    if (commentarySection) {
+        const newItem = document.createElement('div');
+        newItem.className = 'commentary-item';
+        newItem.innerHTML = `
+            <div class="commentary-time">${time}</div>
+            <div class="commentary-text">${text}</div>
+        `;
+        commentarySection.appendChild(newItem);
+        commentarySection.scrollTop = commentarySection.scrollHeight;
+    }
+}
+
+// Example: Add a new commentary update every 30 seconds (for demo)
+// setInterval(() => {
+//     const now = new Date();
+//     const timeStr = now.getHours().toString().padStart(2, '0') + ':' + 
+//                    now.getMinutes().toString().padStart(2, '0');
+//     addCommentaryUpdate(timeStr + ' - Update', 'This is a simulated live update for demonstration purposes.');
+// }, 30000);
+</script>
+{% endblock %} 

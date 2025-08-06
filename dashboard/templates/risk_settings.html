@@ -1,0 +1,288 @@
+{% extends 'base.html' %}
+{% load dashboard_extras %}
+
+{% block title %}Risk Management Settings{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="content-box">
+                <h1 class="text-center mb-3">
+                    <i class="fas fa-shield-alt me-2"></i>Risk Management Settings
+                </h1>
+                <p class="text-center mb-0">
+                    Configure your betting limits and risk tolerance to manage your betting activity safely.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Risk Tolerance Settings -->
+        <div class="col-lg-6 mb-4">
+            <div class="content-box">
+                <h4 class="mb-3">
+                    <i class="fas fa-sliders-h me-2"></i>Risk Tolerance
+                </h4>
+                
+                <form id="riskForm">
+                    <div class="mb-3">
+                        <label class="form-label">Risk Profile</label>
+                        {% for value, description in risk_tolerance_choices %}
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="risk_tolerance" 
+                                   id="risk_{{ value }}" value="{{ value }}"
+                                   {% if profile.risk_tolerance == value %}checked{% endif %}>
+                            <label class="form-check-label" for="risk_{{ value }}">
+                                <strong>{{ value|title }}</strong>
+                                <br>
+                                <small class="text-muted">{{ description }}</small>
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Maximum Bet Amount (credits)</label>
+                        <input type="number" class="form-control" name="max_bet_amount" 
+                               value="{{ profile.max_bet_amount }}" min="10" max="10000">
+                        <div class="form-text">Maximum amount you can bet on a single wager</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Daily Betting Limit (credits)</label>
+                        <input type="number" class="form-control" name="daily_bet_limit" 
+                               value="{{ profile.daily_bet_limit }}" min="100" max="50000">
+                        <div class="form-text">Maximum total amount you can bet per day</div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i>Save Settings
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Current Limits & Statistics -->
+        <div class="col-lg-6 mb-4">
+            <div class="content-box">
+                <h4 class="mb-3">
+                    <i class="fas fa-chart-pie me-2"></i>Current Limits & Statistics
+                </h4>
+                
+                <!-- Risk-Adjusted Limits -->
+                <div class="mb-4">
+                    <h6>Risk-Adjusted Limits</h6>
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="border rounded p-3 text-center">
+                                <small class="text-muted">Max Bet Amount</small>
+                                <p class="mb-0 fw-bold text-primary">{{ risk_limits.max_bet_amount }} credits</p>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="border rounded p-3 text-center">
+                                <small class="text-muted">Daily Limit</small>
+                                <p class="mb-0 fw-bold text-success">{{ risk_limits.daily_bet_limit }} credits</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-12">
+                            <div class="border rounded p-3 text-center">
+                                <small class="text-muted">Max Concurrent Bets</small>
+                                <p class="mb-0 fw-bold text-info">{{ risk_limits.max_concurrent_bets }} bets</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Current Usage -->
+                <div class="mb-4">
+                    <h6>Current Usage</h6>
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="border rounded p-3 text-center">
+                                <small class="text-muted">Active Bets</small>
+                                <p class="mb-0 fw-bold {% if active_bets >= risk_limits.max_concurrent_bets %}text-danger{% else %}text-success{% endif %}">
+                                    {{ active_bets }} / {{ risk_limits.max_concurrent_bets }}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="border rounded p-3 text-center">
+                                <small class="text-muted">Today's Bets</small>
+                                <p class="mb-0 fw-bold text-info">{{ today_bets }} bets</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-12">
+                            <div class="border rounded p-3 text-center">
+                                <small class="text-muted">Today's Bet Amount</small>
+                                <p class="mb-0 fw-bold {% if profile.daily_bet_amount >= risk_limits.daily_bet_limit %}text-danger{% else %}text-success{% endif %}">
+                                    {{ profile.daily_bet_amount }} / {{ risk_limits.daily_bet_limit }} credits
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Progress Bars -->
+                <div class="mb-4">
+                    <h6>Usage Progress</h6>
+                    
+                    <!-- Daily Bet Amount Progress -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <small>Daily Bet Amount</small>
+                            <small>{{ profile.daily_bet_amount }} / {{ risk_limits.daily_bet_limit }}</small>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            {% widthratio profile.daily_bet_amount risk_limits.daily_bet_limit 100 as daily_percent %}
+                            <div class="progress-bar {% if daily_percent > 80 %}bg-danger{% elif daily_percent > 60 %}bg-warning{% else %}bg-success{% endif %}" 
+                                 role="progressbar" style="width: {{ daily_percent }}%">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Concurrent Bets Progress -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <small>Concurrent Bets</small>
+                            <small>{{ active_bets }} / {{ risk_limits.max_concurrent_bets }}</small>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            {% widthratio active_bets risk_limits.max_concurrent_bets 100 as concurrent_percent %}
+                            <div class="progress-bar {% if concurrent_percent > 80 %}bg-danger{% elif concurrent_percent > 60 %}bg-warning{% else %}bg-success{% endif %}" 
+                                 role="progressbar" style="width: {{ concurrent_percent }}%">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Betting Statistics -->
+    <div class="row">
+        <div class="col-12">
+            <div class="content-box">
+                <h4 class="mb-3">
+                    <i class="fas fa-chart-line me-2"></i>Betting Statistics
+                </h4>
+                
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h3 class="text-primary">{{ profile.total_bets_placed }}</h3>
+                            <p class="text-muted mb-0">Total Bets</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h3 class="text-success">{{ profile.win_rate }}%</h3>
+                            <p class="text-muted mb-0">Win Rate</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h3 class="{% if profile.net_profit >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                {{ profile.net_profit }}
+                            </h3>
+                            <p class="text-muted mb-0">Net Profit</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h3 class="text-info">{{ profile.credits }}</h3>
+                            <p class="text-muted mb-0">Current Credits</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Risk Management Tips -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="content-box">
+                <h4 class="mb-3">
+                    <i class="fas fa-lightbulb me-2"></i>Risk Management Tips
+                </h4>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-info-circle me-1"></i>Set Limits</h6>
+                            <p class="mb-0">Always set daily and per-bet limits to prevent excessive losses.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="alert alert-warning">
+                            <h6><i class="fas fa-exclamation-triangle me-1"></i>Don't Chase Losses</h6>
+                            <p class="mb-0">Avoid increasing bet sizes to recover losses. Stick to your limits.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="alert alert-success">
+                            <h6><i class="fas fa-chart-bar me-1"></i>Track Performance</h6>
+                            <p class="mb-0">Monitor your win rate and adjust your strategy accordingly.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="alert alert-primary">
+                            <h6><i class="fas fa-clock me-1"></i>Take Breaks</h6>
+                            <p class="mb-0">Take regular breaks from betting to maintain clear decision-making.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('riskForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch('{% url "risk_settings" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Settings updated successfully!');
+            location.reload();
+        } else {
+            alert('Error updating settings: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error updating settings. Please try again.');
+    });
+});
+
+// Auto-update progress bars when risk tolerance changes
+document.querySelectorAll('input[name="risk_tolerance"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        // This would ideally reload the page or update via AJAX
+        // For now, we'll just show a message
+        alert('Risk tolerance changed. Please save settings to see updated limits.');
+    });
+});
+</script>
+
+<!-- Add CSRF token -->
+{% csrf_token %}
+{% endblock %} 

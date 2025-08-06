@@ -5,6 +5,7 @@ from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 import logging
+from django.db.models import Sum
 
 logger = logging.getLogger(__name__)
 
@@ -931,6 +932,29 @@ class UserProfile(models.Model):
     circuits_visited = models.ManyToManyField('Circuit', blank=True, related_name='visitors')
     achievements_unlocked = models.ManyToManyField('Achievement', blank=True, related_name='unlocked_by')
     
+    # Risk management and betting limits
+    max_bet_amount = models.IntegerField(default=1000, help_text="Maximum bet amount allowed")
+    daily_bet_limit = models.IntegerField(default=5000, help_text="Daily betting limit")
+    daily_bets_placed = models.IntegerField(default=0, help_text="Bets placed today")
+    daily_bet_amount = models.IntegerField(default=0, help_text="Total amount bet today")
+    last_bet_date = models.DateField(null=True, blank=True, help_text="Date of last bet")
+    
+    # Risk tolerance settings
+    risk_tolerance = models.CharField(
+        max_length=20,
+        choices=[
+            ('CONSERVATIVE', 'Conservative'),
+            ('MODERATE', 'Moderate'),
+            ('AGGRESSIVE', 'Aggressive'),
+        ],
+        default='MODERATE'
+    )
+    
+    # Betting restrictions
+    is_suspended = models.BooleanField(default=False, help_text="Account suspended from betting")
+    suspension_reason = models.TextField(blank=True, help_text="Reason for suspension")
+    suspension_until = models.DateTimeField(null=True, blank=True, help_text="Suspension end date")
+    
     class Meta:
         verbose_name = "User Profile"
         verbose_name_plural = "User Profiles"
@@ -941,14 +965,90 @@ class UserProfile(models.Model):
     @property
     def win_rate(self):
         """Calculate win rate percentage"""
-        if self.total_bets_placed == 0:
-            return 0
+        total_bets = self.total_bets_placed
+        if total_bets == 0:
+            return 0.0
         return round((self.total_credits_won / (self.total_credits_won + self.total_credits_lost)) * 100, 1)
     
     @property
     def net_profit(self):
         """Calculate net profit/loss"""
         return self.total_credits_won - self.total_credits_lost
+    
+    def can_place_bet(self, amount):
+        """Check if user can place a bet of given amount"""
+        # Check if account is suspended
+        if self.is_suspended:
+            if self.suspension_until and timezone.now() < self.suspension_until:
+                return False, "Account is suspended"
+            else:
+                # Suspension expired, reactivate account
+                self.is_suspended = False
+                self.suspension_reason = ""
+                self.suspension_until = None
+                self.save()
+        
+        # Check if user has enough credits
+        if self.credits < amount:
+            return False, "Insufficient credits"
+        
+        # Check maximum bet amount
+        if amount > self.max_bet_amount:
+            return False, f"Bet amount exceeds maximum allowed ({self.max_bet_amount} credits)"
+        
+        # Check daily limits
+        today = timezone.now().date()
+        if self.last_bet_date != today:
+            # Reset daily counters
+            self.daily_bets_placed = 0
+            self.daily_bet_amount = 0
+            self.last_bet_date = today
+            self.save()
+        
+        if self.daily_bet_amount + amount > self.daily_bet_limit:
+            return False, f"Daily betting limit exceeded ({self.daily_bet_limit} credits)"
+        
+        return True, "OK"
+    
+    def update_betting_stats(self, bet_amount, won=False, payout=0):
+        """Update betting statistics after a bet"""
+        self.total_bets_placed += 1
+        self.daily_bets_placed += 1
+        self.daily_bet_amount += bet_amount
+        
+        if won:
+            self.total_credits_won += payout
+        else:
+            self.total_credits_lost += bet_amount
+        
+        self.save()
+    
+    def get_risk_adjusted_limits(self):
+        """Get risk-adjusted betting limits based on user's risk tolerance"""
+        base_limits = {
+            'CONSERVATIVE': {
+                'max_bet_percent': 0.05,  # 5% of total credits
+                'daily_limit_percent': 0.20,  # 20% of total credits
+                'max_concurrent_bets': 3
+            },
+            'MODERATE': {
+                'max_bet_percent': 0.10,  # 10% of total credits
+                'daily_limit_percent': 0.40,  # 40% of total credits
+                'max_concurrent_bets': 5
+            },
+            'AGGRESSIVE': {
+                'max_bet_percent': 0.20,  # 20% of total credits
+                'daily_limit_percent': 0.60,  # 60% of total credits
+                'max_concurrent_bets': 8
+            }
+        }
+        
+        limits = base_limits.get(self.risk_tolerance, base_limits['MODERATE'])
+        return {
+            'max_bet_amount': int(self.credits * limits['max_bet_percent']),
+            'daily_bet_limit': int(self.credits * limits['daily_limit_percent']),
+            'max_concurrent_bets': limits['max_concurrent_bets']
+        }
 
 
 class CreditTransaction(models.Model):
@@ -985,13 +1085,17 @@ class CreditTransaction(models.Model):
 
 
 class Bet(models.Model):
-    """User betting model for prediction market"""
+    """Enhanced user betting model for prediction market"""
     BET_TYPES = [
         ('PODIUM_FINISH', 'Podium Finish'),
         ('EXACT_POSITION', 'Exact Position'),
         ('DNF_PREDICTION', 'DNF Prediction'),
-        ('WEATHER_BET', 'Weather Bet'),
         ('QUALIFYING_POSITION', 'Qualifying Position'),
+        ('FASTEST_LAP', 'Fastest Lap'),
+        ('HEAD_TO_HEAD', 'Head-to-Head'),
+        ('TEAM_BATTLE', 'Team Battle'),
+        ('SAFETY_CAR', 'Safety Car'),
+        ('WEATHER_BET', 'Weather Bet'),
     ]
     
     STATUS_CHOICES = [
@@ -999,13 +1103,20 @@ class Bet(models.Model):
         ('WON', 'Won'),
         ('LOST', 'Lost'),
         ('CANCELLED', 'Cancelled'),
+        ('VOID', 'Void'),
     ]
     
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='bets')
     event = models.ForeignKey('Event', on_delete=models.CASCADE)
     bet_type = models.CharField(max_length=20, choices=BET_TYPES)
+    
+    # Primary selection
     driver = models.ForeignKey('Driver', on_delete=models.CASCADE, null=True, blank=True)
     team = models.ForeignKey('Team', on_delete=models.CASCADE, null=True, blank=True)
+    
+    # For head-to-head and team battles
+    opponent_driver = models.ForeignKey('Driver', on_delete=models.CASCADE, null=True, blank=True, related_name='opponent_bets')
+    opponent_team = models.ForeignKey('Team', on_delete=models.CASCADE, null=True, blank=True, related_name='opponent_bets')
     
     # Bet details
     predicted_position = models.IntegerField(null=True, blank=True)
@@ -1013,10 +1124,19 @@ class Bet(models.Model):
     odds = models.FloatField(help_text="Decimal odds (e.g., 2.5 means 2.5x return)")
     potential_payout = models.IntegerField(help_text="Credits to be won if bet succeeds")
     
+    # Market tracking
+    market_volume_at_time = models.IntegerField(default=0, help_text="Total market volume when bet was placed")
+    odds_movement = models.JSONField(default=list, help_text="Odds movement history")
+    
     # Result tracking
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='PENDING')
     actual_result = models.CharField(max_length=50, null=True, blank=True)
     payout_received = models.IntegerField(default=0)
+    
+    # ML prediction integration
+    ml_prediction_used = models.BooleanField(default=False)
+    ml_predicted_position = models.FloatField(null=True, blank=True)
+    ml_confidence = models.FloatField(null=True, blank=True)
     
     # Metadata
     created_at = models.DateTimeField(auto_now_add=True)
@@ -1027,16 +1147,60 @@ class Bet(models.Model):
         ordering = ['-created_at']
         verbose_name = "Bet"
         verbose_name_plural = "Bets"
+        indexes = [
+            models.Index(fields=['event', 'bet_type']),
+            models.Index(fields=['user', 'status']),
+            models.Index(fields=['created_at']),
+        ]
     
     def __str__(self):
-        return f"{self.user.username} - {self.get_bet_type_display()} on {self.event.name}"
+        bet_description = f"{self.get_bet_type_display()}"
+        if self.driver:
+            bet_description += f" - {self.driver.given_name} {self.driver.family_name}"
+        elif self.team:
+            bet_description += f" - {self.team.name}"
+        return f"{self.user.username}: {bet_description} ({self.event.name})"
+    
+    def save(self, *args, **kwargs):
+        # Calculate potential payout if not set
+        if not self.potential_payout:
+            self.potential_payout = int(self.credits_staked * self.odds)
+        
+        # Track market volume at time of bet
+        if not self.market_volume_at_time:
+            self.market_volume_at_time = Bet.objects.filter(
+                event=self.event,
+                bet_type=self.bet_type,
+                driver=self.driver,
+                team=self.team
+            ).aggregate(total=Sum('credits_staked'))['total'] or 0
+        
+        super().save(*args, **kwargs)
     
     @property
     def is_winning_bet(self):
-        """Check if bet is a winning bet"""
-        if self.status != 'WON':
-            return False
-        return self.payout_received > 0
+        """Determine if bet is winning based on actual results"""
+        if self.status != 'PENDING':
+            return self.status == 'WON'
+        
+        # This would need to be implemented based on actual race results
+        # For now, return None for pending bets
+        return None
+    
+    @property
+    def market_performance(self):
+        """Calculate how this bet performed relative to market"""
+        if not self.market_volume_at_time:
+            return 0
+        
+        current_volume = Bet.objects.filter(
+            event=self.event,
+            bet_type=self.bet_type,
+            driver=self.driver,
+            team=self.team
+        ).aggregate(total=Sum('credits_staked'))['total'] or 0
+        
+        return ((current_volume - self.market_volume_at_time) / self.market_volume_at_time * 100) if self.market_volume_at_time > 0 else 0
 
 
 class Achievement(models.Model):
@@ -1094,3 +1258,187 @@ def create_user_profile(sender, instance, created, **kwargs):
 def save_user_profile(sender, instance, **kwargs):
     if hasattr(instance, 'profile'):
         instance.profile.save()
+
+class MarketMaker(models.Model):
+    """Market maker model for managing liquidity and odds adjustment"""
+    event = models.ForeignKey('Event', on_delete=models.CASCADE)
+    bet_type = models.CharField(max_length=20, choices=Bet.BET_TYPES)
+    driver = models.ForeignKey('Driver', on_delete=models.CASCADE, null=True, blank=True)
+    team = models.ForeignKey('Team', on_delete=models.CASCADE, null=True, blank=True)
+    
+    # Market state
+    total_volume = models.IntegerField(default=0, help_text="Total betting volume")
+    total_bets = models.IntegerField(default=0, help_text="Total number of bets")
+    current_odds = models.FloatField(help_text="Current market odds")
+    base_odds = models.FloatField(help_text="Base odds without market adjustment")
+    
+    # Liquidity management
+    available_liquidity = models.IntegerField(default=10000, help_text="Available credits for market making")
+    max_exposure = models.IntegerField(default=5000, help_text="Maximum exposure per bet")
+    
+    # Market maker settings
+    spread_percentage = models.FloatField(default=0.05, help_text="Bid-ask spread as percentage")
+    adjustment_sensitivity = models.FloatField(default=0.1, help_text="How quickly odds adjust to volume")
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ('event', 'bet_type', 'driver', 'team')
+        indexes = [
+            models.Index(fields=['event', 'bet_type']),
+            models.Index(fields=['total_volume']),
+        ]
+    
+    def __str__(self):
+        bet_description = f"{self.get_bet_type_display()}"
+        if self.driver:
+            bet_description += f" - {self.driver.given_name} {self.driver.family_name}"
+        elif self.team:
+            bet_description += f" - {self.team.name}"
+        return f"{self.event.name}: {bet_description}"
+    
+    def calculate_adjusted_odds(self, bet_amount):
+        """Calculate adjusted odds based on market dynamics"""
+        # Base odds from historical data and ML predictions
+        base_odds = self.base_odds
+        
+        # Volume impact adjustment
+        volume_ratio = self.total_volume / max(self.available_liquidity, 1)
+        volume_adjustment = 1 + (volume_ratio * self.adjustment_sensitivity)
+        
+        # Exposure adjustment
+        exposure_ratio = (self.total_volume + bet_amount) / max(self.max_exposure, 1)
+        if exposure_ratio > 1:
+            exposure_adjustment = 1 + (exposure_ratio - 1) * 0.2
+        else:
+            exposure_adjustment = 1.0
+        
+        # Calculate final odds
+        adjusted_odds = base_odds * volume_adjustment * exposure_adjustment
+        
+        # Apply spread
+        bid_odds = adjusted_odds * (1 - self.spread_percentage)
+        ask_odds = adjusted_odds * (1 + self.spread_percentage)
+        
+        return {
+            'bid': round(bid_odds, 2),
+            'ask': round(ask_odds, 2),
+            'mid': round(adjusted_odds, 2)
+        }
+    
+    def update_market_state(self, bet_amount):
+        """Update market state after a bet is placed"""
+        self.total_volume += bet_amount
+        self.total_bets += 1
+        
+        # Recalculate current odds
+        new_odds = self.calculate_adjusted_odds(0)
+        self.current_odds = new_odds['mid']
+        
+        self.save()
+    
+    def get_market_depth(self):
+        """Get market depth information"""
+        recent_bets = Bet.objects.filter(
+            event=self.event,
+            bet_type=self.bet_type,
+            driver=self.driver,
+            team=self.team
+        ).order_by('-created_at')[:10]
+        
+        depth_data = {
+            'total_volume': self.total_volume,
+            'total_bets': self.total_bets,
+            'current_odds': self.current_odds,
+            'available_liquidity': self.available_liquidity,
+            'recent_activity': []
+        }
+        
+        for bet in recent_bets:
+            depth_data['recent_activity'].append({
+                'amount': bet.credits_staked,
+                'odds': bet.odds,
+                'timestamp': bet.created_at.isoformat()
+            })
+        
+        return depth_data
+
+
+class MarketOrder(models.Model):
+    """Market order model for advanced trading functionality"""
+    ORDER_TYPES = [
+        ('MARKET', 'Market Order'),
+        ('LIMIT', 'Limit Order'),
+        ('STOP', 'Stop Order'),
+    ]
+    
+    SIDE_CHOICES = [
+        ('BUY', 'Buy'),
+        ('SELL', 'Sell'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('PENDING', 'Pending'),
+        ('FILLED', 'Filled'),
+        ('CANCELLED', 'Cancelled'),
+        ('REJECTED', 'Rejected'),
+    ]
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='market_orders')
+    market_maker = models.ForeignKey(MarketMaker, on_delete=models.CASCADE)
+    
+    order_type = models.CharField(max_length=10, choices=ORDER_TYPES)
+    side = models.CharField(max_length=4, choices=SIDE_CHOICES)
+    amount = models.IntegerField(help_text="Amount in credits")
+    limit_price = models.FloatField(null=True, blank=True, help_text="Limit price for limit orders")
+    stop_price = models.FloatField(null=True, blank=True, help_text="Stop price for stop orders")
+    
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='PENDING')
+    filled_amount = models.IntegerField(default=0)
+    average_price = models.FloatField(null=True, blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    filled_at = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'status']),
+            models.Index(fields=['market_maker', 'side']),
+        ]
+    
+    def __str__(self):
+        return f"{self.user.username}: {self.side} {self.amount} @ {self.market_maker}"
+    
+    def execute_market_order(self):
+        """Execute a market order"""
+        if self.order_type != 'MARKET':
+            return False
+        
+        # Get current market odds
+        odds = self.market_maker.calculate_adjusted_odds(self.amount)
+        
+        if self.side == 'BUY':
+            execution_price = odds['ask']
+        else:  # SELL
+            execution_price = odds['bid']
+        
+        # Check if we have enough liquidity
+        if self.amount > self.market_maker.available_liquidity:
+            self.status = 'REJECTED'
+            self.save()
+            return False
+        
+        # Execute the order
+        self.filled_amount = self.amount
+        self.average_price = execution_price
+        self.status = 'FILLED'
+        self.filled_at = timezone.now()
+        self.save()
+        
+        # Update market maker state
+        self.market_maker.update_market_state(self.amount)
+        
+        return True

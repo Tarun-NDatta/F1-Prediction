@@ -45,10 +45,10 @@ class Command(BaseCommand):
             credits_staked = random.randint(50, 500)
             odds = round(random.uniform(1.5, 5.0), 2)
             
-            # Calculate credits won if bet was won
-            credits_won = 0
+            # Calculate payout if bet was won
+            payout_received = 0
             if status == 'won':
-                credits_won = int(credits_staked * odds)
+                payout_received = int(credits_staked * odds)
             
             bet = Bet.objects.create(
                 user=user,
@@ -60,7 +60,7 @@ class Command(BaseCommand):
                 credits_staked=credits_staked,
                 odds=odds,
                 status=status,
-                credits_won=credits_won
+                payout_received=payout_received
             )
             bets_created += 1
         
@@ -68,7 +68,7 @@ class Command(BaseCommand):
         total_bets = Bet.objects.filter(user=user).count()
         won_bets = Bet.objects.filter(user=user, status='won').count()
         total_wagered = sum(bet.credits_staked for bet in Bet.objects.filter(user=user))
-        total_won = sum(bet.credits_won for bet in Bet.objects.filter(user=user, status='won'))
+        total_won = sum(bet.payout_received for bet in Bet.objects.filter(user=user, status='won'))
         
         profile.total_bets_placed = total_bets
         profile.total_credits_won = total_won

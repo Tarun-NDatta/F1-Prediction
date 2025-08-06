@@ -169,7 +169,7 @@
                                 </td>
                                 <td class="{% if bet.status == 'won' %}text-success{% else %}text-danger{% endif %}">
                                     {% if bet.status == 'won' %}
-                                        +{{ bet.credits_won }} credits
+                                        +{{ bet.payout_received }} credits
                                     {% else %}
                                         -{{ bet.credits_staked }} credits
                                     {% endif %}

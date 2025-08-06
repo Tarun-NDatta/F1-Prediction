@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load dashboard_extras %}
 
 {% block title %}Prediction Market - F1 Betting{% endblock %}
 
@@ -31,25 +32,46 @@
                 {% for event in upcoming_events %}
                 <div class="event-card mb-3" data-event-id="{{ event.id }}">
                     <div class="row align-items-center">
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <h5 class="mb-1">{{ event.name }}</h5>
                             <p class="text-muted mb-0">
                                 <i class="fas fa-map-marker-alt me-1"></i>{{ event.circuit.name }}
                             </p>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <p class="mb-0">
                                 <i class="fas fa-calendar me-1"></i>{{ event.date|date:"M d, Y" }}
                             </p>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <span class="badge bg-primary">Round {{ event.round }}</span>
+                        </div>
+                        <div class="col-md-3">
+                            <!-- Market Statistics -->
+                            {% with stats=market_stats|get_item:event.id %}
+                            {% if stats %}
+                            <div class="market-stats">
+                                <small class="text-muted">
+                                    <i class="fas fa-chart-line me-1"></i>{{ stats.total_volume }} credits
+                                </small><br>
+                                <small class="text-muted">
+                                    <i class="fas fa-users me-1"></i>{{ stats.bet_count }} bets
+                                </small>
+                            </div>
+                            {% endif %}
+                            {% endwith %}
                         </div>
                         <div class="col-md-2">
                             <button class="btn btn-outline-primary btn-sm" 
                                     onclick="openBettingModal({{ event.id }}, '{{ event.name }}')">
                                 <i class="fas fa-bet me-1"></i>Bet Now
                             </button>
+                            <br>
+                            <small>
+                                <a href="{% url 'market_depth' event.id %}" class="text-muted">
+                                    <i class="fas fa-chart-line me-1"></i>Market Depth
+                                </a>
+                            </small>
                         </div>
                     </div>
                 </div>
@@ -57,6 +79,63 @@
                 <div class="text-center py-4">
                     <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
                     <p class="text-muted">No upcoming events available for betting.</p>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Completed Events -->
+            <div class="content-box mt-4">
+                <h3 class="mb-4">
+                    <i class="fas fa-flag-checkered me-2"></i>Completed Events
+                </h3>
+                
+                {% for event in completed_events %}
+                <div class="event-card mb-3 completed-event" data-event-id="{{ event.id }}">
+                    <div class="row align-items-center">
+                        <div class="col-md-3">
+                            <h5 class="mb-1">{{ event.name }}</h5>
+                            <p class="text-muted mb-0">
+                                <i class="fas fa-map-marker-alt me-1"></i>{{ event.circuit.name }}
+                            </p>
+                        </div>
+                        <div class="col-md-2">
+                            <p class="mb-0">
+                                <i class="fas fa-calendar me-1"></i>{{ event.date|date:"M d, Y" }}
+                            </p>
+                        </div>
+                        <div class="col-md-2">
+                            <span class="badge bg-secondary">Round {{ event.round }}</span>
+                        </div>
+                        <div class="col-md-3">
+                            <!-- Market Statistics -->
+                            {% with stats=market_stats|get_item:event.id %}
+                            {% if stats %}
+                            <div class="market-stats">
+                                <small class="text-muted">
+                                    <i class="fas fa-chart-line me-1"></i>{{ stats.total_volume }} credits
+                                </small><br>
+                                <small class="text-muted">
+                                    <i class="fas fa-users me-1"></i>{{ stats.bet_count }} bets
+                                </small>
+                            </div>
+                            {% endif %}
+                            {% endwith %}
+                        </div>
+                        <div class="col-md-2">
+                            <span class="badge bg-success">Completed</span>
+                            <br>
+                            <small>
+                                <a href="#" class="text-muted" onclick="viewResults({{ event.id }})">
+                                    <i class="fas fa-eye me-1"></i>View Results
+                                </a>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-4">
+                    <i class="fas fa-flag-checkered fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">No completed events available.</p>
                 </div>
                 {% endfor %}
             </div>
@@ -75,11 +154,11 @@
                             <small class="text-muted">{{ bet.event.name }}</small>
                             <p class="mb-1 fw-bold">{{ bet.get_bet_type_display }}</p>
                             {% if bet.driver %}
-                            <small>{{ bet.driver.name }}</small>
+                            <small>{{ bet.driver.given_name }} {{ bet.driver.family_name }}</small>
                             {% endif %}
                         </div>
                         <div class="text-end">
-                            <span class="badge bg-{% if bet.status == 'won' %}success{% elif bet.status == 'lost' %}danger{% else %}warning{% endif %}">
+                            <span class="badge bg-{% if bet.status == 'WON' %}success{% elif bet.status == 'LOST' %}danger{% else %}warning{% endif %}">
                                 {{ bet.status|title }}
                             </span>
                             <p class="mb-0 small">{{ bet.credits_staked }} credits</p>
@@ -96,72 +175,65 @@
                     <i class="fas fa-chart-line me-2"></i>Betting Guide
                 </h4>
                 <div class="betting-guide">
-                    <div class="guide-item mb-2">
-                        <strong>Podium Finish:</strong> Bet on driver to finish in top 3
+                    {% for bet_type in enhanced_bet_types %}
+                    <div class="guide-item mb-3">
+                        <div class="d-flex align-items-start">
+                            <i class="{{ bet_type.icon }} me-2 mt-1 text-primary"></i>
+                            <div>
+                                <strong>{{ bet_type.name }}</strong>
+                                <p class="mb-1 small text-muted">{{ bet_type.description }}</p>
+                                <small class="text-info">Base Odds: {{ bet_type.base_odds }}x</small>
+                            </div>
+                        </div>
                     </div>
-                    <div class="guide-item mb-2">
-                        <strong>Exact Position:</strong> Predict specific finishing position
-                    </div>
-                    <div class="guide-item mb-2">
-                        <strong>DNF Prediction:</strong> Bet on driver not finishing
-                    </div>
-                    <div class="guide-item mb-2">
-                        <strong>Qualifying Position:</strong> Predict qualifying result
-                    </div>
-                    <div class="guide-item mb-2">
-                        <strong>Fastest Lap:</strong> Bet on fastest lap achievement
-                    </div>
-                    <div class="guide-item">
-                        <strong>Weather Impact:</strong> Bet on weather-related outcomes
-                    </div>
+                    {% endfor %}
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Betting Modal -->
-<div class="modal fade" id="bettingModal" tabindex="-1">
+<!-- Enhanced Betting Modal -->
+<div class="modal fade" id="bettingModal" tabindex="-1" aria-labelledby="bettingModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fas fa-coins me-2"></i>Place Bet
+                <h5 class="modal-title" id="bettingModalLabel">
+                    <i class="fas fa-bet me-2"></i>Place Bet
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <form id="bettingForm">
                     <input type="hidden" id="eventId" name="event_id">
                     
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">Event</label>
-                                <input type="text" id="eventName" class="form-control" readonly>
+                    <!-- Bet Type Selection -->
+                    <div class="mb-3">
+                        <label class="form-label">Bet Type</label>
+                        <div class="row">
+                            {% for bet_type in enhanced_bet_types %}
+                            <div class="col-md-6 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="bet_type" 
+                                           id="bet_type_{{ bet_type.type }}" value="{{ bet_type.type }}">
+                                    <label class="form-check-label" for="bet_type_{{ bet_type.type }}">
+                                        <i class="{{ bet_type.icon }} me-1"></i>{{ bet_type.name }}
+                                    </label>
+                                </div>
                             </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">Bet Type</label>
-                                <select class="form-select" id="betType" name="bet_type" required>
-                                    <option value="">Select bet type...</option>
-                                    {% for bet_type, bet_name in bet_types %}
-                                    <option value="{{ bet_type }}">{{ bet_name }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
+                            {% endfor %}
                         </div>
                     </div>
-
+                    
+                    <!-- Driver/Team Selection -->
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="form-label">Driver</label>
                                 <select class="form-select" id="driverSelect" name="driver_id">
-                                    <option value="">Select driver...</option>
+                                    <option value="">Select Driver</option>
                                     {% for driver in drivers %}
-                                    <option value="{{ driver.id }}">{{ driver }}</option>
+                                    <option value="{{ driver.id }}">{{ driver.given_name }} {{ driver.family_name }} ({{ driver.team.name }})</option>
                                     {% endfor %}
                                 </select>
                             </div>
@@ -170,7 +242,7 @@
                             <div class="mb-3">
                                 <label class="form-label">Team</label>
                                 <select class="form-select" id="teamSelect" name="team_id">
-                                    <option value="">Select team...</option>
+                                    <option value="">Select Team</option>
                                     {% for team in teams %}
                                     <option value="{{ team.id }}">{{ team.name }}</option>
                                     {% endfor %}
@@ -178,27 +250,78 @@
                             </div>
                         </div>
                     </div>
-
-                    <div class="row">
+                    
+                    <!-- Opponent Selection (for head-to-head and team battles) -->
+                    <div class="row" id="opponentSection" style="display: none;">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label class="form-label">Position (for position bets)</label>
-                                <input type="number" class="form-control" id="positionInput" name="position" min="1" max="20">
+                                <label class="form-label">Opponent Driver</label>
+                                <select class="form-select" id="opponentDriverSelect" name="opponent_driver_id">
+                                    <option value="">Select Opponent Driver</option>
+                                    {% for driver in drivers %}
+                                    <option value="{{ driver.id }}">{{ driver.given_name }} {{ driver.family_name }} ({{ driver.team.name }})</option>
+                                    {% endfor %}
+                                </select>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label class="form-label">Credits to Stake</label>
-                                <input type="number" class="form-control" id="creditsStaked" name="credits_staked" min="10" max="{{ user_credits }}" required>
-                                <small class="text-muted">Available: {{ user_credits }} credits</small>
+                                <label class="form-label">Opponent Team</label>
+                                <select class="form-select" id="opponentTeamSelect" name="opponent_team_id">
+                                    <option value="">Select Opponent Team</option>
+                                    {% for team in teams %}
+                                    <option value="{{ team.id }}">{{ team.name }}</option>
+                                    {% endfor %}
+                                </select>
                             </div>
                         </div>
                     </div>
-
-                    <div class="alert alert-info">
-                        <strong>Calculated Odds:</strong> <span id="calculatedOdds">-</span>
-                        <br>
-                        <strong>Potential Win:</strong> <span id="potentialWin">-</span> credits
+                    
+                    <!-- Position Selection -->
+                    <div class="mb-3" id="positionSection" style="display: none;">
+                        <label class="form-label">Position</label>
+                        <select class="form-select" id="positionSelect" name="position">
+                            <option value="">Select Position</option>
+                            {% for i in "1234567891011121314151617181920" %}
+                            <option value="{{ forloop.counter }}">{{ forloop.counter }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Credits Stake -->
+                    <div class="mb-3">
+                        <label class="form-label">Credits to Stake</label>
+                        <input type="number" class="form-control" id="creditsStaked" name="credits_staked" 
+                               min="10" max="{{ user_credits }}" value="100">
+                        <div class="form-text">Available: {{ user_credits }} credits</div>
+                    </div>
+                    
+                    <!-- Real-time Odds Display -->
+                    <div class="mb-3" id="oddsSection" style="display: none;">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6 class="card-title">Live Odds & Market Data</h6>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <strong>Odds:</strong> <span id="currentOdds">-</span>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>Potential Payout:</strong> <span id="potentialPayout">-</span>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>Market Volume:</strong> <span id="marketVolume">-</span>
+                                    </div>
+                                </div>
+                                <div class="row mt-2">
+                                    <div class="col-md-6">
+                                        <strong>ML Prediction:</strong> <span id="mlPrediction">-</span>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>Trend:</strong> <span id="oddsTrend">-</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -212,63 +335,105 @@
     </div>
 </div>
 
-{% endblock %}
-
-{% block extra_js %}
 <script>
 let currentEventId = null;
 
 function openBettingModal(eventId, eventName) {
     currentEventId = eventId;
     document.getElementById('eventId').value = eventId;
-    document.getElementById('eventName').value = eventName;
+    document.getElementById('bettingModalLabel').innerHTML = `<i class="fas fa-bet me-2"></i>Place Bet - ${eventName}`;
     
     // Reset form
     document.getElementById('bettingForm').reset();
-    document.getElementById('calculatedOdds').textContent = '-';
-    document.getElementById('potentialWin').textContent = '-';
+    document.getElementById('oddsSection').style.display = 'none';
+    document.getElementById('opponentSection').style.display = 'none';
+    document.getElementById('positionSection').style.display = 'none';
     
     // Show modal
     new bootstrap.Modal(document.getElementById('bettingModal')).show();
 }
 
+// Real-time odds calculation
 function calculateOdds() {
-    const betType = document.getElementById('betType').value;
-    const driverId = document.getElementById('driverSelect').value;
-    const teamId = document.getElementById('teamSelect').value;
-    const position = document.getElementById('positionInput').value;
-    const creditsStaked = document.getElementById('creditsStaked').value;
+    const formData = new FormData(document.getElementById('bettingForm'));
+    formData.append('event_id', currentEventId);
     
-    // Simple odds calculation (in real app, this would be more sophisticated)
-    let odds = 2.0;
-    
-    if (betType === 'podium') {
-        odds = 3.0;
-    } else if (betType === 'position') {
-        if (position <= 3) odds = 4.0;
-        else if (position <= 10) odds = 2.5;
-        else odds = 1.8;
-    } else if (betType === 'dnf') {
-        odds = 2.5;
-    } else if (betType === 'qualifying') {
-        odds = 2.2;
-    } else if (betType === 'fastest_lap') {
-        odds = 5.0;
-    } else if (betType === 'weather') {
-        odds = 3.5;
-    }
-    
-    document.getElementById('calculatedOdds').textContent = odds.toFixed(2);
-    
-    if (creditsStaked) {
-        const potentialWin = Math.round(creditsStaked * odds);
-        document.getElementById('potentialWin').textContent = potentialWin;
-    }
+    fetch('{% url "get_real_time_odds" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('currentOdds').textContent = data.odds + 'x';
+            document.getElementById('potentialPayout').textContent = 
+                (document.getElementById('creditsStaked').value * data.odds).toFixed(0) + ' credits';
+            document.getElementById('marketVolume').textContent = 
+                data.market_stats.current_volume + ' credits (' + data.market_stats.volume_percentage + '%)';
+            
+            if (data.ml_prediction) {
+                document.getElementById('mlPrediction').textContent = 
+                    `P${data.ml_prediction.predicted_position} (${data.ml_prediction.confidence * 100}% confidence)`;
+            } else {
+                document.getElementById('mlPrediction').textContent = 'No prediction available';
+            }
+            
+            document.getElementById('oddsTrend').textContent = data.market_stats.odds_trend;
+            document.getElementById('oddsSection').style.display = 'block';
+        }
+    })
+    .catch(error => {
+        console.error('Error calculating odds:', error);
+    });
 }
 
+// Show/hide form sections based on bet type
+document.addEventListener('DOMContentLoaded', function() {
+    const betTypeRadios = document.querySelectorAll('input[name="bet_type"]');
+    const opponentSection = document.getElementById('opponentSection');
+    const positionSection = document.getElementById('positionSection');
+    
+    betTypeRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            const betType = this.value;
+            
+            // Show/hide opponent section
+            if (betType === 'HEAD_TO_HEAD' || betType === 'TEAM_BATTLE') {
+                opponentSection.style.display = 'block';
+            } else {
+                opponentSection.style.display = 'none';
+            }
+            
+            // Show/hide position section
+            if (betType === 'EXACT_POSITION' || betType === 'QUALIFYING_POSITION') {
+                positionSection.style.display = 'block';
+            } else {
+                positionSection.style.display = 'none';
+            }
+            
+            // Calculate odds if we have enough data
+            if (betType && currentEventId) {
+                setTimeout(calculateOdds, 500);
+            }
+        });
+    });
+    
+    // Calculate odds when selections change
+    ['driverSelect', 'teamSelect', 'opponentDriverSelect', 'opponentTeamSelect', 'positionSelect', 'creditsStaked'].forEach(id => {
+        document.getElementById(id).addEventListener('change', function() {
+            if (document.querySelector('input[name="bet_type"]:checked') && currentEventId) {
+                setTimeout(calculateOdds, 500);
+            }
+        });
+    });
+});
+
 function placeBet() {
-    const form = document.getElementById('bettingForm');
-    const formData = new FormData(form);
+    const formData = new FormData(document.getElementById('bettingForm'));
+    formData.append('event_id', currentEventId);
     
     fetch('{% url "place_bet" %}', {
         method: 'POST',
@@ -280,35 +445,24 @@ function placeBet() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Update credits display
-            document.querySelector('.text-warning.fw-bold').textContent = 
-                `Current Balance: ${data.new_credits} credits`;
-            
-            // Show success message
-            alert(data.message);
-            
-            // Close modal
-            bootstrap.Modal.getInstance(document.getElementById('bettingModal')).hide();
-            
-            // Reload page to show updated data
+            alert('Bet placed successfully!');
             location.reload();
         } else {
             alert('Error: ' + data.error);
         }
     })
     .catch(error => {
-        console.error('Error:', error);
-        alert('An error occurred while placing the bet.');
+        console.error('Error placing bet:', error);
+        alert('Error placing bet. Please try again.');
     });
 }
 
-// Add event listeners for odds calculation
-document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('betType').addEventListener('change', calculateOdds);
-    document.getElementById('driverSelect').addEventListener('change', calculateOdds);
-    document.getElementById('teamSelect').addEventListener('change', calculateOdds);
-    document.getElementById('positionInput').addEventListener('input', calculateOdds);
-    document.getElementById('creditsStaked').addEventListener('input', calculateOdds);
-});
+function viewResults(eventId) {
+    // Redirect to results page for the specific event
+    window.location.href = `/results/?event=${eventId}`;
+}
 </script>
+
+<!-- Add CSRF token -->
+{% csrf_token %}
 {% endblock %} 

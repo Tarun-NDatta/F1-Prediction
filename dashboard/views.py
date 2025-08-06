@@ -6,7 +6,7 @@ from django.db.models.functions import Concat
 from data.models import (
     Event, RaceResult, QualifyingResult, Circuit, Team, Driver, 
     Session, SessionType, ridgeregression, xgboostprediction, CatBoostPrediction,
-    UserProfile, CreditTransaction, Bet, Achievement, TrackSpecialization
+    UserProfile, CreditTransaction, Bet, Achievement, TrackSpecialization, MarketMaker, MarketOrder
 )
 from django.core.paginator import Paginator
 from django.http import JsonResponse
@@ -22,6 +22,7 @@ from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.conf import settings
+from django.utils import timezone
 
 # Set up logging to help debug
 logger = logging.getLogger(__name__)
@@ -258,21 +259,21 @@ def prediction(request):
         'ridge_regression': {
             'name': 'Ridge Regression',
             'model_class': ridgeregression,
-            'available_rounds': list(range(1, 12)),  # Rounds 1-11
+            'available_rounds': list(range(1, 15)),  # Rounds 1-14 (completed) + upcoming
             'status': 'active',
             'model_name_filter': 'ridge_regression'  # Added for database filtering
         },
         'xgboost': {
             'name': 'XGBoost',
             'model_class': xgboostprediction,  # Now available
-            'available_rounds': list(range(1, 12)),  # Update based on your available data
+            'available_rounds': list(range(1, 15)),  # Update based on your available data
             'status': 'active',  # Changed from 'coming_soon' to 'active'
             'model_name_filter': 'xgboost_regression'  # Added for database filtering
         },
         'catboost': {
             'name': 'CatBoost Ensemble',
             'model_class': CatBoostPrediction,  # Now available
-            'available_rounds': list(range(1, 12)),  # Update based on your available data
+            'available_rounds': list(range(1, 15)),  # Update based on your available data
             'status': 'active',  # Changed from 'coming_soon' to 'active'
             'model_name_filter': 'catboost_ensemble'  # Added for database filtering
         }
@@ -796,14 +797,21 @@ def circuit_detail(request, circuit_id):
 
 
 def betting(request):
-    """Prediction market betting interface"""
+    """Enhanced prediction market betting interface with real-time odds"""
     if not request.user.is_authenticated:
         return redirect('login')
     
-    # Get upcoming events for betting
+    # Get completed events (rounds 1-14)
+    completed_events = Event.objects.filter(
+        year=2025,
+        round__lte=14
+    ).select_related('circuit').order_by('round')
+    
+    # Get upcoming events (Netherlands GP and beyond)
     upcoming_events = Event.objects.filter(
-        year__gte=2025
-    ).select_related('circuit').order_by('date')[:10]
+        year=2025,
+        round__gt=14
+    ).select_related('circuit').order_by('round')
     
     # Get user's profile and current credits
     try:
@@ -820,27 +828,102 @@ def betting(request):
     drivers = Driver.objects.all().order_by('given_name', 'family_name')
     teams = Team.objects.all().order_by('name')
     
+    # Enhanced bet types with descriptions and base odds
+    enhanced_bet_types = [
+        {
+            'type': 'PODIUM_FINISH',
+            'name': 'Podium Finish',
+            'description': 'Driver finishes in top 3 positions',
+            'base_odds': 3.0,
+            'icon': 'fas fa-trophy'
+        },
+        {
+            'type': 'EXACT_POSITION',
+            'name': 'Exact Position',
+            'description': 'Driver finishes in specific position',
+            'base_odds': 15.0,
+            'icon': 'fas fa-crosshairs'
+        },
+        {
+            'type': 'DNF_PREDICTION',
+            'name': 'DNF Prediction',
+            'description': 'Driver does not finish the race',
+            'base_odds': 8.0,
+            'icon': 'fas fa-times-circle'
+        },
+        {
+            'type': 'QUALIFYING_POSITION',
+            'name': 'Qualifying Position',
+            'description': 'Driver qualifies in specific position',
+            'base_odds': 10.0,
+            'icon': 'fas fa-flag-checkered'
+        },
+        {
+            'type': 'FASTEST_LAP',
+            'name': 'Fastest Lap',
+            'description': 'Driver sets fastest lap of the race',
+            'base_odds': 12.0,
+            'icon': 'fas fa-stopwatch'
+        },
+        {
+            'type': 'HEAD_TO_HEAD',
+            'name': 'Head-to-Head',
+            'description': 'One driver beats another',
+            'base_odds': 2.0,
+            'icon': 'fas fa-users'
+        },
+        {
+            'type': 'TEAM_BATTLE',
+            'name': 'Team Battle',
+            'description': 'Team finishes ahead of another team',
+            'base_odds': 2.5,
+            'icon': 'fas fa-flag'
+        },
+        {
+            'type': 'SAFETY_CAR',
+            'name': 'Safety Car',
+            'description': 'Safety car appears during the race',
+            'base_odds': 4.0,
+            'icon': 'fas fa-car'
+        }
+    ]
+    
+    # Get market statistics for all events
+    market_stats = {}
+    all_events = list(completed_events) + list(upcoming_events)
+    for event in all_events:
+        event_bets = Bet.objects.filter(event=event)
+        total_volume = event_bets.aggregate(total=Sum('credits_staked'))['total'] or 0
+        bet_count = event_bets.count()
+        
+        # Get most popular bets for this event
+        popular_bets = event_bets.values('bet_type', 'driver__given_name', 'driver__family_name').annotate(
+            volume=Sum('credits_staked'),
+            count=Count('id')
+        ).order_by('-volume')[:3]
+        
+        market_stats[event.id] = {
+            'total_volume': total_volume,
+            'bet_count': bet_count,
+            'popular_bets': popular_bets
+        }
+    
     context = {
+        'completed_events': completed_events,
         'upcoming_events': upcoming_events,
         'drivers': drivers,
         'teams': teams,
         'user_credits': profile.credits,
         'recent_bets': recent_bets,
-        'bet_types': [
-            ('podium', 'Podium Finish'),
-            ('position', 'Exact Position'),
-            ('dnf', 'DNF Prediction'),
-            ('qualifying', 'Qualifying Position'),
-            ('fastest_lap', 'Fastest Lap'),
-            ('weather', 'Weather Impact'),
-        ],
+        'enhanced_bet_types': enhanced_bet_types,
+        'market_stats': market_stats,
     }
     
     return render(request, 'betting.html', context)
 
 
 def place_bet(request):
-    """Handle bet placement via AJAX"""
+    """Enhanced bet placement with market maker integration"""
     if not request.user.is_authenticated:
         return JsonResponse({'success': False, 'error': 'Authentication required'})
     
@@ -854,6 +937,8 @@ def place_bet(request):
         driver_id = request.POST.get('driver_id')
         team_id = request.POST.get('team_id')
         position = request.POST.get('position')
+        opponent_driver_id = request.POST.get('opponent_driver_id')
+        opponent_team_id = request.POST.get('opponent_team_id')
         credits_staked = int(request.POST.get('credits_staked', 0))
         
         # Validate required fields
@@ -866,17 +951,84 @@ def place_bet(request):
         except UserProfile.DoesNotExist:
             profile = UserProfile.objects.create(user=request.user)
         
-        # Check if user has enough credits
-        if profile.credits < credits_staked:
-            return JsonResponse({'success': False, 'error': 'Insufficient credits'})
+        # Check betting limits and risk management
+        can_bet, error_message = profile.can_place_bet(credits_staked)
+        if not can_bet:
+            return JsonResponse({'success': False, 'error': error_message})
+        
+        # Get risk-adjusted limits
+        risk_limits = profile.get_risk_adjusted_limits()
+        
+        # Check if bet amount exceeds risk-adjusted limits
+        if credits_staked > risk_limits['max_bet_amount']:
+            return JsonResponse({
+                'success': False, 
+                'error': f'Bet amount exceeds risk-adjusted limit ({risk_limits["max_bet_amount"]} credits)'
+            })
+        
+        # Check daily limit
+        if profile.daily_bet_amount + credits_staked > risk_limits['daily_bet_limit']:
+            return JsonResponse({
+                'success': False, 
+                'error': f'Daily betting limit exceeded ({risk_limits["daily_bet_limit"]} credits)'
+            })
+        
+        # Check concurrent bets limit
+        active_bets = Bet.objects.filter(
+            user=request.user,
+            status='PENDING'
+        ).count()
+        
+        if active_bets >= risk_limits['max_concurrent_bets']:
+            return JsonResponse({
+                'success': False, 
+                'error': f'Maximum concurrent bets limit reached ({risk_limits["max_concurrent_bets"]} bets)'
+            })
         
         # Get related objects
         event = get_object_or_404(Event, id=event_id)
         driver = get_object_or_404(Driver, id=driver_id) if driver_id else None
         team = get_object_or_404(Team, id=team_id) if team_id else None
+        opponent_driver = get_object_or_404(Driver, id=opponent_driver_id) if opponent_driver_id else None
+        opponent_team = get_object_or_404(Team, id=opponent_team_id) if opponent_team_id else None
         
-        # Calculate odds based on bet type and historical data
-        odds = calculate_bet_odds(bet_type, driver, team, event, position)
+        # Get or create market maker for this bet
+        market_maker, created = MarketMaker.objects.get_or_create(
+            event=event,
+            bet_type=bet_type,
+            driver=driver,
+            team=team,
+            defaults={
+                'base_odds': calculate_bet_odds(bet_type, driver, team, event, position, opponent_driver, opponent_team),
+                'current_odds': calculate_bet_odds(bet_type, driver, team, event, position, opponent_driver, opponent_team),
+            }
+        )
+        
+        # Get current market odds
+        market_odds = market_maker.calculate_adjusted_odds(credits_staked)
+        execution_odds = market_odds['ask']  # User pays the ask price
+        
+        # Check if market has enough liquidity
+        if credits_staked > market_maker.available_liquidity:
+            return JsonResponse({
+                'success': False, 
+                'error': f'Insufficient market liquidity. Available: {market_maker.available_liquidity} credits'
+            })
+        
+        # Get ML prediction if available
+        ml_prediction = None
+        ml_predicted_position = None
+        ml_confidence = None
+        if driver and event:
+            prediction = CatBoostPrediction.objects.filter(
+                driver=driver,
+                event=event
+            ).order_by('-created_at').first()
+            
+            if prediction:
+                ml_prediction = True
+                ml_predicted_position = prediction.predicted_position
+                ml_confidence = prediction.prediction_confidence
         
         # Create the bet
         bet = Bet.objects.create(
@@ -885,33 +1037,49 @@ def place_bet(request):
             bet_type=bet_type,
             driver=driver,
             team=team,
-            position=position,
+            opponent_driver=opponent_driver,
+            opponent_team=opponent_team,
+            predicted_position=position,
             credits_staked=credits_staked,
-            odds=odds,
-            status='pending'
+            odds=execution_odds,
+            potential_payout=int(credits_staked * execution_odds),
+            ml_prediction_used=ml_prediction,
+            ml_predicted_position=ml_predicted_position,
+            ml_confidence=ml_confidence,
+            status='PENDING'
         )
         
-        # Deduct credits from user
-        profile.credits -= credits_staked
-        profile.total_bets_placed += 1
-        profile.save()
+        # Update market maker state
+        market_maker.update_market_state(credits_staked)
+        
+        # Update user profile with new betting statistics
+        profile.update_betting_stats(credits_staked, won=False, payout=0)
         
         # Create credit transaction
         CreditTransaction.objects.create(
             user=request.user,
-            transaction_type='bet_placed',
+            transaction_type='BET_PLACED',
             amount=-credits_staked,
-            description=f'Bet placed on {event.name} - {bet_type}'
+            description=f'Bet placed on {event.name} - {bet.get_bet_type_display()}',
+            balance_after=profile.credits,
+            bet=bet
         )
+        
+        # Get updated market statistics
+        market_stats = get_market_statistics(event, bet_type, driver, team)
         
         return JsonResponse({
             'success': True,
             'bet_id': bet.id,
             'new_credits': profile.credits,
+            'execution_odds': execution_odds,
+            'potential_payout': bet.potential_payout,
+            'market_stats': market_stats,
             'message': 'Bet placed successfully!'
         })
         
     except Exception as e:
+        logger.error(f"Error placing bet: {e}")
         return JsonResponse({'success': False, 'error': str(e)})
 
 
@@ -941,7 +1109,7 @@ def my_bets(request):
     win_rate = (won_bets / total_bets * 100) if total_bets > 0 else 0
     
     total_wagered = bets.aggregate(total=Sum('credits_staked'))['total'] or 0
-    total_won = completed_bets.filter(status='won').aggregate(total=Sum('credits_won'))['total'] or 0
+    total_won = completed_bets.filter(status='won').aggregate(total=Sum('payout_received'))['total'] or 0
     net_profit = total_won - total_wagered
     
     context = {
@@ -959,12 +1127,35 @@ def my_bets(request):
     return render(request, 'my_bets.html', context)
 
 
-def calculate_bet_odds(bet_type, driver, team, event, position=None):
-    """Calculate odds for different bet types based on historical data"""
+def calculate_bet_odds(bet_type, driver, team, event, position=None, opponent_driver=None, opponent_team=None):
+    """Enhanced odds calculation with ML predictions and market dynamics"""
+    
+    # Base odds from historical data
+    base_odds = get_historical_odds(bet_type, driver, team, event, position)
+    
+    # Apply ML prediction adjustments
+    ml_adjustment = get_ml_prediction_adjustment(bet_type, driver, team, event, position)
+    
+    # Apply market dynamics (betting volume impact)
+    market_adjustment = get_market_dynamics_adjustment(bet_type, driver, team, event)
+    
+    # Apply track-specific adjustments
+    track_adjustment = get_track_specific_adjustment(bet_type, driver, team, event)
+    
+    # Calculate final odds
+    final_odds = base_odds * ml_adjustment * market_adjustment * track_adjustment
+    
+    # Ensure odds are within reasonable bounds
+    final_odds = max(1.1, min(50.0, final_odds))
+    
+    return round(final_odds, 2)
+
+
+def get_historical_odds(bet_type, driver, team, event, position=None):
+    """Get base odds from historical performance data"""
     base_odds = 2.0  # Default odds
     
-    if bet_type == 'podium':
-        # Calculate podium finish probability based on driver's recent performance
+    if bet_type == 'PODIUM_FINISH':
         if driver:
             recent_podiums = RaceResult.objects.filter(
                 driver=driver,
@@ -973,33 +1164,35 @@ def calculate_bet_odds(bet_type, driver, team, event, position=None):
             recent_races = RaceResult.objects.filter(driver=driver).count()
             if recent_races > 0:
                 podium_rate = recent_podiums / recent_races
-                base_odds = max(1.5, min(5.0, 1 / podium_rate))
+                base_odds = max(1.5, min(8.0, 1 / podium_rate))
     
-    elif bet_type == 'position':
-        # Position-specific odds
-        if position:
+    elif bet_type == 'EXACT_POSITION':
+        if position and driver:
             position = int(position)
-            if position <= 3:
-                base_odds = 3.0
-            elif position <= 10:
-                base_odds = 2.0
+            # Historical performance at this position
+            position_finishes = RaceResult.objects.filter(
+                driver=driver,
+                position=position
+            ).count()
+            total_races = RaceResult.objects.filter(driver=driver).count()
+            if total_races > 0:
+                position_rate = position_finishes / total_races
+                base_odds = max(5.0, min(30.0, 1 / position_rate))
             else:
-                base_odds = 1.5
+                base_odds = 15.0
     
-    elif bet_type == 'dnf':
-        # DNF odds based on driver's reliability
+    elif bet_type == 'DNF_PREDICTION':
         if driver:
             recent_dnfs = RaceResult.objects.filter(
                 driver=driver,
-                status='DNF'
+                status__icontains='DNF'
             ).count()
             recent_races = RaceResult.objects.filter(driver=driver).count()
             if recent_races > 0:
                 dnf_rate = recent_dnfs / recent_races
-                base_odds = max(1.2, min(10.0, 1 / dnf_rate))
+                base_odds = max(1.2, min(15.0, 1 / dnf_rate))
     
-    elif bet_type == 'qualifying':
-        # Qualifying performance odds
+    elif bet_type == 'QUALIFYING_POSITION':
         if driver:
             recent_qualifying = QualifyingResult.objects.filter(driver=driver).count()
             if recent_qualifying > 0:
@@ -1013,4 +1206,525 @@ def calculate_bet_odds(bet_type, driver, team, event, position=None):
                 else:
                     base_odds = 1.8
     
-    return round(base_odds, 2)
+    elif bet_type == 'FASTEST_LAP':
+        if driver:
+            fastest_laps = RaceResult.objects.filter(
+                driver=driver,
+                fastest_lap_rank=1
+            ).count()
+            total_races = RaceResult.objects.filter(driver=driver).count()
+            if total_races > 0:
+                fastest_lap_rate = fastest_laps / total_races
+                base_odds = max(3.0, min(20.0, 1 / fastest_lap_rate))
+    
+    elif bet_type == 'HEAD_TO_HEAD':
+        if driver and opponent_driver:
+            # Calculate head-to-head record
+            h2h_wins = 0
+            h2h_races = 0
+            for race_result in RaceResult.objects.filter(driver=driver):
+                opponent_result = RaceResult.objects.filter(
+                    driver=opponent_driver,
+                    session=race_result.session
+                ).first()
+                if opponent_result and race_result.position and opponent_result.position:
+                    h2h_races += 1
+                    if race_result.position < opponent_result.position:
+                        h2h_wins += 1
+            
+            if h2h_races > 0:
+                win_rate = h2h_wins / h2h_races
+                base_odds = max(1.3, min(3.0, 1 / win_rate))
+    
+    elif bet_type == 'TEAM_BATTLE':
+        if team and opponent_team:
+            # Calculate team battle record
+            team_wins = 0
+            team_battles = 0
+            for race_result in RaceResult.objects.filter(team=team):
+                opponent_result = RaceResult.objects.filter(
+                    team=opponent_team,
+                    session=race_result.session
+                ).first()
+                if opponent_result and race_result.position and opponent_result.position:
+                    team_battles += 1
+                    if race_result.position < opponent_result.position:
+                        team_wins += 1
+            
+            if team_battles > 0:
+                win_rate = team_wins / team_battles
+                base_odds = max(1.3, min(4.0, 1 / win_rate))
+    
+    elif bet_type == 'SAFETY_CAR':
+        # Base safety car probability (varies by circuit)
+        base_odds = 4.0
+    
+    return base_odds
+
+
+def get_ml_prediction_adjustment(bet_type, driver, team, event, position=None):
+    """Apply ML prediction adjustments to odds"""
+    adjustment = 1.0
+    
+    try:
+        # Get latest CatBoost prediction for this driver/event
+        if driver and event:
+            prediction = CatBoostPrediction.objects.filter(
+                driver=driver,
+                event=event
+            ).order_by('-created_at').first()
+            
+            if prediction:
+                predicted_position = prediction.predicted_position
+                confidence = prediction.prediction_confidence or 0.5
+                
+                if bet_type == 'PODIUM_FINISH':
+                    if predicted_position <= 3:
+                        # ML predicts podium - lower odds
+                        adjustment = 0.8 + (0.2 * confidence)
+                    else:
+                        # ML doesn't predict podium - higher odds
+                        adjustment = 1.2 + (0.3 * (1 - confidence))
+                
+                elif bet_type == 'EXACT_POSITION' and position:
+                    position = int(position)
+                    if abs(predicted_position - position) <= 1:
+                        # ML predicts close to this position
+                        adjustment = 0.7 + (0.3 * confidence)
+                    else:
+                        # ML predicts far from this position
+                        adjustment = 1.3 + (0.4 * (1 - confidence))
+                
+                elif bet_type == 'DNF_PREDICTION':
+                    # Use driver's reliability score
+                    if hasattr(driver, 'reliability_score') and driver.reliability_score:
+                        reliability = driver.reliability_score
+                        if reliability < 0.7:  # Low reliability
+                            adjustment = 0.6 + (0.2 * (1 - reliability))
+                        else:  # High reliability
+                            adjustment = 1.4 + (0.3 * reliability)
+    
+    except Exception as e:
+        logger.warning(f"Error applying ML adjustment: {e}")
+        adjustment = 1.0
+    
+    return adjustment
+
+
+def get_market_dynamics_adjustment(bet_type, driver, team, event):
+    """Apply market dynamics adjustments based on betting volume"""
+    adjustment = 1.0
+    
+    try:
+        # Get current betting volume for this bet type
+        current_volume = Bet.objects.filter(
+            event=event,
+            bet_type=bet_type,
+            driver=driver,
+            team=team
+        ).aggregate(total=Sum('credits_staked'))['total'] or 0
+        
+        # Get total volume for this event
+        total_event_volume = Bet.objects.filter(event=event).aggregate(
+            total=Sum('credits_staked')
+        )['total'] or 1
+        
+        # Calculate volume ratio
+        volume_ratio = current_volume / total_event_volume
+        
+        # Apply adjustment based on volume
+        if volume_ratio > 0.3:  # High volume on this bet
+            adjustment = 0.8  # Lower odds due to high demand
+        elif volume_ratio < 0.05:  # Low volume on this bet
+            adjustment = 1.2  # Higher odds due to low demand
+    
+    except Exception as e:
+        logger.warning(f"Error applying market dynamics: {e}")
+        adjustment = 1.0
+    
+    return adjustment
+
+
+def get_track_specific_adjustment(bet_type, driver, team, event):
+    """Apply track-specific adjustments based on circuit characteristics"""
+    adjustment = 1.0
+    
+    try:
+        circuit = event.circuit
+        
+        # Get track specialization data
+        track_spec = TrackSpecialization.objects.filter(circuit=circuit).first()
+        if track_spec:
+            if bet_type == 'QUALIFYING_POSITION':
+                # Qualifying importance affects qualifying bet odds
+                qualifying_importance = track_spec.qualifying_importance / 10.0
+                adjustment = 1.0 + (0.3 * (1 - qualifying_importance))
+            
+            elif bet_type == 'DNF_PREDICTION':
+                # Track difficulty affects DNF probability
+                overtaking_difficulty = track_spec.overtaking_difficulty / 10.0
+                adjustment = 1.0 + (0.2 * overtaking_difficulty)
+            
+            elif bet_type == 'SAFETY_CAR':
+                # Track characteristics affect safety car probability
+                # This would need historical safety car data per circuit
+                adjustment = 1.0
+    
+    except Exception as e:
+        logger.warning(f"Error applying track adjustment: {e}")
+        adjustment = 1.0
+    
+    return adjustment
+
+
+def get_real_time_odds(request):
+    """AJAX endpoint for real-time odds calculation"""
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Authentication required'}, status=401)
+    
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST method required'}, status=405)
+    
+    try:
+        # Get parameters from request
+        event_id = request.POST.get('event_id')
+        bet_type = request.POST.get('bet_type')
+        driver_id = request.POST.get('driver_id')
+        team_id = request.POST.get('team_id')
+        position = request.POST.get('position')
+        opponent_driver_id = request.POST.get('opponent_driver_id')
+        opponent_team_id = request.POST.get('opponent_team_id')
+        
+        # Validate required fields
+        if not all([event_id, bet_type]):
+            return JsonResponse({'error': 'Missing required fields'}, status=400)
+        
+        # Get related objects
+        event = get_object_or_404(Event, id=event_id)
+        driver = get_object_or_404(Driver, id=driver_id) if driver_id else None
+        team = get_object_or_404(Team, id=team_id) if team_id else None
+        opponent_driver = get_object_or_404(Driver, id=opponent_driver_id) if opponent_driver_id else None
+        opponent_team = get_object_or_404(Team, id=opponent_team_id) if opponent_team_id else None
+        
+        # Calculate odds
+        odds = calculate_bet_odds(
+            bet_type, driver, team, event, position, 
+            opponent_driver, opponent_team
+        )
+        
+        # Get market statistics
+        market_stats = get_market_statistics(event, bet_type, driver, team)
+        
+        # Get ML prediction if available
+        ml_prediction = None
+        if driver and event:
+            prediction = CatBoostPrediction.objects.filter(
+                driver=driver,
+                event=event
+            ).order_by('-created_at').first()
+            
+            if prediction:
+                ml_prediction = {
+                    'predicted_position': round(prediction.predicted_position, 1),
+                    'confidence': round(prediction.prediction_confidence or 0.5, 2),
+                    'model_name': prediction.model_name
+                }
+        
+        return JsonResponse({
+            'success': True,
+            'odds': odds,
+            'market_stats': market_stats,
+            'ml_prediction': ml_prediction
+        })
+        
+    except Exception as e:
+        logger.error(f"Error calculating real-time odds: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+def get_market_statistics(event, bet_type, driver, team):
+    """Get market statistics for a specific bet"""
+    try:
+        # Get current betting volume for this bet
+        current_volume = Bet.objects.filter(
+            event=event,
+            bet_type=bet_type,
+            driver=driver,
+            team=team
+        ).aggregate(total=Sum('credits_staked'))['total'] or 0
+        
+        # Get total volume for this event
+        total_event_volume = Bet.objects.filter(event=event).aggregate(
+            total=Sum('credits_staked')
+        )['total'] or 0
+        
+        # Get bet count for this specific bet
+        bet_count = Bet.objects.filter(
+            event=event,
+            bet_type=bet_type,
+            driver=driver,
+            team=team
+        ).count()
+        
+        # Get recent odds movement (last 10 bets)
+        recent_odds = Bet.objects.filter(
+            event=event,
+            bet_type=bet_type,
+            driver=driver,
+            team=team
+        ).order_by('-created_at').values_list('odds', flat=True)[:10]
+        
+        odds_trend = 'stable'
+        if len(recent_odds) >= 2:
+            first_odds = recent_odds[-1]
+            last_odds = recent_odds[0]
+            if last_odds > first_odds * 1.1:
+                odds_trend = 'increasing'
+            elif last_odds < first_odds * 0.9:
+                odds_trend = 'decreasing'
+        
+        return {
+            'current_volume': current_volume,
+            'total_event_volume': total_event_volume,
+            'volume_percentage': round((current_volume / total_event_volume * 100) if total_event_volume > 0 else 0, 1),
+            'bet_count': bet_count,
+            'odds_trend': odds_trend,
+            'recent_odds': list(recent_odds)
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting market statistics: {e}")
+        return {
+            'current_volume': 0,
+            'total_event_volume': 0,
+            'volume_percentage': 0,
+            'bet_count': 0,
+            'odds_trend': 'stable',
+            'recent_odds': []
+        }
+
+
+def market_depth(request, event_id):
+    """Market depth view showing order book and trading interface"""
+    if not request.user.is_authenticated:
+        return redirect('login')
+    
+    event = get_object_or_404(Event, id=event_id)
+    
+    # Get all market makers for this event
+    market_makers = MarketMaker.objects.filter(event=event).select_related(
+        'driver', 'team'
+    ).order_by('bet_type', 'driver__given_name', 'team__name')
+    
+    # Get user's profile
+    try:
+        profile = request.user.profile
+    except UserProfile.DoesNotExist:
+        profile = UserProfile.objects.create(user=request.user)
+    
+    # Get user's active orders
+    user_orders = MarketOrder.objects.filter(
+        user=request.user,
+        status='PENDING'
+    ).select_related('market_maker').order_by('-created_at')
+    
+    context = {
+        'event': event,
+        'market_makers': market_makers,
+        'user_credits': profile.credits,
+        'user_orders': user_orders,
+    }
+    
+    return render(request, 'market_depth.html', context)
+
+
+def get_market_depth_data(request, market_maker_id):
+    """AJAX endpoint for market depth data"""
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Authentication required'}, status=401)
+    
+    try:
+        market_maker = get_object_or_404(MarketMaker, id=market_maker_id)
+        depth_data = market_maker.get_market_depth()
+        
+        # Add current odds for different bet amounts
+        odds_ladder = []
+        for amount in [100, 500, 1000, 2500, 5000]:
+            odds = market_maker.calculate_adjusted_odds(amount)
+            odds_ladder.append({
+                'amount': amount,
+                'bid': odds['bid'],
+                'ask': odds['ask'],
+                'spread': round(odds['ask'] - odds['bid'], 2)
+            })
+        
+        depth_data['odds_ladder'] = odds_ladder
+        
+        return JsonResponse({
+            'success': True,
+            'depth_data': depth_data
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting market depth: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+def place_market_order(request):
+    """Place a market order"""
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Authentication required'}, status=401)
+    
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST method required'}, status=405)
+    
+    try:
+        market_maker_id = request.POST.get('market_maker_id')
+        order_type = request.POST.get('order_type')
+        side = request.POST.get('side')
+        amount = int(request.POST.get('amount', 0))
+        limit_price = float(request.POST.get('limit_price', 0)) if request.POST.get('limit_price') else None
+        
+        # Validate required fields
+        if not all([market_maker_id, order_type, side, amount]):
+            return JsonResponse({'error': 'Missing required fields'}, status=400)
+        
+        # Get user profile
+        try:
+            profile = request.user.profile
+        except UserProfile.DoesNotExist:
+            profile = UserProfile.objects.create(user=request.user)
+        
+        # Check if user has enough credits
+        if profile.credits < amount:
+            return JsonResponse({'error': 'Insufficient credits'}, status=400)
+        
+        # Get market maker
+        market_maker = get_object_or_404(MarketMaker, id=market_maker_id)
+        
+        # Create market order
+        order = MarketOrder.objects.create(
+            user=request.user,
+            market_maker=market_maker,
+            order_type=order_type,
+            side=side,
+            amount=amount,
+            limit_price=limit_price
+        )
+        
+        # Execute market order immediately
+        if order_type == 'MARKET':
+            success = order.execute_market_order()
+            if success:
+                # Deduct credits from user
+                profile.credits -= amount
+                profile.save()
+                
+                # Create credit transaction
+                CreditTransaction.objects.create(
+                    user=request.user,
+                    transaction_type='MARKET_ORDER',
+                    amount=-amount,
+                    description=f'Market order: {side} {amount} credits',
+                    balance_after=profile.credits
+                )
+        
+        return JsonResponse({
+            'success': True,
+            'order_id': order.id,
+            'status': order.status,
+            'new_credits': profile.credits
+        })
+        
+    except Exception as e:
+        logger.error(f"Error placing market order: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+def risk_settings(request):
+    """Risk management settings page"""
+    if not request.user.is_authenticated:
+        return redirect('login')
+    
+    try:
+        profile = request.user.profile
+    except UserProfile.DoesNotExist:
+        profile = UserProfile.objects.create(user=request.user)
+    
+    if request.method == 'POST':
+        # Update risk tolerance
+        risk_tolerance = request.POST.get('risk_tolerance')
+        if risk_tolerance in ['CONSERVATIVE', 'MODERATE', 'AGGRESSIVE']:
+            profile.risk_tolerance = risk_tolerance
+        
+        # Update manual limits
+        max_bet_amount = request.POST.get('max_bet_amount')
+        if max_bet_amount:
+            try:
+                profile.max_bet_amount = int(max_bet_amount)
+            except ValueError:
+                pass
+        
+        daily_bet_limit = request.POST.get('daily_bet_limit')
+        if daily_bet_limit:
+            try:
+                profile.daily_bet_limit = int(daily_bet_limit)
+            except ValueError:
+                pass
+        
+        profile.save()
+        
+        return JsonResponse({'success': True, 'message': 'Settings updated successfully'})
+    
+    # Get current risk-adjusted limits
+    risk_limits = profile.get_risk_adjusted_limits()
+    
+    # Get betting statistics
+    active_bets = Bet.objects.filter(user=request.user, status='PENDING').count()
+    today_bets = Bet.objects.filter(
+        user=request.user,
+        created_at__date=timezone.now().date()
+    ).count()
+    
+    context = {
+        'profile': profile,
+        'risk_limits': risk_limits,
+        'active_bets': active_bets,
+        'today_bets': today_bets,
+        'risk_tolerance_choices': [
+            ('CONSERVATIVE', 'Conservative - Lower risk, lower rewards'),
+            ('MODERATE', 'Moderate - Balanced risk and rewards'),
+            ('AGGRESSIVE', 'Aggressive - Higher risk, higher rewards'),
+        ]
+    }
+    
+    return render(request, 'risk_settings.html', context)
+
+
+def live_updates(request):
+    """Live race updates and commentary page"""
+    if not request.user.is_authenticated:
+        return redirect('login')
+    
+    # Get current/upcoming race
+    current_event = Event.objects.filter(
+        year=2025,
+        round__gt=14  # Netherlands GP and beyond
+    ).order_by('date').first()
+    
+    # Get user's active bets for the current event
+    active_bets = []
+    if current_event:
+        active_bets = Bet.objects.filter(
+            user=request.user,
+            event=current_event,
+            status='PENDING'
+        ).select_related('driver', 'team')[:5]
+    
+    context = {
+        'current_event': current_event,
+        'active_bets': active_bets,
+        'user_credits': request.user.profile.credits if hasattr(request.user, 'profile') else 0,
+    }
+    
+    return render(request, 'live_updates.html', context)

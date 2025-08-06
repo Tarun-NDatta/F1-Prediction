@@ -1,0 +1,439 @@
+{% extends 'base.html' %}
+{% load dashboard_extras %}
+
+{% block title %}Market Depth - {{ event.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="content-box">
+                <h1 class="text-center mb-3">
+                    <i class="fas fa-chart-line me-2"></i>Market Depth - {{ event.name }}
+                </h1>
+                <p class="text-center mb-0">
+                    Advanced trading interface with real-time market data. 
+                    <span class="text-warning fw-bold">Available Credits: {{ user_credits }} credits</span>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Market Makers Grid -->
+    <div class="row">
+        {% for market_maker in market_makers %}
+        <div class="col-lg-6 col-xl-4 mb-4">
+            <div class="content-box market-maker-card" data-market-maker-id="{{ market_maker.id }}">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h5 class="mb-1">{{ market_maker.get_bet_type_display }}</h5>
+                        {% if market_maker.driver %}
+                        <p class="text-muted mb-0">{{ market_maker.driver.given_name }} {{ market_maker.driver.family_name }}</p>
+                        {% elif market_maker.team %}
+                        <p class="text-muted mb-0">{{ market_maker.team.name }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-primary">{{ market_maker.current_odds }}x</span>
+                    </div>
+                </div>
+                
+                <!-- Market Statistics -->
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <small class="text-muted">Volume</small>
+                        <p class="mb-0 fw-bold">{{ market_maker.total_volume }} credits</p>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted">Bets</small>
+                        <p class="mb-0 fw-bold">{{ market_maker.total_bets }}</p>
+                    </div>
+                </div>
+                
+                <!-- Liquidity Bar -->
+                <div class="mb-3">
+                    <small class="text-muted">Liquidity</small>
+                    <div class="progress" style="height: 8px;">
+                        {% widthratio market_maker.total_volume market_maker.available_liquidity 100 as liquidity_percent %}
+                        <div class="progress-bar" role="progressbar" 
+                             style="width: {{ liquidity_percent }}%"
+                             aria-valuenow="{{ liquidity_percent }}" 
+                             aria-valuemin="0" aria-valuemax="100">
+                        </div>
+                    </div>
+                    <small class="text-muted">{{ market_maker.available_liquidity }} credits available</small>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-primary btn-sm" 
+                            onclick="openTradingModal({{ market_maker.id }})">
+                        <i class="fas fa-chart-bar me-1"></i>View Depth
+                    </button>
+                    <button class="btn btn-outline-success btn-sm" 
+                            onclick="quickTrade({{ market_maker.id }}, 'BUY', 100)">
+                        <i class="fas fa-arrow-up me-1"></i>Quick Buy 100
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="text-center py-4">
+                <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                <p class="text-muted">No market makers available for this event.</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- User Orders -->
+    {% if user_orders %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="content-box">
+                <h4 class="mb-3">
+                    <i class="fas fa-list me-2"></i>Your Active Orders
+                </h4>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Order</th>
+                                <th>Type</th>
+                                <th>Side</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in user_orders %}
+                            <tr>
+                                <td>{{ order.market_maker.get_bet_type_display }}</td>
+                                <td>{{ order.get_order_type_display }}</td>
+                                <td>
+                                    <span class="badge bg-{% if order.side == 'BUY' %}success{% else %}danger{% endif %}">
+                                        {{ order.side }}
+                                    </span>
+                                </td>
+                                <td>{{ order.amount }} credits</td>
+                                <td>
+                                    <span class="badge bg-{% if order.status == 'FILLED' %}success{% elif order.status == 'PENDING' %}warning{% else %}danger{% endif %}">
+                                        {{ order.status }}
+                                    </span>
+                                </td>
+                                <td>{{ order.created_at|date:"M d, H:i" }}</td>
+                                <td>
+                                    {% if order.status == 'PENDING' %}
+                                    <button class="btn btn-sm btn-outline-danger" 
+                                            onclick="cancelOrder({{ order.id }})">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Trading Modal -->
+<div class="modal fade" id="tradingModal" tabindex="-1" aria-labelledby="tradingModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="tradingModalLabel">
+                    <i class="fas fa-chart-bar me-2"></i>Market Depth & Trading
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <!-- Market Depth -->
+                    <div class="col-md-8">
+                        <h6>Market Depth</h6>
+                        <div id="marketDepthChart" style="height: 300px; background: #f8f9fa; border-radius: 8px;">
+                            <div class="d-flex align-items-center justify-content-center h-100">
+                                <div class="text-center">
+                                    <i class="fas fa-chart-line fa-2x text-muted mb-2"></i>
+                                    <p class="text-muted">Loading market depth...</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Odds Ladder -->
+                        <div class="mt-3">
+                            <h6>Odds Ladder</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm" id="oddsLadder">
+                                    <thead>
+                                        <tr>
+                                            <th>Amount</th>
+                                            <th>Bid</th>
+                                            <th>Ask</th>
+                                            <th>Spread</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Will be populated by JavaScript -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Trading Panel -->
+                    <div class="col-md-4">
+                        <h6>Place Order</h6>
+                        <form id="tradingForm">
+                            <input type="hidden" id="marketMakerId" name="market_maker_id">
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Order Type</label>
+                                <select class="form-select" id="orderType" name="order_type">
+                                    <option value="MARKET">Market Order</option>
+                                    <option value="LIMIT">Limit Order</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Side</label>
+                                <div class="btn-group w-100" role="group">
+                                    <input type="radio" class="btn-check" name="side" id="buySide" value="BUY" checked>
+                                    <label class="btn btn-outline-success" for="buySide">Buy</label>
+                                    
+                                    <input type="radio" class="btn-check" name="side" id="sellSide" value="SELL">
+                                    <label class="btn btn-outline-danger" for="sellSide">Sell</label>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Amount (credits)</label>
+                                <input type="number" class="form-control" id="orderAmount" name="amount" 
+                                       min="10" max="{{ user_credits }}" value="100">
+                                <div class="form-text">Available: {{ user_credits }} credits</div>
+                            </div>
+                            
+                            <div class="mb-3" id="limitPriceSection" style="display: none;">
+                                <label class="form-label">Limit Price</label>
+                                <input type="number" class="form-control" id="limitPrice" name="limit_price" 
+                                       step="0.01" min="1.0">
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                <button type="button" class="btn btn-primary" onclick="placeOrder()">
+                                    <i class="fas fa-check me-1"></i>Place Order
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="closeTradingModal()">
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
+                        
+                        <!-- Order Summary -->
+                        <div class="mt-3 p-3 bg-light rounded">
+                            <h6>Order Summary</h6>
+                            <div id="orderSummary">
+                                <p class="text-muted">Select order details to see summary</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentMarketMakerId = null;
+let marketDepthData = null;
+
+function openTradingModal(marketMakerId) {
+    currentMarketMakerId = marketMakerId;
+    document.getElementById('marketMakerId').value = marketMakerId;
+    
+    // Reset form
+    document.getElementById('tradingForm').reset();
+    document.getElementById('limitPriceSection').style.display = 'none';
+    
+    // Load market depth data
+    loadMarketDepthData(marketMakerId);
+    
+    // Show modal
+    new bootstrap.Modal(document.getElementById('tradingModal')).show();
+}
+
+function loadMarketDepthData(marketMakerId) {
+    fetch(`/get_market_depth/${marketMakerId}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                marketDepthData = data.depth_data;
+                updateMarketDepthDisplay();
+                updateOddsLadder();
+            }
+        })
+        .catch(error => {
+            console.error('Error loading market depth:', error);
+        });
+}
+
+function updateMarketDepthDisplay() {
+    if (!marketDepthData) return;
+    
+    const chartContainer = document.getElementById('marketDepthChart');
+    chartContainer.innerHTML = `
+        <div class="p-3">
+            <div class="row">
+                <div class="col-6">
+                    <strong>Total Volume:</strong> ${marketDepthData.total_volume} credits<br>
+                    <strong>Total Bets:</strong> ${marketDepthData.total_bets}<br>
+                    <strong>Current Odds:</strong> ${marketDepthData.current_odds}x
+                </div>
+                <div class="col-6">
+                    <strong>Available Liquidity:</strong> ${marketDepthData.available_liquidity} credits<br>
+                    <strong>Recent Activity:</strong> ${marketDepthData.recent_activity.length} trades
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function updateOddsLadder() {
+    if (!marketDepthData || !marketDepthData.odds_ladder) return;
+    
+    const tbody = document.getElementById('oddsLadder').getElementsByTagName('tbody')[0];
+    tbody.innerHTML = '';
+    
+    marketDepthData.odds_ladder.forEach(row => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${row.amount}</td>
+            <td>${row.bid}x</td>
+            <td>${row.ask}x</td>
+            <td>${row.spread}</td>
+            <td>
+                <button class="btn btn-sm btn-outline-success" onclick="quickTrade(${currentMarketMakerId}, 'BUY', ${row.amount})">
+                    Buy
+                </button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function quickTrade(marketMakerId, side, amount) {
+    if (confirm(`Place ${side} order for ${amount} credits?`)) {
+        const formData = new FormData();
+        formData.append('market_maker_id', marketMakerId);
+        formData.append('order_type', 'MARKET');
+        formData.append('side', side);
+        formData.append('amount', amount);
+        
+        fetch('{% url "place_market_order" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Order placed successfully!');
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error placing order:', error);
+            alert('Error placing order. Please try again.');
+        });
+    }
+}
+
+function placeOrder() {
+    const formData = new FormData(document.getElementById('tradingForm'));
+    
+    fetch('{% url "place_market_order" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Order placed successfully!');
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error placing order:', error);
+        alert('Error placing order. Please try again.');
+    });
+}
+
+function closeTradingModal() {
+    bootstrap.Modal.getInstance(document.getElementById('tradingModal')).hide();
+}
+
+// Event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Show/hide limit price section based on order type
+    document.getElementById('orderType').addEventListener('change', function() {
+        const limitSection = document.getElementById('limitPriceSection');
+        if (this.value === 'LIMIT') {
+            limitSection.style.display = 'block';
+        } else {
+            limitSection.style.display = 'none';
+        }
+    });
+    
+    // Update order summary when form changes
+    ['orderType', 'orderAmount', 'limitPrice'].forEach(id => {
+        document.getElementById(id).addEventListener('change', updateOrderSummary);
+    });
+    
+    // Update order summary when side changes
+    document.querySelectorAll('input[name="side"]').forEach(radio => {
+        radio.addEventListener('change', updateOrderSummary);
+    });
+});
+
+function updateOrderSummary() {
+    const orderType = document.getElementById('orderType').value;
+    const side = document.querySelector('input[name="side"]:checked').value;
+    const amount = document.getElementById('orderAmount').value;
+    const limitPrice = document.getElementById('limitPrice').value;
+    
+    let summary = `
+        <strong>Type:</strong> ${orderType}<br>
+        <strong>Side:</strong> ${side}<br>
+        <strong>Amount:</strong> ${amount} credits<br>
+    `;
+    
+    if (orderType === 'LIMIT' && limitPrice) {
+        summary += `<strong>Limit Price:</strong> ${limitPrice}x<br>`;
+    }
+    
+    document.getElementById('orderSummary').innerHTML = summary;
+}
+</script>
+
+<!-- Add CSRF token -->
+{% csrf_token %}
+{% endblock %} 
