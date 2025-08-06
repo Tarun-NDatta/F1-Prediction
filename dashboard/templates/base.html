@@ -108,8 +108,85 @@
         .nav-link { color: rgba(255,255,255,0.85) !important; font-weight: 500; }
         .nav-link:hover, .nav-link.active { color: var(--f1-white) !important; }
 
+        /* Brand/Logo Section */
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--f1-white) !important;
+            text-decoration: none;
+        }
+        
+        .navbar-brand:hover {
+            color: var(--f1-white) !important;
+            text-decoration: none;
+        }
+        
+        .brand-text {
+            margin-left: 0.5rem;
+            font-size: 1.3rem;
+        }
+
+        /* Menu Buttons Container */
+        .menu-buttons-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        /* Navigation Menu Button */
+        .nav-menu-container { 
+            position: relative; 
+            display: flex; 
+            align-items: center; 
+        }
+        
+        .nav-menu-button { 
+            background: rgba(255, 255, 255, 0.1); 
+            border: 1px solid rgba(255, 255, 255, 0.2); 
+            color: var(--f1-white); 
+            font-size: 1rem; 
+            padding: 0.5rem 1rem; 
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-menu-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: var(--f1-white);
+        }
+        
+        .nav-menu { 
+            display: none; 
+            position: absolute; 
+            top: calc(100% + 10px); 
+            right: 0; 
+            border-radius: 8px; 
+            padding: 8px; 
+            min-width: 200px; 
+            z-index: 1050; 
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2); 
+        }
+        
+        .nav-menu.show { display: block; }
+        
+        .nav-menu-item { 
+            display: block; 
+            text-decoration: none; 
+            border-radius: 6px; 
+            padding: 10px 15px; 
+            text-align: left; 
+            transition: all 0.3s ease;
+        }
+        
+        .nav-menu-divider { 
+            border-top: 1px solid; 
+            margin: 8px 0; 
+        }
+
         /* User Menu */
-        .user-menu-container { position: relative; display: flex; align-items: center; margin-right: 12px; }
+        .user-menu-container { position: relative; display: flex; align-items: center; }
         .username-display { color: var(--f1-white); margin-right: 12px; }
         .user-menu-button { background: none; border: none; color: var(--f1-white); font-size: 1.25rem; padding: 0; }
         .user-menu { display: none; position: absolute; top: calc(100% + 10px); right: 0; border-radius: 8px; padding: 8px; min-width: 180px; z-index: 1050; box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
@@ -125,20 +202,7 @@
             text-align: center;
         }
         
-        body.light-mode .user-menu { background-color: var(--f1-white); border: 1px solid #ddd; }
-        body.light-mode .user-menu-item { color: var(--f1-dark); }
-        body.light-mode .user-menu-item:hover { background-color: #f2f2f2; }
-        body.light-mode .user-menu-divider { border-color: #eee; }
-        
-        body.dark-mode .user-menu { background-color: var(--f1-card-dark); border: 1px solid #444; }
-        body.dark-mode .username-display { color: var(--f1-silver); }
-        body.dark-mode .user-menu-button { color: var(--f1-silver); }
-        body.dark-mode .user-menu-button:hover { color: var(--f1-white); }
-        body.dark-mode .user-menu-item { color: var(--f1-silver); }
-        body.dark-mode .user-menu-item:hover { background-color: rgba(255,255,255,0.05); }
-        body.dark-mode .user-menu-divider { border-color: #444; }
-
-        /* Credits Display */
+        /* Credits Display in User Menu */
         .credits-display {
             display: flex;
             align-items: center;
@@ -146,6 +210,7 @@
             border-radius: 20px;
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
+            margin: 0.5rem 0;
         }
         
         .credits-amount {
@@ -159,10 +224,30 @@
             color: #ffd700;
         }
         
-        body.dark-mode .credits-display {
-            background: rgba(255, 255, 255, 0.05);
-            border-color: rgba(255, 255, 255, 0.1);
-        }
+        body.light-mode .nav-menu { background-color: var(--f1-white); border: 1px solid #ddd; }
+        body.light-mode .nav-menu-item { color: var(--f1-dark); }
+        body.light-mode .nav-menu-item:hover { background-color: #f2f2f2; }
+        body.light-mode .nav-menu-divider { border-color: #eee; }
+        
+        body.light-mode .user-menu { background-color: var(--f1-white); border: 1px solid #ddd; }
+        body.light-mode .user-menu-item { color: var(--f1-dark); }
+        body.light-mode .user-menu-item:hover { background-color: #f2f2f2; }
+        body.light-mode .user-menu-divider { border-color: #eee; }
+        
+        body.dark-mode .nav-menu { background-color: var(--f1-card-dark); border: 1px solid #444; }
+        body.dark-mode .username-display { color: var(--f1-silver); }
+        body.dark-mode .nav-menu-button { color: var(--f1-silver); }
+        body.dark-mode .nav-menu-button:hover { color: var(--f1-white); }
+        body.dark-mode .nav-menu-item { color: var(--f1-silver); }
+        body.dark-mode .nav-menu-item:hover { background-color: rgba(255,255,255,0.05); }
+        body.dark-mode .nav-menu-divider { border-color: #444; }
+        
+        body.dark-mode .user-menu { background-color: var(--f1-card-dark); border: 1px solid #444; }
+        body.dark-mode .user-menu-button { color: var(--f1-silver); }
+        body.dark-mode .user-menu-button:hover { color: var(--f1-white); }
+        body.dark-mode .user-menu-item { color: var(--f1-silver); }
+        body.dark-mode .user-menu-item:hover { background-color: rgba(255,255,255,0.05); }
+        body.dark-mode .user-menu-divider { border-color: #444; }
 
         /*--------------------------------------------------
         COMPONENT: CONTENT BOX / CARD
@@ -212,6 +297,7 @@
 <body class="light-mode">
     <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
         <div class="container-fluid">
+            <!-- F1 Car Icon and Brand Name -->
             <a class="navbar-brand" href="{% url 'home' %}">
                 <svg class="f1-car-icon" width="56" height="40" viewBox="0 0 200 100" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M20 45 L40 35 L80 30 L120 30 L160 35 L180 45 L175 55 L165 60 L35 60 L25 55 Z" fill="white" stroke="#dc143c" stroke-width="2"/>
@@ -228,29 +314,45 @@
                     <circle cx="125" cy="38" r="2" fill="#c0c0c0"/>
                     <text x="100" y="50" text-anchor="middle" fill="#ffd700" font-family="Arial" font-size="12" font-weight="bold">1</text>
                 </svg>
+                <span class="brand-text">F1 Results Predictor</span>
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    <li class="nav-item"><a class="nav-link" href="{% url 'home' %}">Home</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{% url 'results' %}">Results</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{% url 'prediction' %}">Prediction</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{% url 'standings' %}">Standings</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{% url 'statistics' %}">Statistics</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{% url 'circuits' %}">Circuits</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{% url 'betting' %}">Betting</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{% url 'live_updates' %}">Live Updates</a></li>
-                </ul>
-                {% if user.is_authenticated %}
-                <div class="credits-display me-3">
-                    <span class="credits-amount">
-                        <i class="fas fa-coins text-warning"></i>
-                        {{ user.profile.credits|default:5000 }}
-                    </span>
+            
+            <!-- Menu Buttons Container -->
+            <div class="menu-buttons-container">
+                <!-- Navigation Menu Button -->
+                <div class="nav-menu-container">
+                    <button id="nav-menu-button" class="nav-menu-button">
+                        <i class="fas fa-bars me-2"></i>Menu
+                    </button>
+                    <div id="nav-menu" class="nav-menu">
+                        <a href="{% url 'home' %}" class="nav-menu-item">
+                            <i class="fas fa-home me-2"></i>Home
+                        </a>
+                        <a href="{% url 'results' %}" class="nav-menu-item">
+                            <i class="fas fa-flag-checkered me-2"></i>Results
+                        </a>
+                        <a href="{% url 'prediction' %}" class="nav-menu-item">
+                            <i class="fas fa-crystal-ball me-2"></i>Prediction
+                        </a>
+                        <a href="{% url 'standings' %}" class="nav-menu-item">
+                            <i class="fas fa-trophy me-2"></i>Standings
+                        </a>
+                        <a href="{% url 'statistics' %}" class="nav-menu-item">
+                            <i class="fas fa-chart-bar me-2"></i>Statistics
+                        </a>
+                        <a href="{% url 'circuits' %}" class="nav-menu-item">
+                            <i class="fas fa-road me-2"></i>Circuits
+                        </a>
+                        <a href="{% url 'betting' %}" class="nav-menu-item">
+                            <i class="fas fa-coins me-2"></i>Betting
+                        </a>
+                        <a href="{% url 'live_updates' %}" class="nav-menu-item">
+                            <i class="fas fa-broadcast-tower me-2"></i>Live Updates
+                        </a>
+                    </div>
                 </div>
-                {% endif %}
+                
+                <!-- User Menu Button -->
                 <div class="user-menu-container">
                     <button id="user-menu-button" class="user-menu-button">
                         <i class="fa-solid fa-user"></i>
@@ -258,6 +360,15 @@
                     <div id="user-menu" class="user-menu">
                         {% if user.is_authenticated %}
                             <div class="user-menu-greeting">Hi, {{ user.username }}</div>
+                            
+                            <!-- Credits Display -->
+                            <div class="credits-display">
+                                <span class="credits-amount">
+                                    <i class="fas fa-coins text-warning"></i>
+                                    {{ user.profile.credits|default:5000 }}
+                                </span>
+                            </div>
+                            
                             <a href="{% url 'portfolio' %}" class="user-menu-item">
                                 <i class="fas fa-chart-line me-2"></i>My Portfolio
                             </a>
@@ -297,8 +408,9 @@
             const themeToggle = document.getElementById('theme-toggle');
             const userMenuButton = document.getElementById('user-menu-button');
             const userMenu = document.getElementById('user-menu');
+            const navMenuButton = document.getElementById('nav-menu-button');
+            const navMenu = document.getElementById('nav-menu');
             const body = document.body;
-            const navLinks = document.querySelectorAll('.nav-link');
             const currentPath = window.location.pathname;
 
             const setTheme = (theme) => {
@@ -316,22 +428,26 @@
             userMenuButton.addEventListener('click', (e) => {
                 e.stopPropagation();
                 userMenu.classList.toggle('show');
+                navMenu.classList.remove('show');
+            });
+
+            navMenuButton.addEventListener('click', (e) => {
+                e.stopPropagation();
+                navMenu.classList.toggle('show');
+                userMenu.classList.remove('show');
             });
 
             document.addEventListener('click', (e) => {
                 if (!userMenu.contains(e.target) && !userMenuButton.contains(e.target)) {
                     userMenu.classList.remove('show');
                 }
+                if (!navMenu.contains(e.target) && !navMenuButton.contains(e.target)) {
+                    navMenu.classList.remove('show');
+                }
             });
 
             const savedTheme = localStorage.getItem('theme') || 'light';
             setTheme(savedTheme);
-
-            navLinks.forEach(link => {
-                if (link.getAttribute('href') === currentPath) {
-                    link.classList.add('active');
-                }
-            });
         });
     </script>
     {% block extra_js %}{% endblock %}
