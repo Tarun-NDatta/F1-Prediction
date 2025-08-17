@@ -1,0 +1,344 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Subscription Management - F1 Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .tier-card {
+        border: 2px solid transparent;
+        transition: all 0.3s ease;
+        height: 100%;
+    }
+    
+    .tier-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    
+    .tier-card.current-tier {
+        border-color: #28a745;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    }
+    
+    .tier-badge {
+        position: absolute;
+        top: -10px;
+        right: 15px;
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: bold;
+    }
+    
+    .feature-list {
+        list-style: none;
+        padding: 0;
+    }
+    
+    .feature-list li {
+        padding: 8px 0;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .feature-list li:last-child {
+        border-bottom: none;
+    }
+    
+    .feature-list li i {
+        color: #28a745;
+        margin-right: 10px;
+    }
+    
+    .price-display {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #007bff;
+    }
+    
+    .subscription-status {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 30px;
+    }
+    
+    .model-access-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-top: 20px;
+    }
+    
+    .model-card {
+        padding: 15px;
+        border-radius: 8px;
+        text-align: center;
+    }
+    
+    .model-available {
+        background: #d4edda;
+        border: 1px solid #c3e6cb;
+        color: #155724;
+    }
+    
+    .model-locked {
+        background: #f8d7da;
+        border: 1px solid #f5c6cb;
+        color: #721c24;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">
+                <i class="fas fa-crown text-warning"></i>
+                Subscription Management
+            </h1>
+        </div>
+    </div>
+
+    <!-- Current Subscription Status -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="subscription-status">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h3 class="mb-2">Current Plan: {{ current_tier_info.name }}</h3>
+                        <p class="mb-0">
+                            {% if subscription_active %}
+                                <i class="fas fa-check-circle"></i> Active
+                                {% if subscription_end_date %}
+                                    - Expires on {{ subscription_end_date|date:"F j, Y" }}
+                                {% endif %}
+                            {% else %}
+                                <i class="fas fa-exclamation-triangle"></i> Inactive
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="col-md-4 text-right">
+                        <h4 class="mb-0">{{ current_tier_info.price }}</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Model Access Overview -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-robot"></i>
+                        Your ML Model Access
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="model-access-grid">
+                        <div class="model-card model-available">
+                            <i class="fas fa-chart-line fa-2x mb-2"></i>
+                            <h6>Ridge Regression</h6>
+                            <small>Basic predictions</small>
+                        </div>
+                        
+                        <div class="model-card {% if 'xgboost' in available_models %}model-available{% else %}model-locked{% endif %}">
+                            <i class="fas fa-brain fa-2x mb-2"></i>
+                            <h6>XGBoost</h6>
+                            <small>Enhanced accuracy</small>
+                            {% if 'xgboost' not in available_models %}
+                                <div class="mt-2">
+                                    <i class="fas fa-lock"></i> Premium Required
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="model-card {% if 'catboost' in available_models %}model-available{% else %}model-locked{% endif %}">
+                            <i class="fas fa-rocket fa-2x mb-2"></i>
+                            <h6>CatBoost Ensemble</h6>
+                            <small>Maximum accuracy</small>
+                            {% if 'catboost' not in available_models %}
+                                <div class="mt-2">
+                                    <i class="fas fa-lock"></i> Pro Required
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Subscription Tiers -->
+    <div class="row">
+        {% for tier_key, tier_data in tier_info.items %}
+        <div class="col-md-4 mb-4">
+            <div class="card tier-card {% if profile.subscription_tier == tier_key %}current-tier{% endif %} h-100">
+                {% if profile.subscription_tier == tier_key %}
+                    <span class="tier-badge bg-success text-white">Current Plan</span>
+                {% endif %}
+                
+                <div class="card-header text-center bg-{{ tier_data.color }} text-white">
+                    <h4 class="mb-0">{{ tier_data.name }}</h4>
+                </div>
+                
+                <div class="card-body text-center">
+                    <div class="price-display mb-3">{{ tier_data.price }}</div>
+                    
+                    <ul class="feature-list">
+                        {% for feature in tier_data.features %}
+                        <li>
+                            <i class="fas fa-check"></i>
+                            {{ feature }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                
+                <div class="card-footer text-center">
+                    {% if profile.subscription_tier == tier_key %}
+                        {% if tier_key != 'BASIC' %}
+                            <form method="post" class="d-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="cancel">
+                                <button type="submit" class="btn btn-outline-secondary">
+                                    Cancel Subscription
+                                </button>
+                            </form>
+                        {% else %}
+                            <button class="btn btn-secondary" disabled>Current Plan</button>
+                        {% endif %}
+                    {% else %}
+                        {% if tier_key != 'BASIC' %}
+                            <form method="post" class="d-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="upgrade">
+                                <input type="hidden" name="tier" value="{{ tier_key }}">
+                                <button type="submit" class="btn btn-{{ tier_data.color }} btn-lg">
+                                    {% if profile.subscription_tier == 'BASIC' %}
+                                        Upgrade Now
+                                    {% else %}
+                                        Switch Plan
+                                    {% endif %}
+                                </button>
+                            </form>
+                        {% else %}
+                            <form method="post" class="d-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="cancel">
+                                <button type="submit" class="btn btn-outline-primary">
+                                    Downgrade to Basic
+                                </button>
+                            </form>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Feature Comparison -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-table"></i>
+                        Feature Comparison
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Feature</th>
+                                    <th class="text-center">Basic</th>
+                                    <th class="text-center">Premium</th>
+                                    <th class="text-center">Pro</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Ridge Regression Model</td>
+                                    <td class="text-center"><i class="fas fa-check text-success"></i></td>
+                                    <td class="text-center"><i class="fas fa-check text-success"></i></td>
+                                    <td class="text-center"><i class="fas fa-check text-success"></i></td>
+                                </tr>
+                                <tr>
+                                    <td>XGBoost Model</td>
+                                    <td class="text-center"><i class="fas fa-times text-danger"></i></td>
+                                    <td class="text-center"><i class="fas fa-check text-success"></i></td>
+                                    <td class="text-center"><i class="fas fa-check text-success"></i></td>
+                                </tr>
+                                <tr>
+                                    <td>CatBoost Ensemble</td>
+                                    <td class="text-center"><i class="fas fa-times text-danger"></i></td>
+                                    <td class="text-center"><i class="fas fa-times text-danger"></i></td>
+                                    <td class="text-center"><i class="fas fa-check text-success"></i></td>
+                                </tr>
+                                <tr>
+                                    <td>Prediction History</td>
+                                    <td class="text-center">Limited</td>
+                                    <td class="text-center">Extended</td>
+                                    <td class="text-center">Unlimited</td>
+                                </tr>
+                                <tr>
+                                    <td>Model Accuracy Stats</td>
+                                    <td class="text-center">Basic</td>
+                                    <td class="text-center">Detailed</td>
+                                    <td class="text-center">Advanced</td>
+                                </tr>
+                                <tr>
+                                    <td>Support</td>
+                                    <td class="text-center">Community</td>
+                                    <td class="text-center">Email</td>
+                                    <td class="text-center">Priority</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Add confirmation for subscription changes
+    $('form').on('submit', function(e) {
+        const action = $(this).find('input[name="action"]').val();
+        const tier = $(this).find('input[name="tier"]').val();
+        
+        let message = '';
+        if (action === 'upgrade') {
+            message = `Are you sure you want to upgrade to ${tier}?`;
+        } else if (action === 'cancel') {
+            message = 'Are you sure you want to cancel your subscription?';
+        }
+        
+        if (message && !confirm(message)) {
+            e.preventDefault();
+        }
+    });
+    
+    // Animate tier cards on hover
+    $('.tier-card').hover(
+        function() {
+            $(this).addClass('shadow-lg');
+        },
+        function() {
+            $(this).removeClass('shadow-lg');
+        }
+    );
+});
+</script>
+{% endblock %}

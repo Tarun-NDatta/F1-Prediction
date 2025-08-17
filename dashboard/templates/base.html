@@ -224,6 +224,100 @@
             color: #ffd700;
         }
         
+        /* Subscription Display in User Menu */
+        .subscription-display {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            margin: 0.5rem 0;
+        }
+        
+        .subscription-tier {
+            color: var(--f1-white);
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+        }
+        
+        .subscription-tier.basic {
+            color: #6c757d;
+        }
+        
+        .subscription-tier.premium {
+            color: #ffd700;
+        }
+        
+        .subscription-tier.pro {
+            color: #28a745;
+        }
+        
+        .subscription-status {
+            font-size: 0.8rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 10px;
+            background: rgba(40, 167, 69, 0.2);
+            color: #28a745;
+        }
+        
+        .subscription-status.inactive {
+            background: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+        }
+        
+        /* Theme Toggle Pill */
+        .theme-toggle-pill {
+            position: relative;
+            width: 60px;
+            height: 30px;
+            background: #6c757d;
+            border-radius: 15px;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin: 0.5rem 1rem;
+        }
+        
+        .theme-toggle-pill.dark {
+            background: var(--f1-red);
+        }
+        
+        .theme-toggle-pill::before {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 24px;
+            height: 24px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s ease;
+        }
+        
+        .theme-toggle-pill.dark::before {
+            transform: translateX(30px);
+        }
+        
+        .theme-toggle-pill::after {
+            content: '☀️';
+            position: absolute;
+            top: 50%;
+            left: 8px;
+            transform: translateY(-50%);
+            font-size: 12px;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+        
+        .theme-toggle-pill.dark::after {
+            content: '🌙';
+            left: auto;
+            right: 8px;
+        }
+        
         body.light-mode .nav-menu { background-color: var(--f1-white); border: 1px solid #ddd; }
         body.light-mode .nav-menu-item { color: var(--f1-dark); }
         body.light-mode .nav-menu-item:hover { background-color: #f2f2f2; }
@@ -233,6 +327,37 @@
         body.light-mode .user-menu-item { color: var(--f1-dark); }
         body.light-mode .user-menu-item:hover { background-color: #f2f2f2; }
         body.light-mode .user-menu-divider { border-color: #eee; }
+        
+        /* Light mode fixes for credits and subscription display */
+        body.light-mode .credits-display {
+            background: rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        body.light-mode .credits-amount {
+            color: var(--f1-dark);
+        }
+        
+        body.light-mode .subscription-display {
+            background: rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        body.light-mode .subscription-tier {
+            color: var(--f1-dark);
+        }
+        
+        body.light-mode .subscription-tier.basic {
+            color: #6c757d;
+        }
+        
+        body.light-mode .subscription-tier.premium {
+            color: #ffa500;
+        }
+        
+        body.light-mode .subscription-tier.pro {
+            color: #28a745;
+        }
         
         body.dark-mode .nav-menu { background-color: var(--f1-card-dark); border: 1px solid #444; }
         body.dark-mode .username-display { color: var(--f1-silver); }
@@ -340,6 +465,12 @@
                         <a href="{% url 'statistics' %}" class="nav-menu-item">
                             <i class="fas fa-chart-bar me-2"></i>Statistics
                         </a>
+                        <a href="{% url 'driver_analytics' %}" class="nav-menu-item">
+                            <i class="fas fa-user-friends me-2"></i>Driver Analytics
+                        </a>
+                        <a href="{% url 'team_analytics' %}" class="nav-menu-item">
+                            <i class="fas fa-users me-2"></i>Team Analytics
+                        </a>
                         <a href="{% url 'circuits' %}" class="nav-menu-item">
                             <i class="fas fa-road me-2"></i>Circuits
                         </a>
@@ -359,13 +490,24 @@
                     </button>
                     <div id="user-menu" class="user-menu">
                         {% if user.is_authenticated %}
-                            <div class="user-menu-greeting">Hi, {{ user.username }}</div>
+                            <div class="user-menu-greeting">Hi, {{ user.username|upper }}</div>
                             
                             <!-- Credits Display -->
                             <div class="credits-display">
                                 <span class="credits-amount">
                                     <i class="fas fa-coins text-warning"></i>
                                     {{ user.profile.credits|default:5000 }}
+                                </span>
+                            </div>
+                            
+                            <!-- Subscription Display -->
+                            <div class="subscription-display">
+                                <span class="subscription-tier {{ user.profile.subscription_tier|default:'basic' }}">
+                                    <i class="fas fa-crown me-1"></i>
+                                    {{ user.profile.subscription_tier|default:'Basic'|title }}
+                                </span>
+                                <span class="subscription-status {% if user.profile.is_subscription_active %}active{% else %}inactive{% endif %}">
+                                    {% if user.profile.is_subscription_active %}Active{% else %}Inactive{% endif %}
                                 </span>
                             </div>
                             
@@ -378,6 +520,9 @@
                             <a href="{% url 'credits' %}" class="user-menu-item">
                                 <i class="fas fa-history me-2"></i>Credits History
                             </a>
+                            <a href="{% url 'subscription_management' %}" class="user-menu-item">
+                                <i class="fas fa-crown me-2"></i>Manage Subscription
+                            </a>
                             <hr class="user-menu-divider">
                             <a href="{% url 'logout' %}" class="user-menu-item">Logout</a>
                         {% else %}
@@ -386,7 +531,7 @@
                         {% endif %}
                         <hr class="user-menu-divider">
                         <div class="user-menu-theme-label">Theme</div>
-                        <button id="theme-toggle" class="btn btn-secondary w-100 my-2">Dark</button>
+                        <button id="theme-toggle" class="theme-toggle-pill"></button>
                     </div>
                 </div>
             </div>
@@ -415,7 +560,7 @@
 
             const setTheme = (theme) => {
                 body.className = theme + '-mode';
-                themeToggle.textContent = theme === 'dark' ? 'Light' : 'Dark';
+                themeToggle.className = theme === 'dark' ? 'theme-toggle-pill dark' : 'theme-toggle-pill';
                 localStorage.setItem('theme', theme);
             };
 

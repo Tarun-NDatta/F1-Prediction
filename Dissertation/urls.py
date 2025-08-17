@@ -25,6 +25,8 @@ urlpatterns = [
     path('prediction/', view.prediction, name='prediction'),
     path('standings/', view.standings, name='standings'),
     path('statistics/', view.statistics, name='statistics'),
+    path('driver-analytics/', view.driver_analytics, name='driver_analytics'),
+    path('team-analytics/', view.team_analytics, name='team_analytics'),
     path('credits/', view.credits, name='credits'),
     path('portfolio/', view.portfolio, name='portfolio'),
     path('circuits/', view.circuits, name='circuits'),
@@ -46,4 +48,5 @@ urlpatterns = [
     path('verify-temp-password/', view.verify_temp_password, name='verify_temp_password'),
     path('reset-password/', view.reset_password, name='reset_password'),
     path('resend-temp-password/', view.resend_temp_password, name='resend_temp_password'),
+    path('subscription/', view.subscription_management, name='subscription_management'),
 ]

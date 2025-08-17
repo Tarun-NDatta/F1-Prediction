@@ -3,6 +3,7 @@ from django.db.models import Count, Avg, Q, Max, Sum
 from django.db.models import CharField, Value  # Django's Value, not torch
 from django.db.models.functions import Concat
 
+from data import models
 from data.models import (
     Event, RaceResult, QualifyingResult, Circuit, Team, Driver, 
     Session, SessionType, ridgeregression, xgboostprediction, CatBoostPrediction,
@@ -38,6 +39,7 @@ from django.utils import timezone
 from datetime import datetime, timedelta
 import json
 import logging
+from .decorators import subscription_required, get_user_model_context
 
 # Set up logging to help debug
 logger = logging.getLogger(__name__)
@@ -269,6 +271,10 @@ def get_team_class(team_name):
 def prediction(request):
     predictions_locked = not request.user.is_authenticated
     
+    # Get user's subscription context
+    model_context = get_user_model_context(request.user)
+    user_available_models = model_context.get('available_models', ['ridge_regression'])
+    
     # Available models configuration - UPDATED to include CatBoost
     AVAILABLE_MODELS = {
         'ridge_regression': {
@@ -276,23 +282,38 @@ def prediction(request):
             'model_class': ridgeregression,
             'available_rounds': list(range(1, 15)),  # Rounds 1-14 (completed) + upcoming
             'status': 'active',
-            'model_name_filter': 'ridge_regression'  # Added for database filtering
+            'model_name_filter': 'ridge_regression',  # Added for database filtering
+            'tier_required': 'BASIC'
         },
         'xgboost': {
             'name': 'XGBoost',
             'model_class': xgboostprediction,  # Now available
             'available_rounds': list(range(1, 15)),  # Update based on your available data
             'status': 'active',  # Changed from 'coming_soon' to 'active'
-            'model_name_filter': 'xgboost_regression'  # Added for database filtering
+            'model_name_filter': 'xgboost_regression',  # Added for database filtering
+            'tier_required': 'PREMIUM'
         },
         'catboost': {
             'name': 'CatBoost Ensemble',
             'model_class': CatBoostPrediction,  # Now available
             'available_rounds': list(range(1, 15)),  # Update based on your available data
             'status': 'active',  # Changed from 'coming_soon' to 'active'
-            'model_name_filter': 'catboost_ensemble'  # Added for database filtering
+            'model_name_filter': 'catboost_ensemble',  # Added for database filtering
+            'tier_required': 'PRO'
         }
     }
+    
+    # Filter available models based on user's subscription
+    if request.user.is_authenticated:
+        filtered_models = {}
+        for key, model_info in AVAILABLE_MODELS.items():
+            if key in user_available_models:
+                model_info['accessible'] = True
+            else:
+                model_info['accessible'] = False
+                model_info['status'] = 'subscription_required'
+            filtered_models[key] = model_info
+        AVAILABLE_MODELS = filtered_models
     
     # Get selected model from request (default to ridge_regression)
     selected_model_key = request.GET.get('model', 'ridge_regression')
@@ -350,79 +371,78 @@ def prediction(request):
         act_map = {a.driver_id: a for a in actuals}
 
         comparison = []
+        show_coming_soon = len(predictions) == 0
+
         for driver_id in driver_ids:
             pred = pred_map.get(driver_id)
             act = act_map.get(driver_id)
-            driver = pred.driver if pred else (act.driver if act else None)
             
-            # Get team information
-            team_name = 'N/A'
-            team_class = 'team-default'
-            team_color = '#666666'  # Default color
-            points = None
-            
-            if act and act.team:
-                team_name = act.team.name
-                team_class = f"team-{act.team.name.lower().replace(' ', '')}"
-                # You can add team colors here based on team name
-                team_colors = {
-                    'Mercedes': '#00D2BE',
-                    'Ferrari': '#DC0000',
-                    'Red Bull': '#0600EF',
-                    'McLaren': '#FF8700',
-                    'Alpine': '#0090FF',
-                    'Aston Martin': '#006F62',
-                    'Williams': '#005AFF',
-                    'AlphaTauri': '#2B4562',
-                    'Alfa Romeo': '#900000',
-                    'Haas': '#FFFFFF'
+            if pred and act:
+                # Both prediction and actual result available
+                is_correct = pred.predicted_position == act.position
+                difference = pred.predicted_position - act.position
+                
+                # Get team color for display
+                team_color = act.team.color if hasattr(act.team, 'color') and act.team.color else '#666666'
+                
+                comparison_item = {
+                    'driver': f"{act.driver.given_name} {act.driver.family_name}",
+                    'team': act.team.name,
+                    'team_color': team_color,
+                    'predicted': pred.predicted_position,
+                    'actual': act.position,
+                    'difference': f"{int(difference):+d}" if difference != 0 else "0",
+                    'confidence': f"{pred.confidence:.1%}" if hasattr(pred, 'confidence') and pred.confidence else "N/A",
+                    'is_correct': is_correct,
+                    'points': act.points or 0,
                 }
-                team_color = team_colors.get(act.team.name, '#666666')
-                points = act.points
+                
+                # Add CatBoost-specific features if available
+                if selected_model_key == 'catboost' and hasattr(pred, 'track_category'):
+                    comparison_item['catboost_features'] = {
+                        'track_category': getattr(pred, 'track_category', 'N/A'),
+                        'power_sensitivity': getattr(pred, 'power_sensitivity', 'N/A'),
+                        'overtaking_difficulty': getattr(pred, 'overtaking_difficulty', 'N/A'),
+                    }
+                else:
+                    comparison_item['catboost_features'] = {
+                        'track_category': 'N/A',
+                        'power_sensitivity': 'N/A',
+                        'overtaking_difficulty': 'N/A',
+                    }
+                
+                comparison.append(comparison_item)
             elif pred:
-                # Try to get team from prediction if available
-                team_name = getattr(pred, 'team', 'N/A')
-                team_class = 'team-default'
-                points = getattr(pred, 'points', None)
-            
-            # Get CatBoost specific features if available
-            catboost_features = {}
-            if pred and selected_model_key == 'catboost':
-                catboost_features = {
-                    'track_category': getattr(pred, 'track_category', 'N/A'),
-                    'track_power_sensitivity': getattr(pred, 'track_power_sensitivity', 'N/A'),
-                    'track_overtaking_difficulty': getattr(pred, 'track_overtaking_difficulty', 'N/A'),
-                    'track_qualifying_importance': getattr(pred, 'track_qualifying_importance', 'N/A'),
-                    'ridge_prediction': getattr(pred, 'ridge_prediction', 'N/A'),
-                    'xgboost_prediction': getattr(pred, 'xgboost_prediction', 'N/A'),
-                    'ensemble_prediction': getattr(pred, 'ensemble_prediction', 'N/A'),
-                    'prediction_confidence': getattr(pred, 'prediction_confidence', 'N/A'),
+                # Only prediction available (future race)
+                comparison_item = {
+                    'driver': f"{pred.driver.given_name} {pred.driver.family_name}",
+                    'team': pred.team.name if hasattr(pred, 'team') and pred.team else "N/A",
+                    'team_color': '#666666',
+                    'predicted': pred.predicted_position,
+                    'actual': 'N/A',
+                    'difference': 'N/A',
+                    'confidence': f"{pred.confidence:.1%}" if hasattr(pred, 'confidence') and pred.confidence else "N/A",
+                    'is_correct': None,
+                    'points': 0,
                 }
-            
-            comparison.append({
-                'driver': f"{driver.given_name} {driver.family_name}" if driver else 'N/A',
-                'predicted': int(round(pred.predicted_position)) if pred else 'N/A',  # Convert to int for cleaner display
-                'actual': act.position if act and act.position is not None else (pred.actual_position if pred and pred.actual_position is not None else 'N/A'),
-                'difference': (act.position - int(round(pred.predicted_position))) if pred and act and act.position is not None and pred.predicted_position is not None else 'N/A',
-                'driver_number': driver.permanent_number if driver and driver.permanent_number else '',
-                'team': team_name,
-                'team_class': team_class,
-                'team_color': team_color,  # Added team color
-                'team_slug': '',
-                'confidence': round(pred.confidence * 100, 1) if pred and hasattr(pred, 'confidence') and pred.confidence else 'N/A',
-                'is_correct': (act.position == int(round(pred.predicted_position))) if pred and act and act.position is not None and pred.predicted_position is not None else False,
-                'points': points if points is not None else 'N/A',
-                'catboost_features': catboost_features,  # Add CatBoost specific features
-            })
+                
+                if selected_model_key == 'catboost' and hasattr(pred, 'track_category'):
+                    comparison_item['catboost_features'] = {
+                        'track_category': getattr(pred, 'track_category', 'N/A'),
+                        'power_sensitivity': getattr(pred, 'power_sensitivity', 'N/A'),
+                        'overtaking_difficulty': getattr(pred, 'overtaking_difficulty', 'N/A'),
+                    }
+                else:
+                    comparison_item['catboost_features'] = {
+                        'track_category': 'N/A',
+                        'power_sensitivity': 'N/A',
+                        'overtaking_difficulty': 'N/A',
+                    }
+                
+                comparison.append(comparison_item)
 
-        # Sort comparison: if actual results are available, order by actual; else by predicted
-        if any(item['actual'] != 'N/A' for item in comparison):
-            comparison.sort(key=lambda x: (x['actual'] if x['actual'] != 'N/A' else 9999))
-        else:
-            comparison.sort(key=lambda x: (x['predicted'] if x['predicted'] != 'N/A' else 9999))
-
-        # Only show coming soon if there is no data at all
-        show_coming_soon = len(comparison) == 0
+        # Sort comparison by predicted position
+        comparison.sort(key=lambda x: x['predicted'])
 
         race_data = {
             'event': event,
@@ -431,6 +451,10 @@ def prediction(request):
         }
         results.append(race_data)
     
+    # Calculate model accuracy statistics
+    model_stats = calculate_model_accuracy_stats(selected_model['model_class'], selected_model['model_name_filter'])
+    
+    # Add subscription context
     context = {
         'results': results,
         'available_rounds': available_rounds,
@@ -444,18 +468,248 @@ def prediction(request):
         'error': None,
         'predictions_locked': predictions_locked,
         'is_authenticated': request.user.is_authenticated,
+        'model_stats': model_stats,
+        **model_context,  # Add subscription context
     }
     
     return render(request, 'prediction.html', context)
 
+
+def calculate_model_accuracy_stats(model_class, model_name_filter):
+    """Calculate accuracy statistics for a given model"""
+    if not model_class:
+        return None
+    
+    try:
+        # Get all predictions with actual results
+        predictions = model_class.objects.filter(
+            actual_position__isnull=False,
+            year=2025
+        )
+        
+        if hasattr(model_class, 'model_name'):
+            predictions = predictions.filter(model_name=model_name_filter)
+        
+        if not predictions.exists():
+            return None
+        
+        # Calculate metrics
+        total_predictions = predictions.count()
+        correct_predictions = predictions.filter(predicted_position=models.F('actual_position')).count()
+        overall_accuracy = correct_predictions / total_predictions if total_predictions > 0 else 0
+        
+        # Calculate MAE
+        mae = 0
+        top_3_correct = 0
+        top_10_correct = 0
+        top_3_total = 0
+        top_10_total = 0
+        
+        for pred in predictions:
+            mae += abs(pred.predicted_position - pred.actual_position)
+            
+            # Top 3 accuracy (predictions within 3 positions)
+            if abs(pred.predicted_position - pred.actual_position) <= 3:
+                top_3_correct += 1
+            top_3_total += 1
+            
+            # Top 10 accuracy (predictions within 10 positions)
+            if abs(pred.predicted_position - pred.actual_position) <= 10:
+                top_10_correct += 1
+            top_10_total += 1
+        
+        mae = mae / total_predictions if total_predictions > 0 else 0
+        top_3_accuracy = top_3_correct / top_3_total if top_3_total > 0 else 0
+        top_10_accuracy = top_10_correct / top_10_total if top_10_total > 0 else 0
+        
+        return {
+            'total_predictions': total_predictions,
+            'overall_accuracy': overall_accuracy,
+            'mae': mae,
+            'top_3_accuracy': top_3_accuracy,
+            'top_10_accuracy': top_10_accuracy,
+        }
+        
+    except Exception as e:
+        print(f"Error calculating model stats: {e}")
+        return None
+
+
+def driver_analytics(request):
+    """Driver analytics page with charts and comparisons"""
+    # Get current year (default to 2025)
+    current_year = request.GET.get('year', '2025')
+    try:
+        year_int = int(current_year)
+    except (ValueError, TypeError):
+        year_int = 2025
+    
+    # Get events for the selected year
+    events = Event.objects.filter(year=year_int).order_by('round')
+    event_ids = events.values_list('id', flat=True)
+    
+    # Get all drivers with their results
+    drivers = Driver.objects.filter(
+        raceresult__session__event_id__in=event_ids
+    ).distinct()
+    
+    # Get driver standings data for charts
+    driver_standings_data = []
+    for driver in drivers:
+        driver_results = RaceResult.objects.filter(
+            session__event_id__in=event_ids,
+            driver=driver
+        ).order_by('session__event__round')
+        
+        if driver_results.exists():
+            points_progression = []
+            cumulative_points = 0
+            
+            for result in driver_results:
+                cumulative_points += result.points or 0
+                points_progression.append({
+                    'round': result.session.event.round,
+                    'race_name': result.session.event.name,
+                    'points': result.points or 0,
+                    'cumulative_points': cumulative_points,
+                    'position': result.position,
+                })
+            
+            driver_standings_data.append({
+                'driver': driver,
+                'points_progression': points_progression,
+                'total_points': cumulative_points,
+                'team': driver_results.first().team,
+            })
+    
+    # Sort by total points
+    driver_standings_data.sort(key=lambda x: x['total_points'], reverse=True)
+    
+    # Get teammate comparisons
+    teammate_comparisons = []
+    teams = Team.objects.filter(
+        raceresult__session__event_id__in=event_ids
+    ).distinct()
+    
+    for team in teams:
+        team_drivers = Driver.objects.filter(
+            raceresult__session__event_id__in=event_ids,
+            raceresult__team=team
+        ).distinct()
+        
+        if team_drivers.count() >= 2:
+            driver1, driver2 = team_drivers[:2]
+            
+            driver1_points = RaceResult.objects.filter(
+                session__event_id__in=event_ids,
+                driver=driver1
+            ).aggregate(total_points=models.Sum('points'))['total_points'] or 0
+            
+            driver2_points = RaceResult.objects.filter(
+                session__event_id__in=event_ids,
+                driver=driver2
+            ).aggregate(total_points=models.Sum('points'))['total_points'] or 0
+            
+            teammate_comparisons.append({
+                'team': team,
+                'driver1': {
+                    'driver': driver1,
+                    'points': driver1_points,
+                },
+                'driver2': {
+                    'driver': driver2,
+                    'points': driver2_points,
+                },
+                'difference': abs(driver1_points - driver2_points),
+            })
+    
+    context = {
+        'driver_standings_data': driver_standings_data,
+        'teammate_comparisons': teammate_comparisons,
+        'events': events,
+        'selected_year': year_int,
+    }
+    
+    return render(request, 'driver_analytics.html', context)
+
+
+def team_analytics(request):
+    """Team analytics page with race-by-race progression"""
+    # Get current year (default to 2025)
+    current_year = request.GET.get('year', '2025')
+    try:
+        year_int = int(current_year)
+    except (ValueError, TypeError):
+        year_int = 2025
+    
+    # Get events for the selected year
+    events = Event.objects.filter(year=year_int).order_by('round')
+    event_ids = events.values_list('id', flat=True)
+    
+    # Get all teams with their results
+    teams = Team.objects.filter(
+        raceresult__session__event_id__in=event_ids
+    ).distinct()
+    
+    # Get team progression data for charts
+    team_progression_data = []
+    for team in teams:
+        team_results = RaceResult.objects.filter(
+            session__event_id__in=event_ids,
+            team=team
+        ).order_by('session__event__round')
+        
+        if team_results.exists():
+            points_progression = []
+            cumulative_points = 0
+            
+            # Group by event to get team points per race
+            for event in events:
+                event_results = team_results.filter(session__event=event)
+                event_points = sum(result.points or 0 for result in event_results)
+                cumulative_points += event_points
+                
+                points_progression.append({
+                    'round': event.round,
+                    'race_name': event.name,
+                    'points': event_points,
+                    'cumulative_points': cumulative_points,
+                })
+            
+            team_progression_data.append({
+                'team': team,
+                'points_progression': points_progression,
+                'total_points': cumulative_points,
+            })
+    
+    # Sort by total points
+    team_progression_data.sort(key=lambda x: x['total_points'], reverse=True)
+    
+    context = {
+        'team_progression_data': team_progression_data,
+        'events': events,
+        'selected_year': year_int,
+    }
+    
+    return render(request, 'team_analytics.html', context)
+
+
 def standings(request):
-    # Get all 2025 events
-    event_2025_ids = Event.objects.filter(year=2025).values_list('id', flat=True)
+    # Get current year (default to 2025)
+    current_year = request.GET.get('year', '2025')
+    try:
+        year_int = int(current_year)
+    except (ValueError, TypeError):
+        year_int = 2025
+    
+    # Get all events for the selected year
+    event_ids = Event.objects.filter(year=year_int).values_list('id', flat=True)
+    
     # Driver standings: sum points for each driver
     driver_points = (
         RaceResult.objects
-        .filter(session__event_id__in=event_2025_ids)
-        .values('driver', 'driver__given_name', 'driver__family_name', 'driver__permanent_number')
+        .filter(session__event_id__in=event_ids)
+        .values('driver', 'driver__given_name', 'driver__family_name', 'driver__permanent_number', 'team__name')
         .annotate(points=Sum('points'))
         .order_by('-points', 'driver__family_name', 'driver__given_name')
     )
@@ -465,12 +719,14 @@ def standings(request):
             'position': idx,
             'number': d['driver__permanent_number'],
             'name': f"{d['driver__given_name']} {d['driver__family_name']}",
+            'team': d['team__name'],
             'points': d['points'] or 0,
         })
+    
     # Team standings: sum points for each team
     team_points = (
         RaceResult.objects
-        .filter(session__event_id__in=event_2025_ids)
+        .filter(session__event_id__in=event_ids)
         .values('team', 'team__name')
         .annotate(points=Sum('points'))
         .order_by('-points', 'team__name')
@@ -482,7 +738,17 @@ def standings(request):
             'name': t['team__name'],
             'points': t['points'] or 0,
         })
-    return render(request, 'standings.html', {'driver_standings': driver_standings, 'team_standings': team_standings})
+    
+    # Get recent events for dynamic updates
+    recent_events = Event.objects.filter(year=year_int).order_by('-date')[:5]
+    
+    context = {
+        'driver_standings': driver_standings, 
+        'team_standings': team_standings,
+        'selected_year': year_int,
+        'recent_events': recent_events,
+    }
+    return render(request, 'standings.html', context)
 
 def register(request):
     next_url = request.GET.get('next') or request.POST.get('next')
@@ -546,6 +812,81 @@ def login_view(request):
 def logout_view(request):
     auth_logout(request)
     return redirect('home')
+
+@login_required
+def subscription_management(request):
+    """Subscription management page"""
+    try:
+        profile = request.user.profile
+    except UserProfile.DoesNotExist:
+        profile = UserProfile.objects.create(user=request.user)
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'upgrade':
+            new_tier = request.POST.get('tier')
+            if new_tier in ['PREMIUM', 'PRO']:
+                profile.subscription_tier = new_tier
+                profile.subscription_start_date = timezone.now()
+                # Set end date to 30 days from now (for demo purposes)
+                profile.subscription_end_date = timezone.now() + timedelta(days=30)
+                profile.is_subscription_active = True
+                profile.save()
+                
+                messages.success(request, f'Successfully upgraded to {new_tier} tier!')
+                
+                # Create credit transaction for upgrade
+                CreditTransaction.objects.create(
+                    user=request.user,
+                    transaction_type='ADMIN_ADJUSTMENT',
+                    amount=0,  # No credits involved in subscription
+                    description=f'Subscription upgraded to {new_tier}',
+                    balance_after=profile.credits
+                )
+        
+        elif action == 'cancel':
+            profile.subscription_tier = 'BASIC'
+            profile.is_subscription_active = True
+            profile.subscription_end_date = None
+            profile.save()
+            
+            messages.info(request, 'Subscription cancelled. You now have Basic access.')
+        
+        return redirect('subscription_management')
+    
+    # Get all tier information
+    tier_info = {
+        'BASIC': profile.get_subscription_display_info() if profile.subscription_tier == 'BASIC' else {
+            'name': 'Basic (Free)',
+            'color': 'secondary',
+            'features': ['Ridge Regression Model', 'Basic Predictions'],
+            'price': 'Free'
+        },
+        'PREMIUM': {
+            'name': 'Premium',
+            'color': 'primary', 
+            'features': ['Ridge Regression', 'XGBoost Model', 'Enhanced Accuracy'],
+            'price': '$9.99/month'
+        },
+        'PRO': {
+            'name': 'Pro',
+            'color': 'success',
+            'features': ['All Models', 'CatBoost Ensemble', 'Maximum Accuracy', 'Priority Support'],
+            'price': '$19.99/month'
+        }
+    }
+    
+    context = {
+        'profile': profile,
+        'tier_info': tier_info,
+        'current_tier_info': profile.get_subscription_display_info(),
+        'available_models': profile.get_available_models(),
+        'subscription_active': profile.is_subscription_active,
+        'subscription_end_date': profile.subscription_end_date,
+    }
+    
+    return render(request, 'subscription_management.html', context)
 
 def statistics(request):
     """Statistics page showing driver and team analytics"""

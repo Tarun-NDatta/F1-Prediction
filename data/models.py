@@ -950,6 +950,23 @@ class UserProfile(models.Model):
         default='MODERATE'
     )
     
+    # Subscription tier system
+    SUBSCRIPTION_TIERS = [
+        ('BASIC', 'Basic (Free)'),
+        ('PREMIUM', 'Premium'),
+        ('PRO', 'Pro'),
+    ]
+    
+    subscription_tier = models.CharField(
+        max_length=20,
+        choices=SUBSCRIPTION_TIERS,
+        default='BASIC',
+        help_text="User's subscription tier for ML model access"
+    )
+    subscription_start_date = models.DateTimeField(null=True, blank=True)
+    subscription_end_date = models.DateTimeField(null=True, blank=True)
+    is_subscription_active = models.BooleanField(default=True)
+    
     # Betting restrictions
     is_suspended = models.BooleanField(default=False, help_text="Account suspended from betting")
     suspension_reason = models.TextField(blank=True, help_text="Reason for suspension")
@@ -1049,6 +1066,56 @@ class UserProfile(models.Model):
             'daily_bet_limit': int(self.credits * limits['daily_limit_percent']),
             'max_concurrent_bets': limits['max_concurrent_bets']
         }
+    
+    def get_available_models(self):
+        """Get list of ML models available to user based on subscription tier"""
+        model_access = {
+            'BASIC': ['ridge_regression'],
+            'PREMIUM': ['ridge_regression', 'xgboost'],
+            'PRO': ['ridge_regression', 'xgboost', 'catboost']
+        }
+        return model_access.get(self.subscription_tier, ['ridge_regression'])
+    
+    def can_access_model(self, model_name):
+        """Check if user can access a specific ML model"""
+        # Basic model is always available to authenticated users
+        if model_name == 'ridge_regression':
+            return True
+            
+        # For premium/pro models, check subscription status
+        if not self.is_subscription_active:
+            return False
+        
+        # Check if subscription has expired
+        if self.subscription_end_date and timezone.now() > self.subscription_end_date:
+            return False
+            
+        available_models = self.get_available_models()
+        return model_name in available_models
+    
+    def get_subscription_display_info(self):
+        """Get subscription tier display information"""
+        tier_info = {
+            'BASIC': {
+                'name': 'Basic (Free)',
+                'color': 'secondary',
+                'features': ['Ridge Regression Model', 'Basic Predictions'],
+                'price': 'Free'
+            },
+            'PREMIUM': {
+                'name': 'Premium',
+                'color': 'primary',
+                'features': ['Ridge Regression', 'XGBoost Model', 'Enhanced Accuracy'],
+                'price': '$9.99/month'
+            },
+            'PRO': {
+                'name': 'Pro',
+                'color': 'success',
+                'features': ['All Models', 'CatBoost Ensemble', 'Maximum Accuracy', 'Priority Support'],
+                'price': '$19.99/month'
+            }
+        }
+        return tier_info.get(self.subscription_tier, tier_info['BASIC'])
 
 
 class CreditTransaction(models.Model):

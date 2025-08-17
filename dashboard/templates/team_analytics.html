@@ -1,0 +1,479 @@
+{% extends 'base.html' %}
+{% block title %}Team Analytics{% endblock %}
+
+{% block extra_css %}
+<style>
+.analytics-header {
+    background: var(--f1-gradient);
+    color: white;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border-radius: 12px;
+    text-align: center;
+}
+.content-box {
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    margin-bottom: 2rem;
+    padding: 2rem 1.5rem;
+}
+body.dark-mode .content-box {
+    background: #232527 !important;
+    color: #fff !important;
+    border: 1px solid #333;
+}
+
+/* Chart Container Styling */
+.chart-container {
+    position: relative;
+    height: 400px;
+    margin: 2rem 0;
+    background: rgba(255,255,255,0.9);
+    border-radius: 8px;
+    border: 1px solid rgba(0,0,0,0.1);
+}
+body.dark-mode .chart-container {
+    background: rgba(255,255,255,0.05);
+    border-color: rgba(255,255,255,0.1);
+}
+
+/* Team Cards */
+.team-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border-left: 4px solid var(--f1-red);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+body.dark-mode .team-card {
+    background: #232527;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    border-left-color: var(--f1-gold);
+}
+.team-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+.team-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+.team-logo {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: var(--f1-red);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.5rem;
+}
+body.dark-mode .team-logo {
+    background: var(--f1-gold);
+    color: #232527;
+}
+.team-info h5 {
+    margin: 0;
+    color: var(--f1-red);
+    font-weight: 600;
+}
+body.dark-mode .team-info h5 {
+    color: var(--f1-gold);
+}
+.team-info small {
+    color: #6b7280;
+    font-size: 0.9rem;
+}
+body.dark-mode .team-info small {
+    color: #ccc;
+}
+
+/* Team Performance Stats */
+.performance-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+.stat-item {
+    text-align: center;
+    padding: 1rem;
+    background: rgba(248, 249, 250, 0.5);
+    border-radius: 8px;
+    border: 1px solid rgba(0,0,0,0.1);
+}
+body.dark-mode .stat-item {
+    background: rgba(255,255,255,0.05);
+    border-color: rgba(255,255,255,0.1);
+}
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--f1-red);
+    margin-bottom: 0.2rem;
+}
+body.dark-mode .stat-value {
+    color: var(--f1-gold);
+}
+.stat-label {
+    font-size: 0.8rem;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+body.dark-mode .stat-label {
+    color: #ccc;
+}
+
+/* Year Selector */
+.year-selector {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 2rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+.year-btn {
+    background: none;
+    border: 2px solid var(--f1-red);
+    color: var(--f1-red);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+body.dark-mode .year-btn {
+    border-color: var(--f1-gold);
+    color: var(--f1-gold);
+}
+.year-btn:hover,
+.year-btn.active {
+    background: var(--f1-red);
+    color: white;
+}
+body.dark-mode .year-btn:hover,
+body.dark-mode .year-btn.active {
+    background: var(--f1-gold);
+    color: #232527;
+}
+
+/* Team Comparison Table */
+.team-comparison-table {
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-top: 2rem;
+}
+body.dark-mode .team-comparison-table {
+    background: #232527;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+.team-comparison-table th {
+    background: var(--f1-red);
+    color: white;
+    font-weight: 600;
+    padding: 1rem;
+    text-align: center;
+}
+body.dark-mode .team-comparison-table th {
+    background: var(--f1-gold);
+    color: #232527;
+}
+.team-comparison-table td {
+    padding: 0.8rem;
+    text-align: center;
+    border-bottom: 1px solid #e9ecef;
+}
+body.dark-mode .team-comparison-table td {
+    border-bottom-color: #333;
+}
+.team-comparison-table tr:hover {
+    background: rgba(220, 20, 60, 0.05);
+}
+body.dark-mode .team-comparison-table tr:hover {
+    background: rgba(255,255,255,0.05);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .chart-container {
+        height: 300px;
+    }
+    .performance-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .year-selector {
+        flex-direction: column;
+        align-items: center;
+    }
+    .year-btn {
+        width: 100px;
+    }
+    .team-comparison-table {
+        font-size: 0.9rem;
+    }
+    .team-comparison-table th,
+    .team-comparison-table td {
+        padding: 0.5rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="analytics-header">
+    <h1><i class="fas fa-users me-2"></i>Team Analytics</h1>
+    <p class="lead">Team Performance Analysis & Race-by-Race Progression</p>
+</div>
+
+<!-- Year Selector -->
+<div class="year-selector">
+    <button class="year-btn {% if selected_year == 2025 %}active{% endif %}" onclick="window.location.href='?year=2025'">2025</button>
+    <button class="year-btn {% if selected_year == 2024 %}active{% endif %}" onclick="window.location.href='?year=2024'">2024</button>
+    <button class="year-btn {% if selected_year == 2023 %}active{% endif %}" onclick="window.location.href='?year=2023'">2023</button>
+</div>
+
+<!-- Team Points Progression Chart -->
+<div class="content-box">
+    <h3><i class="fas fa-chart-line me-2"></i>Team Points Progression</h3>
+    <p class="text-muted">Cumulative points progression throughout the {{ selected_year }} season</p>
+    <div class="chart-container">
+        <canvas id="teamProgressionChart"></canvas>
+    </div>
+</div>
+
+<!-- Team Performance Summary -->
+<div class="content-box">
+    <h3><i class="fas fa-trophy me-2"></i>Team Performance Summary</h3>
+    <T class="text-muted">Leading teams by total points</p>
+    
+    {% for team_data in team_progression_data|slice:":10" %}
+    <div class="team-card">
+        <div class="team-header">
+            <div class="team-logo">{{ team_data.team.name|slice:":2"|upper }}</div>
+            <div class="team-info">
+                <h5>{{ team_data.team.name }}</h5>
+                <small>{{ team_data.points_progression|length }} races completed</small>
+            </div>
+        </div>
+        <div class="performance-stats">
+            <div class="stat-item">
+                <div class="stat-value">{{ team_data.total_points }}</div>
+                <div class="stat-label">Total Points</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">{{ team_data.points_progression|length }}</div>
+                <div class="stat-label">Races</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">{{ team_data.total_points|floatformat:1 }}</div>
+                <div class="stat-label">Avg/Race</div>
+            </div>
+            <div class="stat-value">
+                {% with total_races=team_data.points_progression|length %}
+                    {% if total_races >= 2 %}
+                        {% widthratio total_races|add:1 2 1 as midpoint %}
+                        {% with second_half=team_data.points_progression|slice:midpoint %}
+                            {{ second_half|length }}
+                        {% endwith %}
+                    {% else %}
+                        0
+                    {% endif %}
+                {% endwith %}
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="text-center text-muted">
+        <i class="fas fa-info-circle fa-3x mb-3"></i>
+        <p>No team data available for {{ selected_year }}</p>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Team Comparison Table -->
+{% if team_progression_data %}
+<div class="content-box">
+    <h3><i class="fas fa-table me-2"></i>Team Comparison Table</h3>
+    <p class="text-muted">Detailed race-by-race points comparison</p>
+    
+    <div class="team-comparison-table">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Team</th>
+                    {% for event in events %}
+                    <th>{{ event.name|slice:":3" }}</th>
+                    {% endfor %}
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for team_data in team_progression_data %}
+                <tr>
+                    <td><strong>{{ team_data.team.name }}</strong></td>
+                    {% for point in team_data.points_progression %}
+                    <td>
+                        {% if point.points > 0 %}
+                            <span class="badge bg-success">{{ point.points }}</span>
+                        {% else %}
+                            <span class="text-muted">0</span>
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                    <td><strong>{{ team_data.total_points }}</strong></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- Team Development Trends -->
+<!-- Team Development Trends -->
+<div class="content-box">
+    <h3><i class="fas fa-chart-area me-2"></i>Team Development Trends</h3>
+    <p class="text-muted">Performance trends and development patterns</p>
+    
+    <div class="row">
+        {% for team_data in team_progression_data|slice:":6" %}
+        <div class="col-md-6 col-lg-4 mb-3">
+            <div class="team-card">
+                <div class="team-header">
+                    <div class="team-logo" style="width: 40px; height: 40px; font-size: 1.2rem;">{{ team_data.team.name|slice:":2"|upper }}</div>
+                    <div class="team-info">
+                        <h5 style="font-size: 1rem;">{{ team_data.team.name }}</h5>
+                    </div>
+                </div>
+                <div class="performance-stats" style="grid-template-columns: 1fr 1fr;">
+                    <div class="stat-item">
+                        <div class="stat-value">
+                            {% with total_races=team_data.points_progression|length %}
+                                {% if total_races >= 2 %}
+                                    {{ total_races|floatformat:0 }}
+                                {% else %}
+                                    0
+                                {% endif %}
+                            {% endwith %}
+                        </div>
+                        <div class="stat-label">Recent Form</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">
+                            {% for point in team_data.points_progression %}
+                                {% if point.points > 0 %}
+                                    {{ forloop.counter }}
+                                    {% endif %}
+                            {% endfor %}
+                        </div>
+                        <div class="stat-label">First Points</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('teamProgressionChart').getContext('2d');
+    
+    // Prepare data for the chart
+    const chartData = {
+        labels: [
+            {% for event in events %}
+                '{{ event.name }}',
+            {% endfor %}
+        ],
+        datasets: [
+            {% for team_data in team_progression_data|slice:":8" %}
+            {
+                label: '{{ team_data.team.name }}',
+                data: [
+                    {% for point in team_data.points_progression %}
+                        {{ point.cumulative_points }},
+                    {% endfor %}
+                ],
+                borderColor: getTeamColor({{ forloop.counter0 }}),
+                backgroundColor: getTeamColor({{ forloop.counter0 }}, 0.1),
+                borderWidth: 3,
+                fill: false,
+                tension: 0.4
+            },
+            {% endfor %}
+        ]
+    };
+    
+    // Create the chart
+    new Chart(ctx, {
+        type: 'line',
+        data: chartData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Race'
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Cumulative Points'
+                    },
+                    beginAtZero: true
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        usePointStyle: true,
+                        padding: 20
+                    }
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false
+                }
+            },
+            interaction: {
+                mode: 'nearest',
+                axis: 'x',
+                intersect: false
+            }
+        }
+    });
+});
+
+// Function to generate colors for teams
+function getTeamColor(index, alpha = 1) {
+    const colors = [
+        `rgba(220, 20, 60, ${alpha})`,    // Red Bull Red
+        `rgba(0, 210, 190, ${alpha})`,    // Mercedes Teal
+        `rgba(255, 135, 0, ${alpha})`,    // McLaren Orange
+        `rgba(0, 144, 255, ${alpha})`,    // Ferrari Blue
+        `rgba(144, 0, 0, ${alpha})`,      // Aston Martin Dark Red
+        `rgba(0, 111, 98, ${alpha})`,     // Alpine Green
+        `rgba(90, 0, 255, ${alpha})`,     // Williams Purple
+        `rgba(255, 215, 0, ${alpha})`,    // Haas Gold
+    ];
+    return colors[index % colors.length];
+}
+</script>
+{% endblock %} 

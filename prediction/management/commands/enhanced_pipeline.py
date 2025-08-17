@@ -499,7 +499,7 @@ class EnhancedF1Pipeline:
             catboost_params = {
                 'iterations': 1000,
                 'depth': 8,
-                'learning_rate': 0.03,
+                'learning_rate': 0.01,
                 'loss_function': 'MAE',
                 'random_seed': 42,
                 'task_type': 'CPU',
