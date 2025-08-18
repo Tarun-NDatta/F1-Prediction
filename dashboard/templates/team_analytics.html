@@ -339,69 +339,7 @@ body.dark-mode .team-comparison-table tr:hover {
 </div>
 {% endif %}
 
-<!-- Team Development Trends -->
-<!-- Team Development Trends -->
-<div class="content-box">
-    <h3><i class="fas fa-chart-area me-2"></i>Team Development Trends</h3>
-    <p class="text-muted">Performance trends and development patterns</p>
-    
-    <div class="row">
-        {% for team_data in team_progression_data|slice:":6" %}
-        <div class="col-md-6 col-lg-4 mb-3">
-            <div class="team-card">
-                <div class="team-header">
-                    <div class="team-logo" style="width: 40px; height: 40px; font-size: 1.2rem;">{{ team_data.team.name|slice:":2"|upper }}</div>
-                    <div class="team-info">
-                        <h5 style="font-size: 1rem;">{{ team_data.team.name }}</h5>
-                    </div>
-                </div>
-                <div class="performance-stats" style="grid-template-columns: 1fr 1fr 1fr;">
-                    <div class="stat-item">
-                        <div class="stat-value">{{ team_data.total_points|default:0 }}</div>
-                        <div class="stat-label">Total Points</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value">
-                            {% with recent_races=team_data.points_progression|slice:"-3:" %}
-                                {% if recent_races %}
-                                    {% for point in recent_races %}
-                                        {% if not forloop.first %}+{% endif %}{{ point.points|default:0 }}
-                                    {% endfor %}
-                                {% else %}
-                                    0
-                                {% endif %}
-                            {% endwith %}
-                        </div>
-                        <div class="stat-label">Last 3 Races</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value">
-                            {% with points_list=team_data.points_progression %}
-                                {% if points_list|length >= 2 %}
-                                    {% with first_half=points_list|slice:":3" second_half=points_list|slice:"-3:" %}
-                                        {% with first_avg=0 second_avg=0 %}
-                                            {% for point in first_half %}
-                                                {% if forloop.first %}{% with first_avg=point.points|default:0 %}{% endwith %}{% endif %}
-                                            {% endfor %}
-                                            {% for point in second_half %}
-                                                {% if forloop.first %}{% with second_avg=point.points|default:0 %}{% endwith %}{% endif %}
-                                            {% endfor %}
-                                            {% if second_avg > first_avg %}↗{% elif second_avg < first_avg %}↘{% else %}→{% endif %}
-                                        {% endwith %}
-                                    {% endwith %}
-                                {% else %}
-                                    →
-                                {% endif %}
-                            {% endwith %}
-                        </div>
-                        <div class="stat-label">Trend</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-</div>
+<!-- Team Development Trends removed as requested -->
 {% endblock %}
 
 {% block extra_js %}

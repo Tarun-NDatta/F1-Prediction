@@ -13,7 +13,7 @@
     text-align: center;
 }
 .content-box {
-    border-radius: 16px;
+    border-radius: 20px;
     box-shadow: 0 2px 12px rgba(0,0,0,0.08);
     margin-bottom: 2rem;
     padding: 2rem 1.5rem;
@@ -233,7 +233,7 @@ body.dark-mode .scatter-plot {
 /* Race Details Styling */
 .race-details {
     background: #fff;
-    border-radius: 16px;
+    border-radius: 20px;
     padding: 2rem;
     margin-bottom: 2rem;
     box-shadow: 0 2px 12px rgba(0,0,0,0.08);
@@ -466,7 +466,7 @@ body.dark-mode .model-performance-metrics h3 {
 
 <div class="prediction-content-wrapper" style="position: relative;">
     <div class="{% if not is_authenticated %}predictions-content-blur{% endif %}">
-        <!-- Updated Model Selector with Subscription Handling -->
+        <!-- Model Selector (no subscription gating) -->
         <div class="content-box model-selector mb-4">
             <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
                 <span style="font-size: 1.5rem; color: var(--f1-red);"><i class="fas fa-brain"></i></span>
@@ -474,104 +474,84 @@ body.dark-mode .model-performance-metrics h3 {
             </div>
             <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
                 <span style="color: #6b7280; font-size: 1rem;">Choose which machine learning model to view predictions from</span>
-                <select class="form-select" style="max-width: 320px; min-width: 180px;" id="modelSelect">
-                    {% for key, model in available_models.items %}
-                    <option value="{{ key }}" 
-                            {% if key == selected_model_key %}selected{% endif %}
-                            {% if not model.accessible %}disabled{% endif %}>
-                        {{ model.name }}
-                        {% if not model.accessible %}
-                            {% if model.status == 'subscription_required' %}
-                                ({{ model.tier_required }} Required)
-                            {% elif model.status == 'login_required' %}
-                                (Login Required)
-                            {% elif model.status == 'coming_soon' %}
-                                (Coming Soon)
-                            {% endif %}
-                        {% endif %}
-                    </option>
-                    {% endfor %}
-                </select>
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <select class="form-select" style="max-width: 320px; min-width: 180px;" id="modelSelect">
+                        {% for key, model in visible_models_map.items %}
+                        <option value="{{ key }}" {% if key == selected_model_key %}selected{% endif %}>{{ model.name }}</option>
+                        {% endfor %}
+                    </select>
+                    {% if subscription_tier == 'PRO' %}
+                        <span title="Unlocked" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+                            <i class="fas fa-lock-open" style="color: #28a745;"></i>
+                            <span style="font-size: 0.95rem; color: #28a745;">All models unlocked</span>
+                        </span>
+                    {% elif subscription_tier == 'PREMIUM' %}
+                        <span title="Unlocked" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+                            <i class="fas fa-lock-open" style="color: #28a745;"></i>
+                            <span style="font-size: 0.95rem; color: #28a745;">Ridge & XGBoost unlocked</span>
+                        </span>
+                        <span style="font-size: 0.9rem; color: #6b7280; margin-left: 0.25rem;">Upgrade to Pro to see CatBoost</span>
+                    {% else %}
+                        <span title="Locked" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+                            <i class="fas fa-lock" style="color: #6c757d;"></i>
+                            <span style="font-size: 0.95rem; color: #6c757d;">Ridge only</span>
+                        </span>
+                        <span style="font-size: 0.9rem; color: #6b7280; margin-left: 0.25rem;">Upgrade to see other models</span>
+                    {% endif %}
+                </div>
             </div>
             
-            <!-- Show subscription upgrade message if user tries to access a locked model -->
-            {% if is_authenticated %}
-                {% with selected_model=available_models|lookup:selected_model_key %}
-                    {% if selected_model and not selected_model.accessible %}
-                    <div class="subscription-alert">
-                        <h6><i class="fas fa-lock"></i> Subscription Required</h6>
-                        <p>
-                            The {{ selected_model.name }} model requires a {{ selected_model.tier_required }} subscription.
-                            <a href="{% url 'pricing' %}">Upgrade your plan</a> to access this model.
-                        </p>
-                    </div>
-                    {% endif %}
-                {% endwith %}
-            {% endif %}
         </div>
 
         <div class="content-box mb-4">
             <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.2rem;">
                 <span style="font-size: 2rem; color: var(--f1-red);"><i class="fas fa-trophy"></i></span>
                 <span style="font-size: 1.4rem; font-weight: bold; color: var(--f1-red);">2025 Season Overview</span>
-                {% if model_status == 'coming_soon' %}
-                    <span class="model-badge model-badge-coming-soon">{{ model_name }} - Coming Soon</span>
-                {% elif model_status == 'subscription_required' %}
-                    <span class="model-badge model-badge-coming-soon">{{ model_name }} - Subscription Required</span>
-                {% else %}
-                    <span class="model-badge model-badge-active">{{ model_name }}</span>
-                {% endif %}
+                <span class="model-badge model-badge-active">{{ model_name }}</span>
             </div>
             
-            {% if selected_model_key == 'catboost' %}
-            <div style="background: rgba(225, 6, 0, 0.1); border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
-                <h6 style="color: var(--f1-red); margin-bottom: 0.5rem;"><i class="fas fa-info-circle"></i> CatBoost Ensemble Features</h6>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; font-size: 0.9rem;">
-                    <div>
-                        <strong>Track Category:</strong> Circuit type (Power, Technical, Street, Hybrid)
+            
+            <div style="display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap;">
+                {% if selected_model_key == 'catboost' and race_data.track_info %}
+                <div class="season-stat-card" style="background: #f8f9fa; border-radius: 20px; padding: 1.2rem 2.2rem; min-width: 260px; text-align: left;">
+                    <div style="font-weight: 700; color: var(--f1-red); margin-bottom: 0.6rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-road"></i> Track Specialization
                     </div>
-                    <div>
-                        <strong>Power Sensitivity:</strong> How important engine power is (1-10 scale)
-                    </div>
-                    <div>
-                        <strong>Overtaking Difficulty:</strong> How hard it is to overtake (1-10 scale)
+                    <div style="color: #6b7280; font-size: 0.98rem;">
+                        <div><strong>Category:</strong> {{ race_data.track_info.track_category|default:'N/A' }}</div>
+                        <div><strong>Power Sensitivity:</strong> {{ race_data.track_info.track_power_sensitivity|default:'N/A' }}</div>
+                        <div><strong>Overtaking Difficulty:</strong> {{ race_data.track_info.track_overtaking_difficulty|default:'N/A' }}</div>
                     </div>
                 </div>
-            </div>
-            {% endif %}
-            <div style="display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap;">
-                <div class="season-stat-card" style="background: #f8f9fa; border-radius: 12px; padding: 1.2rem 2.2rem; min-width: 120px; text-align: center;">
+                {% endif %}
+                <div class="season-stat-card" style="background: #f8f9fa; border-radius: 20px; padding: 1.2rem 2.2rem; min-width: 120px; text-align: center;">
                     <div style="font-size: 2rem; font-weight: bold; color: var(--f1-red);">{{ total_races }}</div>
                     <div style="color: #6b7280; font-size: 1rem;">Total Races</div>
                 </div>
-                <div class="season-stat-card" style="background: #f8f9fa; border-radius: 12px; padding: 1.2rem 2.2rem; min-width: 120px; text-align: center;">
+                <div class="season-stat-card" style="background: #f8f9fa; border-radius: 20px; padding: 1.2rem 2.2rem; min-width: 120px; text-align: center;">
                     <div style="font-size: 2rem; font-weight: bold; color: var(--f1-red);">{{ races_with_predictions }}</div>
                     <div style="color: #6b7280; font-size: 1rem;">Races with Predictions</div>
                 </div>
-                <div class="season-stat-card" style="background: #f8f9fa; border-radius: 12px; padding: 1.2rem 2.2rem; min-width: 120px; text-align: center;">
+                <div class="season-stat-card" style="background: #f8f9fa; border-radius: 20px; padding: 1.2rem 2.2rem; min-width: 120px; text-align: center;">
                     <div style="font-size: 2rem; font-weight: bold; color: var(--f1-red);">{{ available_rounds_display }}</div>
                     <div style="color: #6b7280; font-size: 1rem;">Available Rounds</div>
                 </div>
-                <div class="season-stat-card" style="background: #f8f9fa; border-radius: 12px; padding: 1.2rem 2.2rem; min-width: 120px; text-align: center;">
+                <div class="season-stat-card" style="background: #f8f9fa; border-radius: 20px; padding: 1.2rem 2.2rem; min-width: 120px; text-align: center;">
                     <div style="font-size: 2rem; font-weight: bold; color: var(--f1-red);">{{ model_name }}</div>
                     <div style="color: #6b7280; font-size: 1rem;">Model Used</div>
                 </div>
             </div>
         </div>
 
-        <!-- Model Accuracy Statistics -->
+        <!-- Model Performance Statistics (MAE and Top 3 only) -->
         {% if model_stats %}
         <div class="content-box mb-4">
             <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.2rem;">
                 <span style="font-size: 1.8rem; color: var(--f1-red);"><i class="fas fa-chart-bar"></i></span>
-                <span style="font-size: 1.3rem; font-weight: bold; color: var(--f1-red);">{{ model_name }} Performance Statistics</span>
+                <span style="font-size: 1.3rem; font-weight: bold; color: var(--f1-red);">{{ model_name }} Performance</span>
             </div>
             <div class="model-stats">
                 <div class="stats-grid">
-                    <div class="stat-item">
-                        <div class="stat-value">{{ model_stats.overall_accuracy|floatformat:1 }}%</div>
-                        <div class="stat-label">Overall Accuracy</div>
-                    </div>
                     <div class="stat-item">
                         <div class="stat-value">{{ model_stats.mae|floatformat:2 }}</div>
                         <div class="stat-label">MAE</div>
@@ -584,71 +564,41 @@ body.dark-mode .model-performance-metrics h3 {
                         <div class="stat-value">{{ model_stats.top_10_accuracy|floatformat:1 }}%</div>
                         <div class="stat-label">Top 10 Accuracy</div>
                     </div>
-                    <div class="stat-item">
-                        <div class="stat-value">{{ model_stats.total_predictions }}</div>
-                        <div class="stat-label">Total Predictions</div>
-                    </div>
+                </div>
+                <div style="margin-top: 0.75rem; font-size: 0.95rem; color: #6b7280;">
+                    <strong>What is MAE?</strong> Mean Absolute Error (MAE) is the average absolute difference between predicted and actual finishing positions. Lower MAE means more accurate predictions because, on average, predictions are closer to the real results.
                 </div>
             </div>
         </div>
         {% endif %}
 
-        <!-- Prediction vs Actual Visualization -->
-        {% if is_authenticated and model_stats and chart_data %}
-        <div class="prediction-vs-actual">
-            <h3><i class="fas fa-chart-scatter me-2"></i>Prediction vs Actual Performance</h3>
-            <div class="chart-container">
-                <canvas id="predictionChart" class="scatter-plot"></canvas>
+        <!-- Model Comparison Charts (always visible) -->
+        <div class="content-box mb-4">
+            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.2rem;">
+                <span style="font-size: 1.8rem; color: var(--f1-red);"><i class="fas fa-chart-line"></i></span>
+                <span style="font-size: 1.3rem; font-weight: bold; color: var(--f1-red);">Model Comparison</span>
             </div>
-            <div class="chart-legend">
-                <div class="legend-item">
-                    <div class="legend-color correct"></div>
-                    <span>Correct Predictions</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color incorrect"></div>
-                    <span>Incorrect Predictions</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color future"></div>
-                    <span>Future Predictions</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Model Performance Metrics Chart -->
-        <div class="model-performance-metrics">
-            <h3><i class="fas fa-chart-bar me-2"></i>Model Performance Metrics</h3>
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="chart-container" style="height: 300px;">
-                        <canvas id="accuracyChart"></canvas>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="chart-container" style="height: 260px;">
+                        <canvas id="maeCompare"></canvas>
                     </div>
                 </div>
-                <div class="col-md-6">
-                    <div class="chart-container" style="height: 300px;">
-                        <canvas id="errorDistributionChart"></canvas>
+                <div class="col-md-4">
+                    <div class="chart-container" style="height: 260px;">
+                        <canvas id="top3Compare"></canvas>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="chart-container" style="height: 260px;">
+                        <canvas id="top10Compare"></canvas>
                     </div>
                 </div>
             </div>
         </div>
-        {% endif %}
 
         {% if is_authenticated %}
-            {% if model_status == 'coming_soon' or model_status == 'subscription_required' %}
-                <div class="content-box" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 320px; max-width: 600px; margin: 3rem auto 2.5rem auto; text-align: center;">
-                    {% if model_status == 'subscription_required' %}
-                        <span class="model-badge model-badge-coming-soon" style="font-size: 1.1rem; margin-bottom: 1.2rem;"><i class="fas fa-lock"></i> Subscription Required!</span>
-                        <div style="color: var(--f1-red); font-weight: 600; font-size: 1.2rem; margin-bottom: 0.5em;">The {{ model_name }} model requires a subscription upgrade.</div>
-                        <div style="color: #6b7280; font-size: 1.05rem; margin-bottom: 1.5rem;">Upgrade to access advanced ML predictions!</div>
-                        <a href="{% url 'pricing' %}" class="btn btn-primary">View Pricing Plans</a>
-                    {% else %}
-                        <span class="model-badge model-badge-coming-soon" style="font-size: 1.1rem; margin-bottom: 1.2rem;"><i class="fas fa-tools"></i> Predictions Coming Soon!</span>
-                        <div style="color: var(--f1-red); font-weight: 600; font-size: 1.2rem; margin-bottom: 0.5em;">The {{ model_name }} model is currently in development.</div>
-                        <div style="color: #6b7280; font-size: 1.05rem;">Predictions will be available soon. Please check back later!</div>
-                    {% endif %}
-                </div>
-            {% else %}
+            {% if True %}
                 {% for race_data in results %}
                     <div class="race-details">
                         <div class="race-header" onclick="toggleRaceDetails({{ forloop.counter }})">
@@ -660,8 +610,8 @@ body.dark-mode .model-performance-metrics h3 {
                         </div>
                         <div class="race-details-content" id="details-{{ forloop.counter }}">
                             {% if not race_data.show_coming_soon %}
-                                <div class="table-responsive">
-                                    <table class="table">
+                                <div class="table-responsive" style="max-height: 480px; overflow-y: auto;">
+                                    <table class="table" style="border-radius: 12px; overflow: hidden;">
                                         <thead>
                                             <tr>
                                                 <th>Pos</th>
@@ -670,11 +620,7 @@ body.dark-mode .model-performance-metrics h3 {
                                                 <th>Predicted</th>
                                                 <th>Actual</th>
                                                 <th>Difference</th>
-                                                <th>Confidence</th>
                                                 {% if selected_model_key == 'catboost' %}
-                                                <th>Track Category</th>
-                                                <th>Power Sensitivity</th>
-                                                <th>Overtaking Difficulty</th>
                                                 {% endif %}
                                                 <th>Points</th>
                                             </tr>
@@ -688,17 +634,7 @@ body.dark-mode .model-performance-metrics h3 {
                                                 <td class="text-center">{{ item.predicted }}</td>
                                                 <td class="text-center">{{ item.actual }}</td>
                                                 <td class="text-center">{{ item.difference }}</td>
-                                                <td class="text-center">{{ item.confidence }}</td>
                                                 {% if selected_model_key == 'catboost' %}
-                                                <td class="text-center">
-                                                    {% if item.catboost_features.track_category != 'N/A' %}
-                                                        <span class="badge bg-info">{{ item.catboost_features.track_category }}</span>
-                                                    {% else %}
-                                                        -
-                                                    {% endif %}
-                                                </td>
-                                                <td class="text-center">{{ item.catboost_features.power_sensitivity }}</td>
-                                                <td class="text-center">{{ item.catboost_features.overtaking_difficulty }}</td>
                                                 {% endif %}
                                                 <td class="text-center">{{ item.points }}</td>
                                             </tr>
@@ -752,16 +688,6 @@ function toggleRaceDetails(idx) {
 
 // === MODEL SELECTION FUNCTIONALITY ===
 function changeModel(modelKey) {
-    // Check if the selected model is accessible
-    const selectElement = document.querySelector('#modelSelect');
-    const selectedOption = selectElement.querySelector(`option[value="${modelKey}"]`);
-    
-    if (selectedOption && selectedOption.disabled) {
-        // Don't change if the option is disabled
-        selectElement.value = "{{ selected_model_key }}"; // Reset to current model
-        return;
-    }
-    
     window.location.href = '?model=' + modelKey;
 }
 
@@ -770,246 +696,47 @@ document.addEventListener('DOMContentLoaded', function() {
     const selectElement = document.querySelector('#modelSelect');
     if (selectElement) {
         selectElement.addEventListener('change', function(e) {
-            const selectedOption = this.options[this.selectedIndex];
-            if (selectedOption && selectedOption.disabled) {
-                e.preventDefault();
-                // Reset to current selected model
-                this.value = "{{ selected_model_key }}";
-                return false;
-            }
             changeModel(this.value);
         });
     }
 });
 </script>
-
-{% if is_authenticated and model_stats and chart_data %}
-{{ chart_data_json|json_script:"chart-data" }}
 <script>
+// Model comparison charts (always render)
 document.addEventListener('DOMContentLoaded', function() {
-    const ctx = document.getElementById('predictionChart');
-    if (!ctx) {
-        console.error('Chart canvas not found');
-        return;
-    }
-    
-    const chartContext = ctx.getContext('2d');
-    
-    // Initialize data arrays
-    const correctData = [];
-    const incorrectData = [];
-    const futureData = [];
-    
-    try {
-        // Get chart data from Django
-        const chartDataElement = document.getElementById('chart-data');
-        if (!chartDataElement) {
-            console.error('Chart data element not found');
-            return;
-        }
-        
-        const chartDataFromDjango = JSON.parse(chartDataElement.textContent);
-        console.log('Chart data from Django:', chartDataFromDjango);
-        
-        // Process the data into separate arrays
-        chartDataFromDjango.forEach(function(point) {
-            if (point.actual !== null && point.actual !== 'N/A') {
-                const dataPoint = {
-                    x: point.predicted,
-                    y: point.actual,
-                    driver: point.driver,
-                    race: point.race
-                };
-                
-                if (point.isCorrect) {
-                    correctData.push(dataPoint);
-                } else {
-                    incorrectData.push(dataPoint);
-                }
-            } else {
-                futureData.push({
-                    x: point.predicted,
-                    y: null,
-                    driver: point.driver,
-                    race: point.race
-                });
-            }
-        });
-        
-        console.log('Correct data points:', correctData.length);
-        console.log('Incorrect data points:', incorrectData.length);
-        
-    } catch (error) {
-        console.error('Error parsing chart data:', error);
-        return;
-    }
-    
-    // Create the scatter plot chart
-    try {
-        const chart = new Chart(chartContext, {
-            type: 'scatter',
-            data: {
-                datasets: [
-                    {
-                        label: 'Correct Predictions',
-                        data: correctData,
-                        backgroundColor: '#28a745',
-                        borderColor: '#28a745',
-                        pointRadius: 6,
-                        pointHoverRadius: 8
-                    },
-                    {
-                        label: 'Incorrect Predictions',
-                        data: incorrectData,
-                        backgroundColor: '#dc3545',
-                        borderColor: '#dc3545',
-                        pointRadius: 6,
-                        pointHoverRadius: 8
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Predicted Position'
-                        },
-                        min: 1,
-                        max: 20
-                    },
-                    y: {
-                        title: {
-                            display: true,
-                            text: 'Actual Position'
-                        },
-                        min: 1,
-                        max: 20
-                    }
-                },
-                plugins: {
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return context.raw.driver + ' - ' + context.raw.race;
-                            }
-                        }
-                    },
-                    legend: {
-                        display: false
-                    }
-                }
-            }
-        });
-        
-        console.log('Chart created successfully');
-        
-    } catch (error) {
-        console.error('Error creating prediction chart:', error);
-    }
-    
-    // Accuracy Chart
-    const accuracyCtxElement = document.getElementById('accuracyChart');
-    if (accuracyCtxElement) {
-        const accuracyCtx = accuracyCtxElement.getContext('2d');
-        new Chart(accuracyCtx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Correct Predictions', 'Incorrect Predictions'],
-                datasets: [{
-                    data: [correctData.length, incorrectData.length],
-                    backgroundColor: ['#28a745', '#dc3545'],
-                    borderWidth: 2,
-                    borderColor: '#fff'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'Prediction Accuracy',
-                        font: { size: 16, weight: 'bold' }
-                    },
-                    legend: {
-                        position: 'bottom',
-                        labels: { padding: 20 }
-                    }
-                }
-            }
-        });
-    }
-    
-    // Error Distribution Chart
-    const errorCtxElement = document.getElementById('errorDistributionChart');
-    if (errorCtxElement) {
-        const errorCtx = errorCtxElement.getContext('2d');
-        
-        // Calculate error distribution
-        const errorBins = { '0': 0, '1': 0, '2-3': 0, '4-5': 0, '6+': 0 };
-        
-        [...correctData, ...incorrectData].forEach(point => {
-            const error = Math.abs(point.x - point.y);
-            if (error === 0) errorBins['0']++;
-            else if (error === 1) errorBins['1']++;
-            else if (error <= 3) errorBins['2-3']++;
-            else if (error <= 5) errorBins['4-5']++;
-            else errorBins['6+']++;
-        });
-        
-        new Chart(errorCtx, {
+    const labels = {{ comparison_labels|safe }};
+    const maeData = {{ comparison_mae|safe }};
+    const top3Data = {{ comparison_top3|safe }};
+    const top10Data = {{ comparison_top10|safe }};
+
+    const palette = ['#e10600', '#0d6efd', '#198754'];
+
+    const maeCtx = document.getElementById('maeCompare');
+    if (maeCtx) {
+        new Chart(maeCtx.getContext('2d'), {
             type: 'bar',
-            data: {
-                labels: Object.keys(errorBins),
-                datasets: [{
-                    label: 'Number of Predictions',
-                    data: Object.values(errorBins),
-                    backgroundColor: [
-                        '#28a745',
-                        '#6c757d',
-                        '#ffc107',
-                        '#fd7e14',
-                        '#dc3545'
-                    ],
-                    borderWidth: 1,
-                    borderColor: '#fff'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'Prediction Error Distribution',
-                        font: { size: 16, weight: 'bold' }
-                    },
-                    legend: {
-                        display: false
-                    }
-                },
-                scales: {
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Position Error Range'
-                        }
-                    },
-                    y: {
-                        title: {
-                            display: true,
-                            text: 'Number of Predictions'
-                        },
-                        beginAtZero: true
-                    }
-                }
-            }
+            data: { labels, datasets: [{ label: 'MAE (lower is better)', data: maeData, backgroundColor: palette }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }}, scales: { y: { beginAtZero: true } } }
+        });
+    }
+
+    const top3Ctx = document.getElementById('top3Compare');
+    if (top3Ctx) {
+        new Chart(top3Ctx.getContext('2d'), {
+            type: 'bar',
+            data: { labels, datasets: [{ label: 'Top 3 Accuracy (%)', data: top3Data, backgroundColor: palette }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }}, scales: { y: { beginAtZero: true, max: 100 } } }
+        });
+    }
+
+    const top10Ctx = document.getElementById('top10Compare');
+    if (top10Ctx) {
+        new Chart(top10Ctx.getContext('2d'), {
+            type: 'bar',
+            data: { labels, datasets: [{ label: 'Top 10 Accuracy (%)', data: top10Data, backgroundColor: palette }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }}, scales: { y: { beginAtZero: true, max: 100 } } }
         });
     }
 });
 </script>
-{% endif %}
 {% endblock %}

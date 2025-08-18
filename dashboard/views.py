@@ -13,6 +13,7 @@ from django.core.paginator import Paginator
 from django.http import JsonResponse
 import logging
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.contrib import messages
 from django.contrib.auth import login as auth_login, authenticate, logout as auth_logout
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
@@ -166,7 +167,7 @@ def results(request):
                     'is_dnf': result.status and ('DNF' in result.status or 'Retired' in result.status),
                     'fastest_lap': getattr(result, 'fastest_lap_rank', None) == 1,
                     'grid_position': getattr(result, 'grid_position', None),
-                    'laps': result.laps or 0
+                    'laps': result.laps if result.laps is not None else total_laps
                 }
                 processed_results.append(result_data)
             
@@ -218,7 +219,8 @@ def format_result_time(result, session_type):
         elif result.q1:
             return format_duration(result.q1)
     else:  # race
-        if result.status and ('DNF' in result.status or 'Retired' in result.status):
+        # Always show status text when available (Retired, Lapped, Fuel pressure, etc.)
+        if result.status:
             return result.status
         elif result.time:
             return format_duration(result.time)
@@ -299,32 +301,26 @@ def prediction(request):
         }
     }
     
-    # Filter available models based on user's subscription
-    if request.user.is_authenticated:
-        filtered_models = {}
-        for key, model_info in AVAILABLE_MODELS.items():
-            # Create a copy to avoid modifying the original
-            model_copy = model_info.copy()
-            if key in user_available_models:
-                model_copy['accessible'] = True
-            else:
-                model_copy['accessible'] = False
-                model_copy['status'] = 'subscription_required'
-            filtered_models[key] = model_copy
-        available_models_for_template = filtered_models
-    else:
-        # For unauthenticated users, show all models but mark as inaccessible
-        available_models_for_template = {}
-        for key, model_info in AVAILABLE_MODELS.items():
-            model_copy = model_info.copy()
-            model_copy['accessible'] = False
-            model_copy['status'] = 'login_required'
-            available_models_for_template[key] = model_copy
+    # All models available in system
+    available_models_for_template = AVAILABLE_MODELS
+
+    # Determine which models to show in the dropdown based on subscription tier
+    subscription_tier = model_context.get('subscription_tier', 'BASIC')
+    if subscription_tier == 'PRO':
+        visible_models_map = available_models_for_template
+    elif subscription_tier == 'PREMIUM':
+        visible_models_map = {k: v for k, v in available_models_for_template.items() if k in ['ridge_regression', 'xgboost']}
+    else:  # BASIC or unknown
+        visible_models_map = {k: v for k, v in available_models_for_template.items() if k == 'ridge_regression'}
     
     # Get selected model from request (default to ridge_regression)
     selected_model_key = request.GET.get('model', 'ridge_regression')
     if selected_model_key not in AVAILABLE_MODELS:
         selected_model_key = 'ridge_regression'
+
+    # Ensure selected model is one of the visible models for the user's tier
+    if selected_model_key not in visible_models_map:
+        selected_model_key = next(iter(visible_models_map.keys()))
     
     selected_model = AVAILABLE_MODELS[selected_model_key]
     
@@ -430,6 +426,22 @@ def prediction(request):
                 # Get team color for display
                 team_color = act.team.color if hasattr(act.team, 'color') and act.team.color else '#666666'
                 
+                # Determine confidence if available
+                conf_val = None
+                if hasattr(pred, 'prediction_confidence') and pred.prediction_confidence is not None:
+                    conf_val = pred.prediction_confidence
+                elif hasattr(pred, 'confidence') and pred.confidence is not None:
+                    conf_val = pred.confidence
+                else:
+                    # Fallback heuristic confidence (for CatBoost) using base model agreement if available
+                    try:
+                        if hasattr(pred, 'ridge_prediction') and hasattr(pred, 'xgboost_prediction') \
+                           and pred.ridge_prediction is not None and pred.xgboost_prediction is not None:
+                            dispersion = abs(float(pred.ridge_prediction) - float(pred.xgboost_prediction))
+                            conf_val = max(0.1, min(0.99, 1.0 - (dispersion / 10.0)))
+                    except Exception:
+                        conf_val = None
+
                 comparison_item = {
                     'driver': f"{act.driver.given_name} {act.driver.family_name}",
                     'team': act.team.name,
@@ -437,7 +449,7 @@ def prediction(request):
                     'predicted': pred.predicted_position,
                     'actual': act.position,
                     'difference': f"{int(difference):+d}" if difference != 0 else "0",
-                    'confidence': f"{pred.confidence:.1%}" if hasattr(pred, 'confidence') and pred.confidence else "N/A",
+                    'confidence': f"{conf_val:.1%}" if conf_val is not None else "N/A",
                     'is_correct': is_correct,
                     'points': act.points or 0,
                 }
@@ -446,8 +458,8 @@ def prediction(request):
                 if selected_model_key == 'catboost' and hasattr(pred, 'track_category'):
                     comparison_item['catboost_features'] = {
                         'track_category': getattr(pred, 'track_category', 'N/A'),
-                        'power_sensitivity': getattr(pred, 'power_sensitivity', 'N/A'),
-                        'overtaking_difficulty': getattr(pred, 'overtaking_difficulty', 'N/A'),
+                        'power_sensitivity': getattr(pred, 'track_power_sensitivity', 'N/A'),
+                        'overtaking_difficulty': getattr(pred, 'track_overtaking_difficulty', 'N/A'),
                     }
                 else:
                     comparison_item['catboost_features'] = {
@@ -459,6 +471,19 @@ def prediction(request):
                 comparison.append(comparison_item)
             elif pred:
                 # Only prediction available (future race)
+                conf_val = None
+                if hasattr(pred, 'prediction_confidence') and pred.prediction_confidence is not None:
+                    conf_val = pred.prediction_confidence
+                elif hasattr(pred, 'confidence') and pred.confidence is not None:
+                    conf_val = pred.confidence
+                else:
+                    try:
+                        if hasattr(pred, 'ridge_prediction') and hasattr(pred, 'xgboost_prediction') \
+                           and pred.ridge_prediction is not None and pred.xgboost_prediction is not None:
+                            dispersion = abs(float(pred.ridge_prediction) - float(pred.xgboost_prediction))
+                            conf_val = max(0.1, min(0.99, 1.0 - (dispersion / 10.0)))
+                    except Exception:
+                        conf_val = None
                 comparison_item = {
                     'driver': f"{pred.driver.given_name} {pred.driver.family_name}",
                     'team': pred.team.name if hasattr(pred, 'team') and pred.team else "N/A",
@@ -466,7 +491,7 @@ def prediction(request):
                     'predicted': pred.predicted_position,
                     'actual': 'N/A',
                     'difference': 'N/A',
-                    'confidence': f"{pred.confidence:.1%}" if hasattr(pred, 'confidence') and pred.confidence else "N/A",
+                    'confidence': f"{conf_val:.1%}" if conf_val is not None else "N/A",
                     'is_correct': None,
                     'points': 0,
                 }
@@ -474,8 +499,8 @@ def prediction(request):
                 if selected_model_key == 'catboost' and hasattr(pred, 'track_category'):
                     comparison_item['catboost_features'] = {
                         'track_category': getattr(pred, 'track_category', 'N/A'),
-                        'power_sensitivity': getattr(pred, 'power_sensitivity', 'N/A'),
-                        'overtaking_difficulty': getattr(pred, 'overtaking_difficulty', 'N/A'),
+                        'power_sensitivity': getattr(pred, 'track_power_sensitivity', 'N/A'),
+                        'overtaking_difficulty': getattr(pred, 'track_overtaking_difficulty', 'N/A'),
                     }
                 else:
                     comparison_item['catboost_features'] = {
@@ -489,10 +514,25 @@ def prediction(request):
         # Sort comparison by actual position (if available), otherwise by predicted position
         comparison.sort(key=lambda x: (x['actual'] if x['actual'] != 'N/A' else float('inf'), x['predicted']))
 
+        # Track specialization once per race (for CatBoost summary)
+        track_info = None
+        try:
+            track_spec = TrackSpecialization.objects.filter(circuit=event.circuit).first()
+            if track_spec:
+                track_info = {
+                    'track_category': str(track_spec.category),
+                    'track_power_sensitivity': float(track_spec.power_sensitivity or 0),
+                    'track_overtaking_difficulty': float(track_spec.overtaking_difficulty or 0),
+                    'track_qualifying_importance': float(track_spec.qualifying_importance or 0),
+                }
+        except Exception:
+            track_info = None
+
         race_data = {
             'event': event,
             'comparison': comparison,
             'show_coming_soon': show_coming_soon,
+            'track_info': track_info,
         }
         results.append(race_data)
     
@@ -517,6 +557,28 @@ def prediction(request):
     print(f"Chart data sample: {chart_data[:2] if chart_data else 'Empty'}")
     
     # Add subscription context
+    # Build model comparison stats (Ridge, XGBoost, CatBoost) for charts
+    model_defs = [
+        ('Ridge Regression', ridgeregression, 'ridge_regression'),
+        ('XGBoost', xgboostprediction, 'xgboost_regression'),
+        ('CatBoost Ensemble', CatBoostPrediction, 'catboost_ensemble')
+    ]
+    comparison_labels = []
+    comparison_mae = []
+    comparison_top3 = []
+    comparison_top10 = []
+    for label, cls, name_filter in model_defs:
+        stats = calculate_model_accuracy_stats(cls, name_filter)
+        comparison_labels.append(label)
+        if stats:
+            comparison_mae.append(round(stats.get('mae', 0), 3))
+            comparison_top3.append(round(stats.get('top_3_accuracy', 0), 1))
+            comparison_top10.append(round(stats.get('top_10_accuracy', 0), 1))
+        else:
+            comparison_mae.append(0)
+            comparison_top3.append(0)
+            comparison_top10.append(0)
+
     context = {
         'results': results,
         'available_rounds': available_rounds,
@@ -525,7 +587,8 @@ def prediction(request):
         'races_with_predictions': len(available_rounds),
         'model_name': selected_model['name'],
         'selected_model_key': selected_model_key,
-        'available_models': available_models_for_template,  # Use filtered models
+        'available_models_map': available_models_for_template,
+        'visible_models_map': visible_models_map,
         'model_status': selected_model['status'],
         'error': None,
         'predictions_locked': predictions_locked,
@@ -533,6 +596,10 @@ def prediction(request):
         'model_stats': model_stats,
         'chart_data_json': json.dumps(chart_data),
         'chart_data': chart_data,  # Add raw chart data for debugging
+        'comparison_labels': json.dumps(comparison_labels),
+        'comparison_mae': json.dumps(comparison_mae),
+        'comparison_top3': json.dumps(comparison_top3),
+        'comparison_top10': json.dumps(comparison_top10),
         **model_context,  # Add subscription context
     }
     
@@ -782,7 +849,7 @@ def standings(request):
     event_ids = events_query.values_list('id', flat=True)
     all_events = events_query
     
-    # Driver standings: sum points for each driver
+    # Driver standings: sum points for each driver (official cumulative)
     driver_points = (
         RaceResult.objects
         .filter(session__event_id__in=event_ids)
@@ -800,7 +867,7 @@ def standings(request):
             'points': d['points'] or 0,
         })
     
-    # Team standings: sum points for each team
+    # Team standings: sum points for each team (constructors)
     team_points = (
         RaceResult.objects
         .filter(session__event_id__in=event_ids)
