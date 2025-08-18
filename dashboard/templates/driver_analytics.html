@@ -50,7 +50,7 @@ body.dark-mode .chart-container {
 body.dark-mode .driver-card {
     background: #232527;
     box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-    border-left-color: var(--f1-gold);
+    border-left-color: var(--f1-red);
 }
 .driver-card:hover {
     transform: translateY(-2px);
@@ -75,8 +75,8 @@ body.dark-mode .driver-card {
     font-size: 1.2rem;
 }
 body.dark-mode .driver-number {
-    background: var(--f1-gold);
-    color: #232527;
+    background: var(--f1-red);
+    color: white;
 }
 .driver-info h5 {
     margin: 0;
@@ -84,7 +84,7 @@ body.dark-mode .driver-number {
     font-weight: 600;
 }
 body.dark-mode .driver-info h5 {
-    color: var(--f1-gold);
+    color: var(--f1-red);
 }
 .driver-info small {
     color: #6b7280;
@@ -199,8 +199,8 @@ body.dark-mode .difference-badge {
     font-weight: 500;
 }
 body.dark-mode .year-btn {
-    border-color: var(--f1-gold);
-    color: var(--f1-gold);
+    border-color: var(--f1-red);
+    color: var(--f1-red);
 }
 .year-btn:hover,
 .year-btn.active {
@@ -209,8 +209,8 @@ body.dark-mode .year-btn {
 }
 body.dark-mode .year-btn:hover,
 body.dark-mode .year-btn.active {
-    background: var(--f1-gold);
-    color: #232527;
+    background: var(--f1-red);
+    color: white;
 }
 
 /* Responsive Design */
@@ -247,6 +247,7 @@ body.dark-mode .year-btn.active {
     <button class="year-btn {% if selected_year == 2025 %}active{% endif %}" onclick="window.location.href='?year=2025'">2025</button>
     <button class="year-btn {% if selected_year == 2024 %}active{% endif %}" onclick="window.location.href='?year=2024'">2024</button>
     <button class="year-btn {% if selected_year == 2023 %}active{% endif %}" onclick="window.location.href='?year=2023'">2023</button>
+    <button class="year-btn {% if selected_year == 2022 %}active{% endif %}" onclick="window.location.href='?year=2022'">2022</button>
 </div>
 
 <!-- Driver Points Progression Chart -->

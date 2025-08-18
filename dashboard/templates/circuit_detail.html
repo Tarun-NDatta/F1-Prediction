@@ -222,6 +222,7 @@
                 <span class="characteristic-value">{{ track_spec.overtaking_difficulty }}/10</span>
             </div>
             <div class="difficulty-bar">
+                <!-- Django template variables in CSS are expected and safe -->
                 <div class="difficulty-fill" style="width: {{ track_spec.overtaking_difficulty|floatformat:0 }}%"></div>
             </div>
         </div>
@@ -325,6 +326,9 @@
 </div>
 
 {% if is_authenticated %}
+<!-- CSRF Token for AJAX requests -->
+{% csrf_token %}
+<meta name="csrf-token" content="{{ csrf_token }}">
 <div class="content-box text-center">
     <h4 class="mb-3">Track Your Progress</h4>
     <button class="visit-button {% if user_visited %}visited{% endif %}" 
@@ -341,10 +345,99 @@
 
 {% block extra_js %}
 <script>
+// === CIRCUIT VISIT FUNCTIONALITY ===
+// Handles marking circuits as visited with proper error handling
 function markCircuitVisited(circuitId) {
-    // This would typically make an AJAX call to mark the circuit as visited
-    // For now, we'll just show a simple alert
-    alert('Circuit marked as visited! This feature will be fully implemented with the betting system.');
+    // Get CSRF token with fallback methods
+    const csrfToken = getCsrfToken();
+    
+    if (!csrfToken) {
+        alert('Security token not found. Please refresh the page.');
+        return;
+    }
+    
+    // Disable button during request
+    const button = document.querySelector('.visit-button');
+    const originalContent = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+    
+    // Make AJAX call to mark circuit as visited
+    fetch(`/mark_circuit_visited/${circuitId}/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({})
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.status === 'success') {
+            // Show simple notification as requested
+            alert(data.message);
+            
+            // Update button appearance
+            button.classList.add('visited');
+            button.innerHTML = '<i class="fas fa-check me-2"></i>Circuit Visited';
+            
+            // Update credits display if available
+            updateCreditsDisplay(data.total_credits);
+            
+        } else if (data.status === 'already_visited') {
+            alert('Circuit already visited');
+            button.innerHTML = originalContent;
+        } else {
+            alert('Error: ' + data.message);
+            button.innerHTML = originalContent;
+        }
+    })
+    .catch(error => {
+        console.error('Circuit visit error:', error);
+        alert('An error occurred while marking the circuit as visited');
+        button.innerHTML = originalContent;
+    })
+    .finally(() => {
+        button.disabled = false;
+    });
+}
+
+// === UTILITY FUNCTIONS ===
+// Get CSRF token with multiple fallback methods
+function getCsrfToken() {
+    // Method 1: From form input
+    const tokenInput = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (tokenInput) return tokenInput.value;
+    
+    // Method 2: From meta tag
+    const metaToken = document.querySelector('meta[name="csrf-token"]');
+    if (metaToken) return metaToken.getAttribute('content');
+    
+    // Method 3: From cookie (if available)
+    const cookieValue = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrftoken='))
+        ?.split('=')[1];
+    
+    return cookieValue || null;
+}
+
+// Update credits display across the page
+function updateCreditsDisplay(totalCredits) {
+    if (!totalCredits) return;
+    
+    const creditsSelectors = ['.user-credits', '.credits-display', '[data-credits]'];
+    creditsSelectors.forEach(selector => {
+        const element = document.querySelector(selector);
+        if (element) {
+            element.textContent = totalCredits;
+        }
+    });
 }
 </script>
 {% endblock %} 

@@ -104,11 +104,26 @@
     <p class="lead">{{ selected_year }} Season Standings</p>
 </div>
 
-<!-- Year Selector -->
-<div class="year-selector" style="display: flex; justify-content: center; margin-bottom: 2rem; gap: 1rem; flex-wrap: wrap;">
-    <button class="year-btn {% if selected_year == 2025 %}active{% endif %}" onclick="window.location.href='?year=2025'" style="background: none; border: 2px solid var(--f1-red); color: var(--f1-red); padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; font-weight: 500;">2025</button>
-    <button class="year-btn {% if selected_year == 2024 %}active{% endif %}" onclick="window.location.href='?year=2024'" style="background: none; border: 2px solid var(--f1-red); color: var(--f1-red); padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; font-weight: 500;">2024</button>
-    <button class="year-btn {% if selected_year == 2023 %}active{% endif %}" onclick="window.location.href='?year=2023'" style="background: none; border: 2px solid var(--f1-red); color: var(--f1-red); padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; font-weight: 500;">2023</button>
+<!-- Year and Round Selector -->
+<div class="selector-container" style="display: flex; justify-content: center; margin-bottom: 2rem; gap: 2rem; flex-wrap: wrap; align-items: center;">
+    <!-- Year Selector -->
+    <div class="year-selector" style="display: flex; gap: 1rem; flex-wrap: wrap;">
+        <button class="year-btn {% if selected_year == 2025 %}active{% endif %}" onclick="window.location.href='?year=2025&round={{ selected_round }}'" style="background: none; border: 2px solid var(--f1-red); color: var(--f1-red); padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; font-weight: 500;">2025</button>
+        <button class="year-btn {% if selected_year == 2024 %}active{% endif %}" onclick="window.location.href='?year=2024&round={{ selected_round }}'" style="background: none; border: 2px solid var(--f1-red); color: var(--f1-red); padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; font-weight: 500;">2024</button>
+        <button class="year-btn {% if selected_year == 2023 %}active{% endif %}" onclick="window.location.href='?year=2023&round={{ selected_round }}'" style="background: none; border: 2px solid var(--f1-red); color: var(--f1-red); padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; font-weight: 500;">2023</button>
+        <button class="year-btn {% if selected_year == 2022 %}active{% endif %}" onclick="window.location.href='?year=2022&round={{ selected_round }}'" style="background: none; border: 2px solid var(--f1-red); color: var(--f1-red); padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; font-weight: 500;">2022</button>
+    </div>
+    
+    <!-- Round Selector -->
+    <div class="round-selector" style="display: flex; align-items: center; gap: 1rem;">
+        <label for="round-select" style="color: var(--f1-red); font-weight: 500;">Standings after:</label>
+        <select id="round-select" onchange="window.location.href='?year={{ selected_year }}&round=' + this.value" style="padding: 0.5rem 1rem; border: 2px solid var(--f1-red); border-radius: 8px; background: white; color: #333; font-weight: 500; min-width: 200px;">
+            <option value="all" {% if selected_round == 'all' %}selected{% endif %}>All Completed Races</option>
+            {% for round_num, race_name in available_rounds %}
+            <option value="{{ round_num }}" {% if selected_round == round_num|stringformat:'s' %}selected{% endif %}>Round {{ round_num }}: {{ race_name }}</option>
+            {% endfor %}
+        </select>
+    </div>
 </div>
 
 <style>
@@ -118,13 +133,21 @@
     color: white;
 }
 body.dark-mode .year-btn {
-    border-color: var(--f1-gold);
-    color: var(--f1-gold);
+    border-color: var(--f1-red);
+    color: var(--f1-red);
 }
 body.dark-mode .year-btn:hover,
 body.dark-mode .year-btn.active {
-    background: var(--f1-gold);
-    color: #232527;
+    background: var(--f1-red);
+    color: white;
+}
+body.dark-mode #round-select {
+    background: #232527;
+    color: var(--f1-gold);
+    border-color: var(--f1-gold);
+}
+body.dark-mode .round-selector label {
+    color: var(--f1-gold);
 }
 </style>
 

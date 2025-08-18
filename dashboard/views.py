@@ -14,6 +14,8 @@ from django.http import JsonResponse
 import logging
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth import login as auth_login, authenticate, logout as auth_logout
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import redirect
 from django import forms
 from django.contrib.auth.models import User
@@ -27,12 +29,6 @@ from django.utils import timezone
 
 import random
 import string
-from django.core.mail import send_mail
-from django.contrib import messages
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Sum, Q
 from django.utils import timezone
@@ -282,23 +278,23 @@ def prediction(request):
             'model_class': ridgeregression,
             'available_rounds': list(range(1, 15)),  # Rounds 1-14 (completed) + upcoming
             'status': 'active',
-            'model_name_filter': 'ridge_regression',  # Added for database filtering
+            'model_name_filter': 'ridge_regression',
             'tier_required': 'BASIC'
         },
         'xgboost': {
             'name': 'XGBoost',
-            'model_class': xgboostprediction,  # Now available
-            'available_rounds': list(range(1, 15)),  # Update based on your available data
-            'status': 'active',  # Changed from 'coming_soon' to 'active'
-            'model_name_filter': 'xgboost_regression',  # Added for database filtering
+            'model_class': xgboostprediction,
+            'available_rounds': list(range(1, 15)),
+            'status': 'active',
+            'model_name_filter': 'xgboost_regression',
             'tier_required': 'PREMIUM'
         },
         'catboost': {
             'name': 'CatBoost Ensemble',
-            'model_class': CatBoostPrediction,  # Now available
-            'available_rounds': list(range(1, 15)),  # Update based on your available data
-            'status': 'active',  # Changed from 'coming_soon' to 'active'
-            'model_name_filter': 'catboost_ensemble',  # Added for database filtering
+            'model_class': CatBoostPrediction,
+            'available_rounds': list(range(1, 15)),
+            'status': 'active',
+            'model_name_filter': 'catboost_ensemble',
             'tier_required': 'PRO'
         }
     }
@@ -307,13 +303,23 @@ def prediction(request):
     if request.user.is_authenticated:
         filtered_models = {}
         for key, model_info in AVAILABLE_MODELS.items():
+            # Create a copy to avoid modifying the original
+            model_copy = model_info.copy()
             if key in user_available_models:
-                model_info['accessible'] = True
+                model_copy['accessible'] = True
             else:
-                model_info['accessible'] = False
-                model_info['status'] = 'subscription_required'
-            filtered_models[key] = model_info
-        AVAILABLE_MODELS = filtered_models
+                model_copy['accessible'] = False
+                model_copy['status'] = 'subscription_required'
+            filtered_models[key] = model_copy
+        available_models_for_template = filtered_models
+    else:
+        # For unauthenticated users, show all models but mark as inaccessible
+        available_models_for_template = {}
+        for key, model_info in AVAILABLE_MODELS.items():
+            model_copy = model_info.copy()
+            model_copy['accessible'] = False
+            model_copy['status'] = 'login_required'
+            available_models_for_template[key] = model_copy
     
     # Get selected model from request (default to ridge_regression)
     selected_model_key = request.GET.get('model', 'ridge_regression')
@@ -334,10 +340,50 @@ def prediction(request):
     else:
         available_rounds_display = "Coming Soon"
     
+    # Get all drivers and teams that participate in the season for dynamic updates
+    season_drivers = Driver.objects.filter(
+        raceresult__session__event__year=2025
+    ).distinct().select_related()
+    
+    season_teams = Team.objects.filter(
+        raceresult__session__event__year=2025
+    ).distinct()
+    
+    # Calculate cumulative points for drivers and teams up to each race
+    def get_cumulative_points(event_round):
+        # Get all events up to and including the current round
+        completed_events = Event.objects.filter(
+            year=2025, 
+            round__lte=event_round
+        ).values_list('id', flat=True)
+        
+        # Driver points
+        driver_points = {}
+        for driver in season_drivers:
+            total_points = RaceResult.objects.filter(
+                session__event_id__in=completed_events,
+                driver=driver
+            ).aggregate(total=Sum('points'))['total'] or 0
+            driver_points[driver.id] = total_points
+        
+        # Team points
+        team_points = {}
+        for team in season_teams:
+            total_points = RaceResult.objects.filter(
+                session__event_id__in=completed_events,
+                team=team
+            ).aggregate(total=Sum('points'))['total'] or 0
+            team_points[team.id] = total_points
+            
+        return driver_points, team_points
+    
     # Prepare data for all races - RENAMED from races_data to results
     results = []
     
     for event in all_events:
+        # Get cumulative points up to this race
+        driver_cumulative_points, team_cumulative_points = get_cumulative_points(event.round)
+        
         # Get predictions and actual results for this event
         if selected_model['model_class'] is not None:
             # Updated query to use model_name_filter for better filtering
@@ -355,7 +401,6 @@ def prediction(request):
             predictions = []
 
         # Get actual results for this event (RaceResult)
-        from data.models import RaceResult
         actuals_qs = RaceResult.objects.filter(session__event=event).select_related('driver', 'team')
         actuals = list(actuals_qs) if actuals_qs else []
 
@@ -441,8 +486,8 @@ def prediction(request):
                 
                 comparison.append(comparison_item)
 
-        # Sort comparison by predicted position
-        comparison.sort(key=lambda x: x['predicted'])
+        # Sort comparison by actual position (if available), otherwise by predicted position
+        comparison.sort(key=lambda x: (x['actual'] if x['actual'] != 'N/A' else float('inf'), x['predicted']))
 
         race_data = {
             'event': event,
@@ -451,8 +496,25 @@ def prediction(request):
         }
         results.append(race_data)
     
+    # Prepare chart data for visualization
+    chart_data = []
+    for race_data in results:
+        for item in race_data['comparison']:
+            if item['actual'] != 'N/A':  # Only include races with actual results
+                chart_data.append({
+                    'predicted': item['predicted'],
+                    'actual': item['actual'],
+                    'driver': item['driver'],
+                    'race': race_data['event'].name,
+                    'isCorrect': item['is_correct']
+                })
+    
     # Calculate model accuracy statistics
     model_stats = calculate_model_accuracy_stats(selected_model['model_class'], selected_model['model_name_filter'])
+    
+    # Debug: Print chart data to see what's being passed
+    print(f"Chart data length: {len(chart_data)}")
+    print(f"Chart data sample: {chart_data[:2] if chart_data else 'Empty'}")
     
     # Add subscription context
     context = {
@@ -463,17 +525,18 @@ def prediction(request):
         'races_with_predictions': len(available_rounds),
         'model_name': selected_model['name'],
         'selected_model_key': selected_model_key,
-        'available_models': AVAILABLE_MODELS,
+        'available_models': available_models_for_template,  # Use filtered models
         'model_status': selected_model['status'],
         'error': None,
         'predictions_locked': predictions_locked,
         'is_authenticated': request.user.is_authenticated,
         'model_stats': model_stats,
+        'chart_data_json': json.dumps(chart_data),
+        'chart_data': chart_data,  # Add raw chart data for debugging
         **model_context,  # Add subscription context
     }
     
     return render(request, 'prediction.html', context)
-
 
 def calculate_model_accuracy_stats(model_class, model_name_filter):
     """Calculate accuracy statistics for a given model"""
@@ -524,10 +587,10 @@ def calculate_model_accuracy_stats(model_class, model_name_filter):
         
         return {
             'total_predictions': total_predictions,
-            'overall_accuracy': overall_accuracy,
+            'overall_accuracy': overall_accuracy * 100,  # Convert to percentage
             'mae': mae,
-            'top_3_accuracy': top_3_accuracy,
-            'top_10_accuracy': top_10_accuracy,
+            'top_3_accuracy': top_3_accuracy * 100,  # Convert to percentage
+            'top_10_accuracy': top_10_accuracy * 100,  # Convert to percentage
         }
         
     except Exception as e:
@@ -702,8 +765,22 @@ def standings(request):
     except (ValueError, TypeError):
         year_int = 2025
     
+    # Get selected round (default to all completed races)
+    selected_round = request.GET.get('round', 'all')
+    
     # Get all events for the selected year
-    event_ids = Event.objects.filter(year=year_int).values_list('id', flat=True)
+    events_query = Event.objects.filter(year=year_int).order_by('round')
+    
+    # Filter by round if specified
+    if selected_round != 'all':
+        try:
+            round_int = int(selected_round)
+            events_query = events_query.filter(round__lte=round_int)
+        except (ValueError, TypeError):
+            pass
+    
+    event_ids = events_query.values_list('id', flat=True)
+    all_events = events_query
     
     # Driver standings: sum points for each driver
     driver_points = (
@@ -742,11 +819,16 @@ def standings(request):
     # Get recent events for dynamic updates
     recent_events = Event.objects.filter(year=year_int).order_by('-date')[:5]
     
+    # Get available rounds for dropdown
+    available_rounds = Event.objects.filter(year=year_int).order_by('round').values_list('round', 'name')
+    
     context = {
         'driver_standings': driver_standings, 
         'team_standings': team_standings,
         'selected_year': year_int,
+        'selected_round': selected_round,
         'recent_events': recent_events,
+        'available_rounds': available_rounds,
     }
     return render(request, 'standings.html', context)
 
@@ -1150,6 +1232,49 @@ def circuit_detail(request, circuit_id):
     }
     
     return render(request, 'circuit_detail.html', context)
+
+
+@login_required
+@csrf_exempt
+def mark_circuit_visited(request, circuit_id):
+    """Mark a circuit as visited and award 100 credits to the user"""
+    if request.method == 'POST':
+        try:
+            circuit = get_object_or_404(Circuit, id=circuit_id)
+            profile, created = UserProfile.objects.get_or_create(user=request.user)
+            
+            # Check if circuit is already visited
+            if profile.circuits_visited.filter(id=circuit_id).exists():
+                return JsonResponse({'status': 'already_visited', 'message': 'Circuit already visited'})
+            
+            # Mark circuit as visited
+            profile.circuits_visited.add(circuit)
+            
+            # Award 100 credits
+            profile.credits += 100
+            profile.save()
+            
+            # Create credit transaction record
+            CreditTransaction.objects.create(
+                user=request.user,
+                amount=100,
+                transaction_type='CIRCUIT_VISIT',
+                description=f'Visited {circuit.name}',
+                balance_after=profile.credits,
+                circuit=circuit
+            )
+            
+            return JsonResponse({
+                'status': 'success', 
+                'message': 'marked',
+                'credits_awarded': 100,
+                'total_credits': profile.credits
+            })
+            
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)})
+    
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'})
 
 
 def betting(request):

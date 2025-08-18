@@ -50,7 +50,7 @@ body.dark-mode .chart-container {
 body.dark-mode .team-card {
     background: #232527;
     box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-    border-left-color: var(--f1-gold);
+    border-left-color: var(--f1-red);
 }
 .team-card:hover {
     transform: translateY(-2px);
@@ -75,8 +75,8 @@ body.dark-mode .team-card {
     font-size: 1.5rem;
 }
 body.dark-mode .team-logo {
-    background: var(--f1-gold);
-    color: #232527;
+    background: var(--f1-red);
+    color: white;
 }
 .team-info h5 {
     margin: 0;
@@ -84,7 +84,7 @@ body.dark-mode .team-logo {
     font-weight: 600;
 }
 body.dark-mode .team-info h5 {
-    color: var(--f1-gold);
+    color: var(--f1-red);
 }
 .team-info small {
     color: #6b7280;
@@ -150,8 +150,8 @@ body.dark-mode .stat-label {
     font-weight: 500;
 }
 body.dark-mode .year-btn {
-    border-color: var(--f1-gold);
-    color: var(--f1-gold);
+    border-color: var(--f1-red);
+    color: var(--f1-red);
 }
 .year-btn:hover,
 .year-btn.active {
@@ -160,8 +160,8 @@ body.dark-mode .year-btn {
 }
 body.dark-mode .year-btn:hover,
 body.dark-mode .year-btn.active {
-    background: var(--f1-gold);
-    color: #232527;
+    background: var(--f1-red);
+    color: white;
 }
 
 /* Team Comparison Table */
@@ -239,6 +239,7 @@ body.dark-mode .team-comparison-table tr:hover {
     <button class="year-btn {% if selected_year == 2025 %}active{% endif %}" onclick="window.location.href='?year=2025'">2025</button>
     <button class="year-btn {% if selected_year == 2024 %}active{% endif %}" onclick="window.location.href='?year=2024'">2024</button>
     <button class="year-btn {% if selected_year == 2023 %}active{% endif %}" onclick="window.location.href='?year=2023'">2023</button>
+    <button class="year-btn {% if selected_year == 2022 %}active{% endif %}" onclick="window.location.href='?year=2022'">2022</button>
 </div>
 
 <!-- Team Points Progression Chart -->
@@ -354,28 +355,46 @@ body.dark-mode .team-comparison-table tr:hover {
                         <h5 style="font-size: 1rem;">{{ team_data.team.name }}</h5>
                     </div>
                 </div>
-                <div class="performance-stats" style="grid-template-columns: 1fr 1fr;">
+                <div class="performance-stats" style="grid-template-columns: 1fr 1fr 1fr;">
+                    <div class="stat-item">
+                        <div class="stat-value">{{ team_data.total_points|default:0 }}</div>
+                        <div class="stat-label">Total Points</div>
+                    </div>
                     <div class="stat-item">
                         <div class="stat-value">
-                            {% with total_races=team_data.points_progression|length %}
-                                {% if total_races >= 2 %}
-                                    {{ total_races|floatformat:0 }}
+                            {% with recent_races=team_data.points_progression|slice:"-3:" %}
+                                {% if recent_races %}
+                                    {% for point in recent_races %}
+                                        {% if not forloop.first %}+{% endif %}{{ point.points|default:0 }}
+                                    {% endfor %}
                                 {% else %}
                                     0
                                 {% endif %}
                             {% endwith %}
                         </div>
-                        <div class="stat-label">Recent Form</div>
+                        <div class="stat-label">Last 3 Races</div>
                     </div>
                     <div class="stat-item">
                         <div class="stat-value">
-                            {% for point in team_data.points_progression %}
-                                {% if point.points > 0 %}
-                                    {{ forloop.counter }}
-                                    {% endif %}
-                            {% endfor %}
+                            {% with points_list=team_data.points_progression %}
+                                {% if points_list|length >= 2 %}
+                                    {% with first_half=points_list|slice:":3" second_half=points_list|slice:"-3:" %}
+                                        {% with first_avg=0 second_avg=0 %}
+                                            {% for point in first_half %}
+                                                {% if forloop.first %}{% with first_avg=point.points|default:0 %}{% endwith %}{% endif %}
+                                            {% endfor %}
+                                            {% for point in second_half %}
+                                                {% if forloop.first %}{% with second_avg=point.points|default:0 %}{% endwith %}{% endif %}
+                                            {% endfor %}
+                                            {% if second_avg > first_avg %}↗{% elif second_avg < first_avg %}↘{% else %}→{% endif %}
+                                        {% endwith %}
+                                    {% endwith %}
+                                {% else %}
+                                    →
+                                {% endif %}
+                            {% endwith %}
                         </div>
-                        <div class="stat-label">First Points</div>
+                        <div class="stat-label">Trend</div>
                     </div>
                 </div>
             </div>

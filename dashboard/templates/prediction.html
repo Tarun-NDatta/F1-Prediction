@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load dashboard_extras %}
 {% block title %}F1 Predictions{% endblock %}
 
 {% block extra_css %}
@@ -29,6 +30,10 @@ body.dark-mode .model-selector .form-select {
     background: #232527;
     color: #fff;
     border: 1.5px solid #444;
+}
+.model-selector .form-select option:disabled {
+    color: #999;
+    font-style: italic;
 }
 .overview-stats {
     display: flex;
@@ -135,6 +140,37 @@ body.dark-mode .stat-label {
     color: #ccc;
 }
 
+/* Subscription Alert Styling */
+.subscription-alert {
+    background: rgba(220, 53, 69, 0.1);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 1rem;
+    border-left: 4px solid #dc3545;
+}
+body.dark-mode .subscription-alert {
+    background: rgba(220, 53, 69, 0.2);
+}
+.subscription-alert h6 {
+    color: #dc3545;
+    margin-bottom: 0.5rem;
+}
+.subscription-alert p {
+    margin: 0;
+    color: #6b7280;
+}
+body.dark-mode .subscription-alert p {
+    color: #ccc;
+}
+.subscription-alert a {
+    color: var(--f1-red);
+    text-decoration: none;
+    font-weight: 500;
+}
+.subscription-alert a:hover {
+    text-decoration: underline;
+}
+
 /* Prediction vs Actual Visualization */
 .prediction-vs-actual {
     margin-top: 3rem;
@@ -197,9 +233,10 @@ body.dark-mode .scatter-plot {
 /* Race Details Styling */
 .race-details {
     background: #fff;
-    border-radius: 12px;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
     overflow: hidden;
 }
 body.dark-mode .race-details {
@@ -373,6 +410,27 @@ body.dark-mode .locked-prompt p {
     text-decoration: none;
 }
 
+.model-performance-metrics {
+    margin-top: 3rem;
+    padding: 2rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 16px;
+    border: 1px solid rgba(0,0,0,0.1);
+}
+body.dark-mode .model-performance-metrics {
+    background: linear-gradient(135deg, #2a2d30 0%, #232527 100%);
+    border-color: rgba(255,255,255,0.1);
+}
+.model-performance-metrics h3 {
+    color: var(--f1-red);
+    margin-bottom: 1.5rem;
+    text-align: center;
+    font-weight: 600;
+}
+body.dark-mode .model-performance-metrics h3 {
+    color: var(--f1-gold);
+}
+
 @media (max-width: 768px) {
     .overview-stats {
         flex-direction: column;
@@ -408,6 +466,7 @@ body.dark-mode .locked-prompt p {
 
 <div class="prediction-content-wrapper" style="position: relative;">
     <div class="{% if not is_authenticated %}predictions-content-blur{% endif %}">
+        <!-- Updated Model Selector with Subscription Handling -->
         <div class="content-box model-selector mb-4">
             <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
                 <span style="font-size: 1.5rem; color: var(--f1-red);"><i class="fas fa-brain"></i></span>
@@ -415,12 +474,40 @@ body.dark-mode .locked-prompt p {
             </div>
             <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
                 <span style="color: #6b7280; font-size: 1rem;">Choose which machine learning model to view predictions from</span>
-                <select class="form-select" style="max-width: 320px; min-width: 180px;" onchange="window.location.href='?model=' + this.value">
+                <select class="form-select" style="max-width: 320px; min-width: 180px;" id="modelSelect">
                     {% for key, model in available_models.items %}
-                    <option value="{{ key }}" {% if key == selected_model_key %}selected{% endif %}>{{ model.name }}</option>
+                    <option value="{{ key }}" 
+                            {% if key == selected_model_key %}selected{% endif %}
+                            {% if not model.accessible %}disabled{% endif %}>
+                        {{ model.name }}
+                        {% if not model.accessible %}
+                            {% if model.status == 'subscription_required' %}
+                                ({{ model.tier_required }} Required)
+                            {% elif model.status == 'login_required' %}
+                                (Login Required)
+                            {% elif model.status == 'coming_soon' %}
+                                (Coming Soon)
+                            {% endif %}
+                        {% endif %}
+                    </option>
                     {% endfor %}
                 </select>
             </div>
+            
+            <!-- Show subscription upgrade message if user tries to access a locked model -->
+            {% if is_authenticated %}
+                {% with selected_model=available_models|lookup:selected_model_key %}
+                    {% if selected_model and not selected_model.accessible %}
+                    <div class="subscription-alert">
+                        <h6><i class="fas fa-lock"></i> Subscription Required</h6>
+                        <p>
+                            The {{ selected_model.name }} model requires a {{ selected_model.tier_required }} subscription.
+                            <a href="{% url 'pricing' %}">Upgrade your plan</a> to access this model.
+                        </p>
+                    </div>
+                    {% endif %}
+                {% endwith %}
+            {% endif %}
         </div>
 
         <div class="content-box mb-4">
@@ -429,6 +516,8 @@ body.dark-mode .locked-prompt p {
                 <span style="font-size: 1.4rem; font-weight: bold; color: var(--f1-red);">2025 Season Overview</span>
                 {% if model_status == 'coming_soon' %}
                     <span class="model-badge model-badge-coming-soon">{{ model_name }} - Coming Soon</span>
+                {% elif model_status == 'subscription_required' %}
+                    <span class="model-badge model-badge-coming-soon">{{ model_name }} - Subscription Required</span>
                 {% else %}
                     <span class="model-badge model-badge-active">{{ model_name }}</span>
                 {% endif %}
@@ -504,12 +593,60 @@ body.dark-mode .locked-prompt p {
         </div>
         {% endif %}
 
+        <!-- Prediction vs Actual Visualization -->
+        {% if is_authenticated and model_stats and chart_data %}
+        <div class="prediction-vs-actual">
+            <h3><i class="fas fa-chart-scatter me-2"></i>Prediction vs Actual Performance</h3>
+            <div class="chart-container">
+                <canvas id="predictionChart" class="scatter-plot"></canvas>
+            </div>
+            <div class="chart-legend">
+                <div class="legend-item">
+                    <div class="legend-color correct"></div>
+                    <span>Correct Predictions</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color incorrect"></div>
+                    <span>Incorrect Predictions</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color future"></div>
+                    <span>Future Predictions</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Model Performance Metrics Chart -->
+        <div class="model-performance-metrics">
+            <h3><i class="fas fa-chart-bar me-2"></i>Model Performance Metrics</h3>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="chart-container" style="height: 300px;">
+                        <canvas id="accuracyChart"></canvas>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="chart-container" style="height: 300px;">
+                        <canvas id="errorDistributionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         {% if is_authenticated %}
-            {% if model_status == 'coming_soon' %}
+            {% if model_status == 'coming_soon' or model_status == 'subscription_required' %}
                 <div class="content-box" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 320px; max-width: 600px; margin: 3rem auto 2.5rem auto; text-align: center;">
-                    <span class="model-badge model-badge-coming-soon" style="font-size: 1.1rem; margin-bottom: 1.2rem;"><i class="fas fa-tools"></i> Predictions Coming Soon!</span>
-                    <div style="color: var(--f1-red); font-weight: 600; font-size: 1.2rem; margin-bottom: 0.5em;">The {{ model_name }} model is currently in development.</div>
-                    <div style="color: #6b7280; font-size: 1.05rem;">Predictions will be available soon. Please check back later!</div>
+                    {% if model_status == 'subscription_required' %}
+                        <span class="model-badge model-badge-coming-soon" style="font-size: 1.1rem; margin-bottom: 1.2rem;"><i class="fas fa-lock"></i> Subscription Required!</span>
+                        <div style="color: var(--f1-red); font-weight: 600; font-size: 1.2rem; margin-bottom: 0.5em;">The {{ model_name }} model requires a subscription upgrade.</div>
+                        <div style="color: #6b7280; font-size: 1.05rem; margin-bottom: 1.5rem;">Upgrade to access advanced ML predictions!</div>
+                        <a href="{% url 'pricing' %}" class="btn btn-primary">View Pricing Plans</a>
+                    {% else %}
+                        <span class="model-badge model-badge-coming-soon" style="font-size: 1.1rem; margin-bottom: 1.2rem;"><i class="fas fa-tools"></i> Predictions Coming Soon!</span>
+                        <div style="color: var(--f1-red); font-weight: 600; font-size: 1.2rem; margin-bottom: 0.5em;">The {{ model_name }} model is currently in development.</div>
+                        <div style="color: #6b7280; font-size: 1.05rem;">Predictions will be available soon. Please check back later!</div>
+                    {% endif %}
                 </div>
             {% else %}
                 {% for race_data in results %}
@@ -581,8 +718,9 @@ body.dark-mode .locked-prompt p {
             {% endif %}
         {% endif %}
     </div>
+    
     {% if not is_authenticated %}
-    <div class="predictions-locked-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: rgba(20, 20, 30, 0.55); z-index: 2000;">
+    <div class="predictions-locked-overlay">
         <div class="locked-prompt">
             <h4>View Full Predictions</h4>
             <p>Create an account or log in to see detailed race predictions.</p>
@@ -594,35 +732,12 @@ body.dark-mode .locked-prompt p {
     </div>
     {% endif %}
 </div>
-
-<!-- Prediction vs Actual Visualization -->
-{% if is_authenticated and model_stats %}
-<div class="prediction-vs-actual">
-    <h3><i class="fas fa-chart-scatter me-2"></i>Prediction vs Actual Performance</h3>
-    <div class="chart-container">
-        <canvas id="predictionChart" class="scatter-plot"></canvas>
-    </div>
-    <div class="chart-legend">
-        <div class="legend-item">
-            <div class="legend-color correct"></div>
-            <span>Correct Predictions</span>
-        </div>
-        <div class="legend-item">
-            <div class="legend-color incorrect"></div>
-            <span>Incorrect Predictions</span>
-        </div>
-        <div class="legend-item">
-            <div class="legend-color future"></div>
-            <span>Future Predictions</span>
-        </div>
-    </div>
-</div>
-{% endif %}
 {% endblock %}
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+// === RACE DETAILS TOGGLE FUNCTIONALITY ===
 function toggleRaceDetails(idx) {
     var details = document.getElementById('details-' + idx);
     var arrow = document.getElementById('arrow-' + idx);
@@ -635,102 +750,266 @@ function toggleRaceDetails(idx) {
     }
 }
 
-{% if is_authenticated and model_stats %}
-// Prediction vs Actual Chart
-document.addEventListener('DOMContentLoaded', function() {
-    const ctx = document.getElementById('predictionChart').getContext('2d');
+// === MODEL SELECTION FUNCTIONALITY ===
+function changeModel(modelKey) {
+    // Check if the selected model is accessible
+    const selectElement = document.querySelector('#modelSelect');
+    const selectedOption = selectElement.querySelector(`option[value="${modelKey}"]`);
     
-    // Prepare data from the results
-    const chartData = [];
+    if (selectedOption && selectedOption.disabled) {
+        // Don't change if the option is disabled
+        selectElement.value = "{{ selected_model_key }}"; // Reset to current model
+        return;
+    }
+    
+    window.location.href = '?model=' + modelKey;
+}
+
+// Add event listener for model selection
+document.addEventListener('DOMContentLoaded', function() {
+    const selectElement = document.querySelector('#modelSelect');
+    if (selectElement) {
+        selectElement.addEventListener('change', function(e) {
+            const selectedOption = this.options[this.selectedIndex];
+            if (selectedOption && selectedOption.disabled) {
+                e.preventDefault();
+                // Reset to current selected model
+                this.value = "{{ selected_model_key }}";
+                return false;
+            }
+            changeModel(this.value);
+        });
+    }
+});
+</script>
+
+{% if is_authenticated and model_stats and chart_data %}
+{{ chart_data_json|json_script:"chart-data" }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('predictionChart');
+    if (!ctx) {
+        console.error('Chart canvas not found');
+        return;
+    }
+    
+    const chartContext = ctx.getContext('2d');
+    
+    // Initialize data arrays
     const correctData = [];
     const incorrectData = [];
     const futureData = [];
     
-    {% for race_data in results %}
-        {% for item in race_data.comparison %}
-            {% if item.actual != 'N/A' %}
-                const point = {
-                    x: {{ item.predicted }},
-                    y: {{ item.actual }},
-                    driver: '{{ item.driver }}',
-                    race: '{{ race_data.event.name }}'
+    try {
+        // Get chart data from Django
+        const chartDataElement = document.getElementById('chart-data');
+        if (!chartDataElement) {
+            console.error('Chart data element not found');
+            return;
+        }
+        
+        const chartDataFromDjango = JSON.parse(chartDataElement.textContent);
+        console.log('Chart data from Django:', chartDataFromDjango);
+        
+        // Process the data into separate arrays
+        chartDataFromDjango.forEach(function(point) {
+            if (point.actual !== null && point.actual !== 'N/A') {
+                const dataPoint = {
+                    x: point.predicted,
+                    y: point.actual,
+                    driver: point.driver,
+                    race: point.race
                 };
                 
-                {% if item.is_correct %}
-                    correctData.push(point);
-                {% else %}
-                    incorrectData.push(point);
-                {% endif %}
-            {% else %}
+                if (point.isCorrect) {
+                    correctData.push(dataPoint);
+                } else {
+                    incorrectData.push(dataPoint);
+                }
+            } else {
                 futureData.push({
-                    x: {{ item.predicted }},
+                    x: point.predicted,
                     y: null,
-                    driver: '{{ item.driver }}',
-                    race: '{{ race_data.event.name }}'
+                    driver: point.driver,
+                    race: point.race
                 });
-            {% endif %}
-        {% endfor %}
-    {% endfor %}
+            }
+        });
+        
+        console.log('Correct data points:', correctData.length);
+        console.log('Incorrect data points:', incorrectData.length);
+        
+    } catch (error) {
+        console.error('Error parsing chart data:', error);
+        return;
+    }
     
-    // Create the chart
-    new Chart(ctx, {
-        type: 'scatter',
-        data: {
-            datasets: [
-                {
-                    label: 'Correct Predictions',
-                    data: correctData,
-                    backgroundColor: '#28a745',
-                    borderColor: '#28a745',
-                    pointRadius: 6,
-                    pointHoverRadius: 8
-                },
-                {
-                    label: 'Incorrect Predictions',
-                    data: incorrectData,
-                    backgroundColor: '#dc3545',
-                    borderColor: '#dc3545',
-                    pointRadius: 6,
-                    pointHoverRadius: 8
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                x: {
-                    title: {
-                        display: true,
-                        text: 'Predicted Position'
+    // Create the scatter plot chart
+    try {
+        const chart = new Chart(chartContext, {
+            type: 'scatter',
+            data: {
+                datasets: [
+                    {
+                        label: 'Correct Predictions',
+                        data: correctData,
+                        backgroundColor: '#28a745',
+                        borderColor: '#28a745',
+                        pointRadius: 6,
+                        pointHoverRadius: 8
                     },
-                    min: 1,
-                    max: 20
-                },
-                y: {
-                    title: {
-                        display: true,
-                        text: 'Actual Position'
-                    },
-                    min: 1,
-                    max: 20
-                }
+                    {
+                        label: 'Incorrect Predictions',
+                        data: incorrectData,
+                        backgroundColor: '#dc3545',
+                        borderColor: '#dc3545',
+                        pointRadius: 6,
+                        pointHoverRadius: 8
+                    }
+                ]
             },
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            return context.raw.driver + ' - ' + context.raw.race;
-                        }
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Predicted Position'
+                        },
+                        min: 1,
+                        max: 20
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Actual Position'
+                        },
+                        min: 1,
+                        max: 20
                     }
                 },
-                legend: {
-                    display: false
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.raw.driver + ' - ' + context.raw.race;
+                            }
+                        }
+                    },
+                    legend: {
+                        display: false
+                    }
                 }
             }
-        }
-    });
+        });
+        
+        console.log('Chart created successfully');
+        
+    } catch (error) {
+        console.error('Error creating prediction chart:', error);
+    }
+    
+    // Accuracy Chart
+    const accuracyCtxElement = document.getElementById('accuracyChart');
+    if (accuracyCtxElement) {
+        const accuracyCtx = accuracyCtxElement.getContext('2d');
+        new Chart(accuracyCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Correct Predictions', 'Incorrect Predictions'],
+                datasets: [{
+                    data: [correctData.length, incorrectData.length],
+                    backgroundColor: ['#28a745', '#dc3545'],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Prediction Accuracy',
+                        font: { size: 16, weight: 'bold' }
+                    },
+                    legend: {
+                        position: 'bottom',
+                        labels: { padding: 20 }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Error Distribution Chart
+    const errorCtxElement = document.getElementById('errorDistributionChart');
+    if (errorCtxElement) {
+        const errorCtx = errorCtxElement.getContext('2d');
+        
+        // Calculate error distribution
+        const errorBins = { '0': 0, '1': 0, '2-3': 0, '4-5': 0, '6+': 0 };
+        
+        [...correctData, ...incorrectData].forEach(point => {
+            const error = Math.abs(point.x - point.y);
+            if (error === 0) errorBins['0']++;
+            else if (error === 1) errorBins['1']++;
+            else if (error <= 3) errorBins['2-3']++;
+            else if (error <= 5) errorBins['4-5']++;
+            else errorBins['6+']++;
+        });
+        
+        new Chart(errorCtx, {
+            type: 'bar',
+            data: {
+                labels: Object.keys(errorBins),
+                datasets: [{
+                    label: 'Number of Predictions',
+                    data: Object.values(errorBins),
+                    backgroundColor: [
+                        '#28a745',
+                        '#6c757d',
+                        '#ffc107',
+                        '#fd7e14',
+                        '#dc3545'
+                    ],
+                    borderWidth: 1,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Prediction Error Distribution',
+                        font: { size: 16, weight: 'bold' }
+                    },
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Position Error Range'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Number of Predictions'
+                        },
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
 });
-{% endif %}
 </script>
+{% endif %}
 {% endblock %}

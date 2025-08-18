@@ -31,6 +31,7 @@ urlpatterns = [
     path('portfolio/', view.portfolio, name='portfolio'),
     path('circuits/', view.circuits, name='circuits'),
     path('circuit/<int:circuit_id>/', view.circuit_detail, name='circuit_detail'),
+    path('mark_circuit_visited/<int:circuit_id>/', view.mark_circuit_visited, name='mark_circuit_visited'),
     path('betting/', view.betting, name='betting'),
     path('place_bet/', view.place_bet, name='place_bet'),
     path('get_odds/', view.get_real_time_odds, name='get_real_time_odds'),
