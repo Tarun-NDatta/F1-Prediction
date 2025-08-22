@@ -98,6 +98,48 @@ body.dark-mode .prediction-item {
     color: #6b7280;
 }
 
+.mock-race-details {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+
+body.dark-mode .mock-race-details {
+    background: #232527;
+}
+
+.grid-position {
+    display: inline-block;
+    background: #f8f9fa;
+    padding: 0.3rem 0.6rem;
+    margin: 0.2rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+}
+
+body.dark-mode .grid-position {
+    background: #2a2d30;
+}
+
+.grid-position.pole {
+    background: #ffd700;
+    color: #000;
+    font-weight: bold;
+}
+
+.grid-position.front-row {
+    background: #c0c0c0;
+    color: #000;
+    font-weight: bold;
+}
+
+.grid-position.top-10 {
+    background: #cd7f32;
+    color: #fff;
+}
+
 .betting-section {
     background: white;
     border-radius: 12px;
@@ -179,6 +221,32 @@ body.dark-mode .active-bet {
     opacity: 0.5;
 }
 
+.pre-race-predictions, .live-predictions {
+    background: #fff3cd;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+body.dark-mode .pre-race-predictions, 
+body.dark-mode .live-predictions {
+    background: #332b00;
+}
+
+.prediction-comparison {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    margin: 0.2rem 0;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+body.dark-mode .prediction-comparison {
+    background: #2a2d30;
+}
+
 @media (max-width: 768px) {
     .commentary-section,
     .prediction-updates {
@@ -208,98 +276,160 @@ body.dark-mode .active-bet {
         {% endif %}
     </div>
 
+    <!-- Mock Race Simulation Interface -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="content-box">
+                <h4 class="mb-3">
+                    <i class="fas fa-play-circle me-2"></i>Mock Live Race Simulation
+                </h4>
+                <p class="text-muted mb-3">
+                    Experience how live ML predictions work with our realistic race simulation.
+                    Choose from historical races (with known poor performance) or upcoming events.
+                </p>
+
+                <!-- Simulation Controls -->
+                <div class="row" id="simulationControls">
+                    <div class="col-md-3">
+                        <label class="form-label">Select Track</label>
+                        <select class="form-select" id="trackSelect">
+                            {% for track in available_tracks %}
+                                <option value="{{ track.name }}" data-type="{{ track.type }}" data-mae="{{ track.mae|default:'' }}">
+                                    {{ track.name }}
+                                    {% if track.type == 'historical' %} (MAE: {{ track.mae }}){% endif %}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Race Speed</label>
+                        <select class="form-select" id="speedSelect">
+                            <option value="5min">5 minutes</option>
+                            <option value="10min" selected>10 minutes</option>
+                            <option value="15min">15 minutes</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Actions</label>
+                        <div>
+                            <button class="btn btn-success" id="startRaceBtn">
+                                <i class="fas fa-play me-1"></i>Start Mock Race
+                            </button>
+                            <button class="btn btn-danger d-none" id="stopRaceBtn">
+                                <i class="fas fa-stop me-1"></i>Stop Race
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Race Status</label>
+                        <div id="raceStatus" class="alert alert-secondary mb-0">
+                            <i class="fas fa-circle text-secondary me-1"></i>No active simulation
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Interactive Events (shown during race) -->
+                <div class="row mt-3 d-none" id="interactiveEvents">
+                    <div class="col-12">
+                        <h6>Interactive Events <span class="badge bg-primary" id="eventsRemaining">2 remaining</span></h6>
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-warning btn-sm" id="safetyCarBtn">
+                                <i class="fas fa-car me-1"></i>Safety Car
+                            </button>
+                            <button class="btn btn-info btn-sm" id="badPitStopBtn">
+                                <i class="fas fa-tools me-1"></i>Bad Pit Stop
+                            </button>
+                            <button class="btn btn-primary btn-sm" id="weatherChangeBtn">
+                                <i class="fas fa-cloud-rain me-1"></i>Weather Change
+                            </button>
+                        </div>
+                        <small class="text-muted d-block mt-1">
+                            You can trigger up to 2 events during the race (stops at 10 laps to go)
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mock Race Details -->
+    <div class="row mb-4 d-none" id="mockRaceDetails">
+        <div class="col-12">
+            <div class="mock-race-details">
+                <h4 class="mb-3">
+                    <i class="fas fa-info-circle me-2"></i>Mock Race Context
+                </h4>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Starting Grid (Qualifying Results)</h6>
+                        <div id="startingGrid">
+                            <!-- Will be populated by JavaScript -->
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>ML Predictions Timeline</h6>
+                        <div id="predictionTimeline">
+                            <div class="pre-race-predictions" id="preRacePredictions">
+                                <strong>Pre-Race ML Prediction:</strong>
+                                <div id="preRacePredictionContent">
+                                    <em>Available after race starts</em>
+                                </div>
+                            </div>
+                            <div class="live-predictions d-none" id="livePredictions">
+                                <strong>Current Live Prediction:</strong>
+                                <div id="livePredictionContent">
+                                    <em>Updates during race</em>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row">
         <!-- Live Commentary -->
         <div class="col-lg-8">
-            <div class="commentary-section">
+            <div class="commentary-section" id="commentarySection">
                 <h4 class="mb-3">
                     <i class="fas fa-microphone me-2"></i>Live Commentary
                 </h4>
-                
-                {% if current_event %}
-                    <div class="commentary-item">
-                        <div class="commentary-time">14:30 - Race Start</div>
-                        <div class="commentary-text">
-                            Welcome to the {{ current_event.name }}! The grid is set and we're ready for an exciting race. 
-                            All drivers are in their positions and the lights are about to go out.
+
+                <div id="commentaryFeed">
+                    {% if current_event %}
+                        <div class="commentary-item">
+                            <div class="commentary-time">Pre-Race</div>
+                            <div class="commentary-text">
+                                Welcome to the {{ current_event.name }}! Start a mock simulation to see live commentary in action.
+                            </div>
                         </div>
-                    </div>
-                    
-                    <div class="commentary-item">
-                        <div class="commentary-time">14:25 - Formation Lap</div>
-                        <div class="commentary-text">
-                            The formation lap is complete. Track temperature is 28°C with clear skies. 
-                            Tire strategies are varied across the grid with most teams starting on medium compounds.
+                    {% else %}
+                        <div class="coming-soon">
+                            <i class="fas fa-clock"></i>
+                            <h5>No Live Race</h5>
+                            <p>Start a mock race simulation to see live commentary and ML predictions in action.</p>
                         </div>
-                    </div>
-                    
-                    <div class="commentary-item">
-                        <div class="commentary-time">14:20 - Grid Walk</div>
-                        <div class="commentary-text">
-                            Final preparations are underway. Teams are making last-minute adjustments 
-                            to wing settings and tire pressures based on track conditions.
-                        </div>
-                    </div>
-                    
-                    <div class="commentary-item">
-                        <div class="commentary-time">14:15 - Pre-Race</div>
-                        <div class="commentary-text">
-                            The national anthem has been played and drivers are making their way to the grid. 
-                            The atmosphere is electric here at {{ current_event.circuit.name }}.
-                        </div>
-                    </div>
-                {% else %}
-                    <div class="coming-soon">
-                        <i class="fas fa-clock"></i>
-                        <h5>No Live Race</h5>
-                        <p>Live commentary will appear here when a race is in progress.</p>
-                    </div>
-                {% endif %}
+                    {% endif %}
+                </div>
             </div>
         </div>
 
         <!-- Prediction Updates -->
         <div class="col-lg-4">
-            <div class="prediction-updates">
+            <div class="prediction-updates" id="predictionUpdates">
                 <h4 class="mb-3">
                     <i class="fas fa-chart-line me-2"></i>ML Prediction Updates
+                    <span class="badge bg-secondary ms-2 d-none" id="mlStatus">Stopped</span>
                 </h4>
-                
-                {% if current_event %}
-                    <div class="prediction-item">
-                        <div class="prediction-driver">Max Verstappen</div>
-                        <div class="prediction-change">
-                            Win probability: <strong>68%</strong> (+2% from pre-race)
-                        </div>
-                    </div>
-                    
-                    <div class="prediction-item">
-                        <div class="prediction-driver">Lando Norris</div>
-                        <div class="prediction-change">
-                            Podium probability: <strong>45%</strong> (+5% from pre-race)
-                        </div>
-                    </div>
-                    
-                    <div class="prediction-item">
-                        <div class="prediction-driver">Charles Leclerc</div>
-                        <div class="prediction-change">
-                            Win probability: <strong>18%</strong> (-3% from pre-race)
-                        </div>
-                    </div>
-                    
-                    <div class="prediction-item">
-                        <div class="prediction-driver">Lewis Hamilton</div>
-                        <div class="prediction-change">
-                            Points probability: <strong>85%</strong> (+8% from pre-race)
-                        </div>
-                    </div>
-                {% else %}
+
+                <div id="predictionFeed">
                     <div class="coming-soon">
                         <i class="fas fa-robot"></i>
-                        <h5>Coming Soon</h5>
-                        <p>Live prediction model updates will appear here during races.</p>
+                        <h5>ML Predictions</h5>
+                        <p>Start a mock race to see live ML prediction updates. Models will update every 30 seconds until 10 laps to go.</p>
                     </div>
-                {% endif %}
+                </div>
             </div>
         </div>
     </div>
@@ -388,6 +518,30 @@ body.dark-mode .active-bet {
 </div>
 
 <script>
+// 2025 F1 Driver lineup (confirmed drivers only)
+const f1_2025_drivers = [
+    // Red Bull Racing
+    "Max Verstappen", "Sergio Pérez",
+    // Ferrari 
+    "Charles Leclerc", "Lewis Hamilton",
+    // McLaren
+    "Lando Norris", "Oscar Piastri",
+    // Mercedes
+    "George Russell", "Kimi Antonelli",
+    // Aston Martin
+    "Fernando Alonso", "Lance Stroll",
+    // Alpine
+    "Pierre Gasly", "Jack Doohan",
+    // Williams
+    "Alexander Albon", "Carlos Sainz Jr.",
+    // Kick Sauber (Sauber)
+    "Nico Hülkenberg", "Gabriel Bortoleto",
+    // RB (AlphaTauri)
+    "Yuki Tsunoda", "Isack Hadjar",
+    // Haas
+    "Oliver Bearman", "Esteban Ocon"
+];
+
 // Auto-scroll commentary to bottom
 document.addEventListener('DOMContentLoaded', function() {
     const commentarySection = document.querySelector('.commentary-section');
@@ -399,29 +553,511 @@ document.addEventListener('DOMContentLoaded', function() {
     if (predictionSection) {
         predictionSection.scrollTop = predictionSection.scrollHeight;
     }
-});
 
-// Simulate live updates (for demo purposes)
-function addCommentaryUpdate(time, text) {
-    const commentarySection = document.querySelector('.commentary-section');
-    if (commentarySection) {
-        const newItem = document.createElement('div');
-        newItem.className = 'commentary-item';
-        newItem.innerHTML = `
-            <div class="commentary-time">${time}</div>
-            <div class="commentary-text">${text}</div>
-        `;
-        commentarySection.appendChild(newItem);
-        commentarySection.scrollTop = commentarySection.scrollHeight;
+    // Mock Race Simulation JavaScript
+    let raceInterval = null;
+    let isRaceActive = false;
+    let preRacePrediction = null;
+
+    // Event listeners
+    document.getElementById('startRaceBtn').addEventListener('click', startMockRace);
+    document.getElementById('stopRaceBtn').addEventListener('click', stopMockRace);
+    document.getElementById('safetyCarBtn').addEventListener('click', () => triggerEvent('safety_car'));
+    document.getElementById('badPitStopBtn').addEventListener('click', () => triggerEvent('bad_pit_stop'));
+    document.getElementById('weatherChangeBtn').addEventListener('click', () => triggerEvent('weather_change'));
+
+    async function startMockRace() {
+        const trackName = document.getElementById('trackSelect').value;
+        const speed = document.getElementById('speedSelect').value;
+
+        try {
+            const response = await fetch('/api/mock-race/start/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    event_name: trackName,
+                    simulation_speed: speed
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                isRaceActive = true;
+                updateRaceStatus(`Race Started: ${trackName}`, 'success');
+
+                // Show mock race details
+                document.getElementById('mockRaceDetails').classList.remove('d-none');
+                
+                // Generate and display starting grid
+                generateStartingGrid();
+                
+                // Generate pre-race prediction
+                generatePreRacePrediction();
+
+                // Update UI
+                document.getElementById('startRaceBtn').classList.add('d-none');
+                document.getElementById('stopRaceBtn').classList.remove('d-none');
+                document.getElementById('interactiveEvents').classList.remove('d-none');
+                document.getElementById('simulationControls').classList.add('mb-3');
+
+                // Clear existing commentary
+                document.getElementById('commentaryFeed').innerHTML = '';
+                document.getElementById('predictionFeed').innerHTML = '';
+
+                // Start polling for updates (convert seconds to milliseconds)
+                const pollInterval = Math.max(1000, data.lap_interval * 1000); // At least 1 second
+                raceInterval = setInterval(pollRaceStatus, pollInterval);
+
+                // Also poll immediately to get first update
+                setTimeout(pollRaceStatus, 500);
+
+                addCommentary('Race Control', `${trackName} simulation started! ${data.total_laps} laps ahead. Grid positions and pre-race predictions generated.`);
+            } else {
+                updateRaceStatus('Failed to start race', 'danger');
+            }
+        } catch (error) {
+            console.error('Error starting race:', error);
+            updateRaceStatus('Error starting race', 'danger');
+        }
     }
-}
 
-// Example: Add a new commentary update every 30 seconds (for demo)
-// setInterval(() => {
-//     const now = new Date();
-//     const timeStr = now.getHours().toString().padStart(2, '0') + ':' + 
-//                    now.getMinutes().toString().padStart(2, '0');
-//     addCommentaryUpdate(timeStr + ' - Update', 'This is a simulated live update for demonstration purposes.');
-// }, 30000);
+    function generateStartingGrid() {
+        const startingGrid = document.getElementById('startingGrid');
+        const shuffledDrivers = [...f1_2025_drivers].sort(() => Math.random() - 0.5);
+        
+        let gridHtml = '';
+        shuffledDrivers.slice(0, 20).forEach((driver, index) => {
+            const position = index + 1;
+            let positionClass = 'grid-position';
+            
+            if (position === 1) {
+                positionClass += ' pole';
+            } else if (position === 2) {
+                positionClass += ' front-row';
+            } else if (position <= 10) {
+                positionClass += ' top-10';
+            }
+            
+            gridHtml += `<span class="${positionClass}">P${position}: ${driver}</span>`;
+        });
+        
+        startingGrid.innerHTML = gridHtml;
+    }
+
+    function generatePreRacePrediction() {
+        const drivers = [...f1_2025_drivers].slice(0, 20);
+        preRacePrediction = drivers.sort(() => Math.random() - 0.5);
+        
+        const preRaceContent = document.getElementById('preRacePredictionContent');
+        let predictionHtml = '';
+        
+        preRacePrediction.slice(0, 10).forEach((driver, index) => {
+            const position = index + 1;
+            predictionHtml += `
+                <div class="prediction-comparison">
+                    <span>P${position}: ${driver}</span>
+                    <small class="text-muted">Pre-race model</small>
+                </div>
+            `;
+        });
+        
+        preRaceContent.innerHTML = predictionHtml;
+    }
+
+    async function stopMockRace() {
+        try {
+            await fetch('/api/mock-race/stop/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            });
+
+            resetRaceUI();
+        } catch (error) {
+            console.error('Error stopping race:', error);
+        }
+    }
+
+    async function pollRaceStatus() {
+        if (!isRaceActive) {
+            console.log('Race not active, stopping polling');
+            return;
+        }
+
+        console.log('Polling race status...');
+
+        try {
+            const response = await fetch('/api/mock-race/status/');
+
+            if (!response.ok) {
+                console.error(`HTTP ${response.status}: ${response.statusText}`);
+                // Handle 500 errors more gracefully
+                if (response.status === 500) {
+                    addCommentary('System Warning', 'Temporary server issue - retrying...');
+                    return; // Continue trying
+                }
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            console.log('Race data received:', data);
+
+            if (data.success && data.race_data) {
+                const raceData = data.race_data;
+
+                // Update race status
+                if (raceData.status === 'running') {
+                    updateRaceStatus(
+                        `Lap ${raceData.current_lap}/${raceData.total_laps} - ML: ${raceData.ml_updates_active ? 'Active' : 'Stopped'}`,
+                        raceData.ml_updates_active ? 'success' : 'warning'
+                    );
+
+                    // Update ML status badge
+                    const mlBadge = document.getElementById('mlStatus');
+                    if (!raceData.ml_updates_active) {
+                        mlBadge.classList.remove('d-none', 'bg-secondary');
+                        mlBadge.classList.add('bg-warning');
+                        mlBadge.textContent = 'Final Prediction Made';
+                    }
+
+                    // Update events remaining
+                    document.getElementById('eventsRemaining').textContent =
+                        `${raceData.max_events - raceData.events_used} remaining`;
+
+                    // Disable event buttons if no events left or too late
+                    const canAddEvents = raceData.can_add_events;
+                    document.getElementById('safetyCarBtn').disabled = !canAddEvents;
+                    document.getElementById('badPitStopBtn').disabled = !canAddEvents;
+                    document.getElementById('weatherChangeBtn').disabled = !canAddEvents;
+
+                } else if (raceData.status === 'finished') {
+                    updateRaceStatus('Race Finished!', 'primary');
+                    clearInterval(raceInterval);
+                    isRaceActive = false;
+
+                    // Get final results
+                    setTimeout(showFinalResults, 2000);
+                }
+
+                // Add new commentary
+                if (raceData.commentary && raceData.commentary.length > 0) {
+                    raceData.commentary.forEach(comment => {
+                        if (comment.lap === raceData.current_lap) {
+                            addCommentary(`Lap ${comment.lap}`, comment.message.replace(`Lap ${comment.lap}: `, ''));
+                        }
+                    });
+                }
+
+                // Update predictions - remove confidence scores and convert to P1-20 format
+                if (raceData.ml_updates_active && raceData.ml_predictions && Object.keys(raceData.ml_predictions).length > 0) {
+                    updateMLPredictions(raceData.ml_predictions, raceData.race_state);
+                } else if (raceData.ml_updates_active && raceData.current_lap % 2 === 0) {
+                    updateMockPredictions(raceData);
+                }
+            } else {
+                console.error('Invalid response from server:', data);
+                addCommentary('System Error', 'Failed to get race data from server');
+            }
+        } catch (error) {
+            console.error('Error polling race status:', error);
+            addCommentary('Connection Error', `Failed to connect to server: ${error.message}`);
+
+            // If we get too many errors, stop the race
+            if (error.message.includes('404') || error.message.includes('No active race')) {
+                updateRaceStatus('Race stopped due to error', 'danger');
+                resetRaceUI();
+            }
+        }
+    }
+
+    async function triggerEvent(eventType) {
+        try {
+            // Use 2025 drivers only
+            const randomDriver = f1_2025_drivers[Math.floor(Math.random() * f1_2025_drivers.length)];
+            
+            const response = await fetch('/api/mock-race/event/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    event_type: eventType,
+                    target_lap: null, // Let system decide
+                    driver_name: eventType === 'bad_pit_stop' ? randomDriver : null
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                addCommentary('Event Scheduled', data.message);
+                document.getElementById('eventsRemaining').textContent = `${data.events_remaining} remaining`;
+
+                // Disable buttons if no events left
+                if (data.events_remaining === 0) {
+                    document.getElementById('safetyCarBtn').disabled = true;
+                    document.getElementById('badPitStopBtn').disabled = true;
+                    document.getElementById('weatherChangeBtn').disabled = true;
+                }
+            } else {
+                addCommentary('Event Error', data.error);
+            }
+        } catch (error) {
+            console.error('Error triggering event:', error);
+        }
+    }
+
+    async function showFinalResults() {
+        try {
+            const response = await fetch('/api/mock-race/results/');
+            const data = await response.json();
+
+            if (data.success) {
+                addCommentary('Final Results', 'Race completed! Check the prediction comparison below.');
+
+                // Show final results and prediction comparison
+                let resultsHtml = '<div class="final-results">';
+
+                // Race Results
+                resultsHtml += '<h6>Final Race Results</h6>';
+                data.final_results.slice(0, 10).forEach(result => {
+                    resultsHtml += `<div class="prediction-item">
+                        <div class="prediction-driver">P${result.position}: ${result.driver}</div>
+                        <div class="prediction-change">${result.pit_stops} pit stops</div>
+                    </div>`;
+                });
+
+                // ML Prediction Comparison (without confidence scores)
+                if (data.prediction_comparison && Object.keys(data.prediction_comparison).length > 0) {
+                    resultsHtml += '<hr><h6>ML Prediction Accuracy</h6>';
+
+                    const comparison = data.prediction_comparison;
+                    if (comparison.models_compared) {
+                        Object.keys(comparison.models_compared).forEach(modelName => {
+                            const modelData = comparison.models_compared[modelName];
+                            resultsHtml += `
+                                <div class="prediction-item">
+                                    <div class="prediction-driver">${modelName.replace('_', ' ').toUpperCase()}</div>
+                                    <div class="prediction-change">
+                                        MAE: <strong>${modelData.mae}</strong> |
+                                        Accuracy: <strong>${modelData.accuracy_within_1}%</strong>
+                                    </div>
+                                </div>
+                            `;
+                        });
+
+                        if (comparison.best_model) {
+                            resultsHtml += `
+                                <div class="alert alert-success mt-2">
+                                    <strong>Best Model:</strong> ${comparison.best_model.name.replace('_', ' ').toUpperCase()}
+                                    (MAE: ${comparison.best_model.mae})
+                                </div>
+                            `;
+                        }
+                    }
+
+                    if (comparison.final_prediction_lap) {
+                        resultsHtml += `<small class="text-muted">Final predictions made at lap ${comparison.final_prediction_lap}</small>`;
+                    }
+                } else {
+                    resultsHtml += '<hr><p class="text-muted">No ML prediction comparison available</p>';
+                }
+
+                resultsHtml += '</div>';
+                document.getElementById('predictionFeed').innerHTML = resultsHtml;
+            }
+        } catch (error) {
+            console.error('Error getting final results:', error);
+        }
+    }
+
+    function addCommentary(time, message) {
+        const commentaryFeed = document.getElementById('commentaryFeed');
+        const commentaryItem = document.createElement('div');
+        commentaryItem.className = 'commentary-item';
+        commentaryItem.innerHTML = `
+            <div class="commentary-time">${time}</div>
+            <div class="commentary-text">${message}</div>
+        `;
+
+        commentaryFeed.appendChild(commentaryItem);
+
+        // Auto-scroll to bottom
+        const commentarySection = document.getElementById('commentarySection');
+        commentarySection.scrollTop = commentarySection.scrollHeight;
+
+        // Keep only last 20 items
+        const items = commentaryFeed.children;
+        if (items.length > 20) {
+            commentaryFeed.removeChild(items[0]);
+        }
+    }
+
+    function updateMLPredictions(mlPredictions, raceState) {
+        const predictionFeed = document.getElementById('predictionFeed');
+        const positions = raceState.driver_positions.slice(0, 10);
+
+        let predictionsHtml = '<div class="ml-predictions-header"><h6>Live ML Predictions</h6></div>';
+
+        // Show predictions from different models (without confidence scores)
+        Object.keys(mlPredictions).forEach(modelName => {
+            const modelData = mlPredictions[modelName];
+            const predictions = modelData.predictions || [];
+
+            predictionsHtml += `<div class="model-predictions mb-3">
+                <h6 class="model-name">${modelName.replace('_', ' ').toUpperCase()}</h6>`;
+
+            predictions.slice(0, 5).forEach((pred, index) => {
+                const driver = positions[index];
+                const currentPos = driver ? driver.position : index + 1;
+                
+                // Convert decimal predictions to proper position format (P1-P20)
+                const predictedPosition = Math.max(1, Math.min(20, Math.round(pred)));
+                const change = predictedPosition - currentPos;
+                const changeStr = change > 0 ? `+${change}` : change.toString();
+                const changeClass = change > 0 ? 'text-danger' : change < 0 ? 'text-success' : 'text-muted';
+
+                predictionsHtml += `
+                    <div class="prediction-item">
+                        <div class="prediction-driver">
+                            ${driver ? driver.driver_name : f1_2025_drivers[index] || 'Unknown'}
+                            <small class="text-muted">(Currently P${currentPos})</small>
+                        </div>
+                        <div class="prediction-change">
+                            Predicted: <strong>P${predictedPosition}</strong>
+                            <span class="${changeClass}">(${changeStr === '0' ? 'No change' : changeStr})</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            predictionsHtml += '</div>';
+        });
+
+        predictionFeed.innerHTML = predictionsHtml;
+
+        // Update live predictions timeline
+        updateLivePredictionTimeline(mlPredictions, positions);
+    }
+
+    function updateLivePredictionTimeline(mlPredictions, positions) {
+        const livePredictions = document.getElementById('livePredictions');
+        const livePredictionContent = document.getElementById('livePredictionContent');
+        
+        livePredictions.classList.remove('d-none');
+        
+        // Show top 5 current predictions from the first model
+        const firstModel = Object.keys(mlPredictions)[0];
+        if (firstModel && mlPredictions[firstModel].predictions) {
+            const predictions = mlPredictions[firstModel].predictions;
+            
+            let timelineHtml = '';
+            predictions.slice(0, 5).forEach((pred, index) => {
+                const driver = positions[index];
+                const predictedPosition = Math.max(1, Math.min(20, Math.round(pred)));
+                
+                timelineHtml += `
+                    <div class="prediction-comparison">
+                        <span>P${predictedPosition}: ${driver ? driver.driver_name : f1_2025_drivers[index] || 'Unknown'}</span>
+                        <small class="text-muted">Live update</small>
+                    </div>
+                `;
+            });
+            
+            livePredictionContent.innerHTML = timelineHtml;
+        }
+    }
+
+    function updateMockPredictions(raceData) {
+        const predictionFeed = document.getElementById('predictionFeed');
+        const positions = raceData.race_state.driver_positions.slice(0, 5);
+
+        let predictionsHtml = '<div class="mock-predictions-header"><h6>Mock Predictions</h6></div>';
+        positions.forEach((driver, index) => {
+            const change = Math.random() > 0.5 ? '+' : '-';
+            const changeValue = Math.floor(Math.random() * 3) + 1; // 1-3 positions
+            const probability = 85 - (index * 10) + Math.floor(Math.random() * 10); // Add some variation
+            
+            predictionsHtml += `
+                <div class="prediction-item">
+                    <div class="prediction-driver">P${driver.position}: ${driver.driver_name}</div>
+                    <div class="prediction-change">
+                        Position probability: <strong>${probability}%</strong> (${change}${changeValue} from start)
+                    </div>
+                </div>
+            `;
+        });
+
+        predictionFeed.innerHTML = predictionsHtml;
+    }
+
+    function updateRaceStatus(message, type) {
+        const statusElement = document.getElementById('raceStatus');
+        statusElement.className = `alert alert-${type} mb-0`;
+
+        const iconMap = {
+            'success': 'fas fa-circle text-success',
+            'warning': 'fas fa-circle text-warning',
+            'danger': 'fas fa-circle text-danger',
+            'primary': 'fas fa-checkered-flag text-primary'
+        };
+
+        statusElement.innerHTML = `<i class="${iconMap[type] || 'fas fa-circle text-secondary'} me-1"></i>${message}`;
+    }
+
+    function resetRaceUI() {
+        isRaceActive = false;
+        preRacePrediction = null;
+        
+        if (raceInterval) {
+            clearInterval(raceInterval);
+            raceInterval = null;
+        }
+
+        // Hide mock race details
+        document.getElementById('mockRaceDetails').classList.add('d-none');
+
+        // Reset buttons
+        document.getElementById('startRaceBtn').classList.remove('d-none');
+        document.getElementById('stopRaceBtn').classList.add('d-none');
+        document.getElementById('interactiveEvents').classList.add('d-none');
+        document.getElementById('mlStatus').classList.add('d-none');
+
+        // Reset status
+        updateRaceStatus('No active simulation', 'secondary');
+
+        // Enable event buttons
+        document.getElementById('safetyCarBtn').disabled = false;
+        document.getElementById('badPitStopBtn').disabled = false;
+        document.getElementById('weatherChangeBtn').disabled = false;
+        document.getElementById('eventsRemaining').textContent = '2 remaining';
+
+        // Reset prediction timeline
+        document.getElementById('preRacePredictionContent').innerHTML = '<em>Available after race starts</em>';
+        document.getElementById('livePredictions').classList.add('d-none');
+        document.getElementById('livePredictionContent').innerHTML = '<em>Updates during race</em>';
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+});
 </script>
-{% endblock %} 
+{% endblock %}

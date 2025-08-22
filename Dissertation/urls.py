@@ -40,6 +40,12 @@ urlpatterns = [
     path('place_market_order/', view.place_market_order, name='place_market_order'),
     path('risk_settings/', view.risk_settings, name='risk_settings'),
     path('live_updates/', view.live_updates, name='live_updates'),
+    # Mock Race Simulation URLs
+    path('api/mock-race/start/', view.start_mock_race, name='start_mock_race'),
+    path('api/mock-race/status/', view.get_race_status, name='get_race_status'),
+    path('api/mock-race/event/', view.trigger_race_event, name='trigger_race_event'),
+    path('api/mock-race/results/', view.get_final_results, name='get_final_results'),
+    path('api/mock-race/stop/', view.stop_mock_race, name='stop_mock_race'),
     path('my_bets/', view.my_bets, name='my_bets'),
     path('register/', view.register, name='register'),
     path('login/', view.login_view, name='login'),

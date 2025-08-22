@@ -2253,13 +2253,13 @@ def live_updates(request):
     """Live race updates and commentary page"""
     if not request.user.is_authenticated:
         return redirect('login')
-    
+
     # Get current/upcoming race
     current_event = Event.objects.filter(
         year=2025,
         round__gt=14  # Netherlands GP and beyond
     ).order_by('date').first()
-    
+
     # Get user's active bets for the current event
     active_bets = []
     if current_event:
@@ -2268,14 +2268,232 @@ def live_updates(request):
             event=current_event,
             status='PENDING'
         ).select_related('driver', 'team')[:5]
-    
+
+    # Available tracks for mock simulation
+    available_tracks = [
+        {'name': 'Australian Grand Prix', 'type': 'historical', 'mae': 3.8},
+        {'name': 'Chinese Grand Prix', 'type': 'historical', 'mae': 3.5},
+        {'name': 'Dutch Grand Prix', 'type': 'upcoming', 'mae': None},
+        {'name': 'Italian Grand Prix', 'type': 'upcoming', 'mae': None},
+        {'name': 'Azerbaijan Grand Prix', 'type': 'upcoming', 'mae': None},
+        {'name': 'Singapore Grand Prix', 'type': 'upcoming', 'mae': None},
+    ]
+
     context = {
         'current_event': current_event,
         'active_bets': active_bets,
         'user_credits': request.user.profile.credits if hasattr(request.user, 'profile') else 0,
+        'available_tracks': available_tracks,
     }
-    
+
     return render(request, 'live_updates.html', context)
+
+# Mock Race Simulation Views
+import asyncio
+import json
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+import sys
+import os
+
+# Import mock race simulator
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, project_root)
+
+try:
+    from live_prediction_system import MockRaceSimulator, EventType
+except ImportError as e:
+    MockRaceSimulator = None
+    EventType = None
+
+# Global simulator instance (in production, use Redis/database)
+current_simulator = None
+
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def start_mock_race(request):
+    """Start a new mock race simulation"""
+    global current_simulator
+
+    # Temporarily disable auth check for testing
+    # if not request.user.is_authenticated:
+    #     return JsonResponse({'error': 'Authentication required'}, status=401)
+
+    if MockRaceSimulator is None:
+        return JsonResponse({'error': 'Mock race simulator not available'}, status=500)
+
+    try:
+        data = json.loads(request.body)
+
+        event_name = data.get('event_name', 'Dutch Grand Prix')
+        simulation_speed = data.get('simulation_speed', '10min')
+
+        # Create new simulator
+        current_simulator = MockRaceSimulator(
+            event_name=event_name,
+            simulation_speed=simulation_speed
+        )
+
+        # Convert track_config to JSON-serializable format
+        track_config_serializable = current_simulator.track_config.copy()
+        if 'track_type' in track_config_serializable:
+            track_config_serializable['track_type'] = track_config_serializable['track_type'].value
+
+        response_data = {
+            'success': True,
+            'message': f'Mock race started: {event_name}',
+            'total_laps': current_simulator.total_laps,
+            'lap_interval': current_simulator.lap_interval,
+            'track_config': track_config_serializable
+        }
+
+        return JsonResponse(response_data)
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@require_http_methods(["GET"])
+def get_race_status(request):
+    """Get current race status and updates"""
+    global current_simulator
+
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Authentication required'}, status=401)
+
+    if current_simulator is None:
+        return JsonResponse({'error': 'No active race simulation'}, status=404)
+
+    try:
+        # Run the simulation step synchronously for web interface
+        import asyncio
+        import nest_asyncio
+
+        # Allow nested event loops (needed for Django + asyncio)
+        try:
+            nest_asyncio.apply()
+        except:
+            pass
+
+        # Create new event loop for this request
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        try:
+            # Simulate one lap
+            lap_result = loop.run_until_complete(current_simulator.simulate_lap())
+
+            return JsonResponse({
+                'success': True,
+                'race_data': lap_result
+            })
+        finally:
+            loop.close()
+
+    except Exception as e:
+        import traceback
+        print(f"Error in get_race_status: {e}")
+        print(traceback.format_exc())
+        return JsonResponse({'error': str(e)}, status=500)
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def trigger_race_event(request):
+    """Trigger a user event during the race"""
+    global current_simulator
+
+    # Temporarily disable auth check for testing
+    # if not request.user.is_authenticated:
+    #     return JsonResponse({'error': 'Authentication required'}, status=401)
+
+    if current_simulator is None:
+        return JsonResponse({'error': 'No active race simulation'}, status=404)
+
+    try:
+        data = json.loads(request.body)
+
+        event_type_str = data.get('event_type')
+        target_lap = data.get('target_lap')
+        if target_lap is None:
+            target_lap = current_simulator.current_lap + 5
+        driver_name = data.get('driver_name')
+
+        # Convert string to EventType enum
+        event_type_map = {
+            'safety_car': EventType.SAFETY_CAR,
+            'bad_pit_stop': EventType.BAD_PIT_STOP,
+            'weather_change': EventType.WEATHER_CHANGE
+        }
+
+        event_type = event_type_map.get(event_type_str)
+        if not event_type:
+            return JsonResponse({'error': 'Invalid event type'}, status=400)
+
+        success = current_simulator.add_user_event(event_type, target_lap, driver_name)
+
+        if success:
+            return JsonResponse({
+                'success': True,
+                'message': f'Event scheduled: {event_type_str} on lap {target_lap}',
+                'events_remaining': current_simulator.max_user_events - current_simulator.user_events_used
+            })
+        else:
+            return JsonResponse({
+                'error': 'Cannot add event (max events reached or invalid lap)',
+                'events_remaining': current_simulator.max_user_events - current_simulator.user_events_used
+            }, status=400)
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@require_http_methods(["GET"])
+def get_final_results(request):
+    """Get final race results"""
+    global current_simulator
+
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Authentication required'}, status=401)
+
+    if current_simulator is None:
+        return JsonResponse({'error': 'No active race simulation'}, status=404)
+
+    try:
+        if current_simulator.race_finished:
+            summary = current_simulator.get_simulation_summary()
+            return JsonResponse({
+                'success': True,
+                'final_results': summary['final_results'],
+                'commentary_feed': summary['commentary_feed'],
+                'ml_summary': summary.get('ml_summary', {}),
+                'prediction_comparison': summary.get('prediction_comparison', {}),
+                'race_summary': {
+                    'event_name': summary['event_name'],
+                    'total_laps': summary['total_laps'],
+                    'user_events_used': summary['user_events_used'],
+                    'track_type': summary['track_config']['track_type'].value,
+                    'ml_initialized': getattr(current_simulator, 'ml_initialized', False)
+                }
+            })
+        else:
+            return JsonResponse({'error': 'Race not finished yet'}, status=400)
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def stop_mock_race(request):
+    """Stop the current mock race simulation"""
+    global current_simulator
+
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Authentication required'}, status=401)
+
+    current_simulator = None
+    return JsonResponse({'success': True, 'message': 'Mock race stopped'})
 
 def forgot_password(request):
     """Forgot password page - step 1: enter email/username"""
