@@ -1,0 +1,280 @@
+event_id,event,driver_id,driver,predicted_pos,actual_pos,error,chaos_score,race_category,driver_affected,year
+54,2025 R1 Australian Grand Prix,11,Lando Norris,1.0,1,0.0,1.5,chaotic,False,2025
+61,2025 R2 Chinese Grand Prix,18,Oscar Piastri,1.0,1,0.0,0.4,moderate,False,2025
+55,2025 R3 Japanese Grand Prix,1,Max Verstappen,1.0,1,0.0,0.0,clean,False,2025
+56,2025 R4 Bahrain Grand Prix,18,Oscar Piastri,1.0,1,0.0,0.30000000000000004,moderate,False,2025
+57,2025 R5 Saudi Arabian Grand Prix,18,Oscar Piastri,1.0,1,0.0,0.5,moderate,False,2025
+60,2025 R6 Miami Grand Prix,18,Oscar Piastri,1.0,1,0.0,1.0,chaotic,False,2025
+58,2025 R7 Emilia Romagna Grand Prix,18,Oscar Piastri,1.0,3,2.0,0.5,moderate,False,2025
+59,2025 R8 Monaco Grand Prix,11,Lando Norris,1.0,1,0.0,0.5,moderate,False,2025
+77,2025 R9 Spanish Grand Prix,18,Oscar Piastri,1.0,1,0.0,0.5263157894736842,moderate,False,2025
+78,2025 R10 Canadian Grand Prix,6,George Russell,1.0,1,0.0,0.75,chaotic,False,2025
+79,2025 R11 Austrian Grand Prix,11,Lando Norris,1.0,1,0.0,0.75,chaotic,False,2025
+80,2025 R12 British Grand Prix,11,Lando Norris,1.0,1,0.0,1.0,chaotic,False,2025
+81,2025 R13 Belgian Grand Prix,18,Oscar Piastri,1.0,1,0.0,0.0,clean,False,2025
+82,2025 R14 Hungarian Grand Prix,11,Lando Norris,1.0,1,0.0,0.25,moderate,False,2025
+54,2025 R1 Australian Grand Prix,1,Max Verstappen,2.0,2,0.0,1.5,chaotic,False,2025
+61,2025 R2 Chinese Grand Prix,11,Lando Norris,2.0,2,0.0,0.4,moderate,False,2025
+55,2025 R3 Japanese Grand Prix,11,Lando Norris,2.0,2,0.0,0.0,clean,False,2025
+56,2025 R4 Bahrain Grand Prix,6,George Russell,2.0,2,0.0,0.30000000000000004,moderate,False,2025
+57,2025 R5 Saudi Arabian Grand Prix,1,Max Verstappen,2.0,2,0.0,0.5,moderate,False,2025
+60,2025 R6 Miami Grand Prix,11,Lando Norris,2.0,2,0.0,1.0,chaotic,False,2025
+58,2025 R7 Emilia Romagna Grand Prix,1,Max Verstappen,2.0,1,1.0,0.5,moderate,False,2025
+59,2025 R8 Monaco Grand Prix,3,Charles Leclerc,2.0,2,0.0,0.5,moderate,False,2025
+77,2025 R9 Spanish Grand Prix,11,Lando Norris,2.0,2,0.0,0.5263157894736842,moderate,False,2025
+78,2025 R10 Canadian Grand Prix,1,Max Verstappen,2.0,2,0.0,0.75,chaotic,False,2025
+79,2025 R11 Austrian Grand Prix,3,Charles Leclerc,2.0,3,1.0,0.75,chaotic,False,2025
+80,2025 R12 British Grand Prix,18,Oscar Piastri,2.0,2,0.0,1.0,chaotic,False,2025
+81,2025 R13 Belgian Grand Prix,11,Lando Norris,2.0,2,0.0,0.0,clean,False,2025
+82,2025 R14 Hungarian Grand Prix,18,Oscar Piastri,2.0,2,0.0,0.25,moderate,False,2025
+54,2025 R1 Australian Grand Prix,6,George Russell,3.0,3,0.0,1.5,chaotic,False,2025
+61,2025 R2 Chinese Grand Prix,6,George Russell,3.0,3,0.0,0.4,moderate,False,2025
+55,2025 R3 Japanese Grand Prix,18,Oscar Piastri,3.0,3,0.0,0.0,clean,False,2025
+56,2025 R4 Bahrain Grand Prix,3,Charles Leclerc,3.0,4,1.0,0.30000000000000004,moderate,False,2025
+57,2025 R5 Saudi Arabian Grand Prix,6,George Russell,3.0,5,2.0,0.5,moderate,False,2025
+60,2025 R6 Miami Grand Prix,1,Max Verstappen,3.0,4,1.0,1.0,chaotic,False,2025
+58,2025 R7 Emilia Romagna Grand Prix,11,Lando Norris,3.0,2,1.0,0.5,moderate,False,2025
+59,2025 R8 Monaco Grand Prix,18,Oscar Piastri,3.0,3,0.0,0.5,moderate,False,2025
+77,2025 R9 Spanish Grand Prix,1,Max Verstappen,3.0,10,7.0,0.5263157894736842,moderate,False,2025
+78,2025 R10 Canadian Grand Prix,18,Oscar Piastri,3.0,4,1.0,0.75,chaotic,False,2025
+79,2025 R11 Austrian Grand Prix,18,Oscar Piastri,3.0,2,1.0,0.75,chaotic,False,2025
+80,2025 R12 British Grand Prix,1,Max Verstappen,3.0,5,2.0,1.0,chaotic,False,2025
+81,2025 R13 Belgian Grand Prix,3,Charles Leclerc,3.0,3,0.0,0.0,clean,False,2025
+82,2025 R14 Hungarian Grand Prix,6,George Russell,3.0,3,0.0,0.25,moderate,False,2025
+54,2025 R1 Australian Grand Prix,14,Yuki Tsunoda,4.0,12,8.0,1.5,chaotic,False,2025
+61,2025 R2 Chinese Grand Prix,1,Max Verstappen,4.0,4,0.0,0.4,moderate,False,2025
+55,2025 R3 Japanese Grand Prix,6,George Russell,4.0,5,1.0,0.0,clean,False,2025
+56,2025 R4 Bahrain Grand Prix,11,Lando Norris,4.0,3,1.0,0.30000000000000004,moderate,False,2025
+57,2025 R5 Saudi Arabian Grand Prix,3,Charles Leclerc,4.0,3,1.0,0.5,moderate,False,2025
+60,2025 R6 Miami Grand Prix,29,Kimi Antonelli,4.0,6,2.0,1.0,chaotic,False,2025
+58,2025 R7 Emilia Romagna Grand Prix,6,George Russell,4.0,7,3.0,0.5,moderate,False,2025
+59,2025 R8 Monaco Grand Prix,7,Lewis Hamilton,4.0,5,1.0,0.5,moderate,False,2025
+77,2025 R9 Spanish Grand Prix,6,George Russell,4.0,4,0.0,0.5263157894736842,moderate,False,2025
+78,2025 R10 Canadian Grand Prix,29,Kimi Antonelli,4.0,3,1.0,0.75,chaotic,False,2025
+79,2025 R11 Austrian Grand Prix,7,Lewis Hamilton,4.0,4,0.0,0.75,chaotic,False,2025
+80,2025 R12 British Grand Prix,6,George Russell,4.0,10,6.0,1.0,chaotic,False,2025
+81,2025 R13 Belgian Grand Prix,1,Max Verstappen,4.0,4,0.0,0.0,clean,False,2025
+82,2025 R14 Hungarian Grand Prix,3,Charles Leclerc,4.0,4,0.0,0.25,moderate,False,2025
+54,2025 R1 Australian Grand Prix,15,Alexander Albon,5.0,5,0.0,1.5,chaotic,False,2025
+61,2025 R2 Chinese Grand Prix,3,Charles Leclerc,5.0,18,13.0,0.4,moderate,True,2025
+55,2025 R3 Japanese Grand Prix,3,Charles Leclerc,5.0,4,1.0,0.0,clean,False,2025
+56,2025 R4 Bahrain Grand Prix,29,Kimi Antonelli,5.0,11,6.0,0.30000000000000004,moderate,False,2025
+57,2025 R5 Saudi Arabian Grand Prix,29,Kimi Antonelli,5.0,6,1.0,0.5,moderate,False,2025
+60,2025 R6 Miami Grand Prix,6,George Russell,5.0,3,2.0,1.0,chaotic,False,2025
+58,2025 R7 Emilia Romagna Grand Prix,15,Alexander Albon,5.0,5,0.0,0.5,moderate,False,2025
+59,2025 R8 Monaco Grand Prix,1,Max Verstappen,5.0,4,1.0,0.5,moderate,False,2025
+77,2025 R9 Spanish Grand Prix,3,Charles Leclerc,5.0,3,2.0,0.5263157894736842,moderate,False,2025
+78,2025 R10 Canadian Grand Prix,11,Lando Norris,5.0,18,13.0,0.75,chaotic,True,2025
+79,2025 R11 Austrian Grand Prix,6,George Russell,5.0,5,0.0,0.75,chaotic,False,2025
+80,2025 R12 British Grand Prix,7,Lewis Hamilton,5.0,4,1.0,1.0,chaotic,False,2025
+81,2025 R13 Belgian Grand Prix,6,George Russell,5.0,5,0.0,0.0,clean,False,2025
+82,2025 R14 Hungarian Grand Prix,5,Fernando Alonso,5.0,5,0.0,0.25,moderate,False,2025
+54,2025 R1 Australian Grand Prix,18,Oscar Piastri,6.0,9,3.0,1.5,chaotic,False,2025
+61,2025 R2 Chinese Grand Prix,29,Kimi Antonelli,6.0,6,0.0,0.4,moderate,False,2025
+55,2025 R3 Japanese Grand Prix,29,Kimi Antonelli,6.0,6,0.0,0.0,clean,False,2025
+56,2025 R4 Bahrain Grand Prix,1,Max Verstappen,6.0,6,0.0,0.30000000000000004,moderate,False,2025
+57,2025 R5 Saudi Arabian Grand Prix,11,Lando Norris,6.0,4,2.0,0.5,moderate,False,2025
+60,2025 R6 Miami Grand Prix,15,Alexander Albon,6.0,5,1.0,1.0,chaotic,False,2025
+58,2025 R7 Emilia Romagna Grand Prix,4,Carlos Sainz,6.0,8,2.0,0.5,moderate,False,2025
+59,2025 R8 Monaco Grand Prix,23,Isack Hadjar,6.0,6,0.0,0.5,moderate,False,2025
+77,2025 R9 Spanish Grand Prix,7,Lewis Hamilton,6.0,6,0.0,0.5263157894736842,moderate,False,2025
+78,2025 R10 Canadian Grand Prix,7,Lewis Hamilton,6.0,6,0.0,0.75,chaotic,False,2025
+79,2025 R11 Austrian Grand Prix,25,Liam Lawson,6.0,6,0.0,0.75,chaotic,False,2025
+80,2025 R12 British Grand Prix,3,Charles Leclerc,6.0,14,8.0,1.0,chaotic,False,2025
+81,2025 R13 Belgian Grand Prix,15,Alexander Albon,6.0,6,0.0,0.0,clean,False,2025
+82,2025 R14 Hungarian Grand Prix,8,Lance Stroll,6.0,7,1.0,0.25,moderate,False,2025
+54,2025 R1 Australian Grand Prix,3,Charles Leclerc,7.0,8,1.0,1.5,chaotic,False,2025
+61,2025 R2 Chinese Grand Prix,9,Esteban Ocon,7.0,5,2.0,0.4,moderate,False,2025
+55,2025 R3 Japanese Grand Prix,7,Lewis Hamilton,7.0,7,0.0,0.0,clean,False,2025
+56,2025 R4 Bahrain Grand Prix,20,Pierre Gasly,7.0,7,0.0,0.30000000000000004,moderate,False,2025
+57,2025 R5 Saudi Arabian Grand Prix,7,Lewis Hamilton,7.0,7,0.0,0.5,moderate,False,2025
+60,2025 R6 Miami Grand Prix,3,Charles Leclerc,7.0,7,0.0,1.0,chaotic,False,2025
+58,2025 R7 Emilia Romagna Grand Prix,3,Charles Leclerc,7.0,6,1.0,0.5,moderate,False,2025
+59,2025 R8 Monaco Grand Prix,9,Esteban Ocon,7.0,7,0.0,0.5,moderate,False,2025
+77,2025 R9 Spanish Grand Prix,23,Isack Hadjar,7.0,7,0.0,0.5263157894736842,moderate,False,2025
+78,2025 R10 Canadian Grand Prix,3,Charles Leclerc,7.0,5,2.0,0.75,chaotic,False,2025
+79,2025 R11 Austrian Grand Prix,1,Max Verstappen,7.0,18,11.0,0.75,chaotic,True,2025
+80,2025 R12 British Grand Prix,20,Pierre Gasly,7.0,6,1.0,1.0,chaotic,False,2025
+81,2025 R13 Belgian Grand Prix,14,Yuki Tsunoda,7.0,13,6.0,0.0,clean,False,2025
+82,2025 R14 Hungarian Grand Prix,1,Max Verstappen,7.0,9,2.0,0.25,moderate,False,2025
+54,2025 R1 Australian Grand Prix,20,Pierre Gasly,8.0,11,3.0,1.5,chaotic,False,2025
+61,2025 R2 Chinese Grand Prix,15,Alexander Albon,8.0,7,1.0,0.4,moderate,False,2025
+55,2025 R3 Japanese Grand Prix,23,Isack Hadjar,8.0,8,0.0,0.0,clean,False,2025
+56,2025 R4 Bahrain Grand Prix,7,Lewis Hamilton,8.0,5,3.0,0.30000000000000004,moderate,False,2025
+57,2025 R5 Saudi Arabian Grand Prix,4,Carlos Sainz,8.0,8,0.0,0.5,moderate,False,2025
+60,2025 R6 Miami Grand Prix,7,Lewis Hamilton,8.0,8,0.0,1.0,chaotic,False,2025
+58,2025 R7 Emilia Romagna Grand Prix,7,Lewis Hamilton,8.0,4,4.0,0.5,moderate,False,2025
+59,2025 R8 Monaco Grand Prix,15,Alexander Albon,8.0,9,1.0,0.5,moderate,False,2025
+77,2025 R9 Spanish Grand Prix,29,Kimi Antonelli,8.0,18,10.0,0.5263157894736842,moderate,True,2025
+78,2025 R10 Canadian Grand Prix,5,Fernando Alonso,8.0,7,1.0,0.75,chaotic,False,2025
+79,2025 R11 Austrian Grand Prix,5,Fernando Alonso,8.0,7,1.0,0.75,chaotic,False,2025
+80,2025 R12 British Grand Prix,5,Fernando Alonso,8.0,9,1.0,1.0,chaotic,False,2025
+81,2025 R13 Belgian Grand Prix,7,Lewis Hamilton,8.0,7,1.0,0.0,clean,False,2025
+82,2025 R14 Hungarian Grand Prix,24,Gabriel Bortoleto,8.0,6,2.0,0.25,moderate,False,2025
+54,2025 R1 Australian Grand Prix,7,Lewis Hamilton,9.0,10,1.0,1.5,chaotic,False,2025
+61,2025 R2 Chinese Grand Prix,7,Lewis Hamilton,9.0,19,10.0,0.4,moderate,True,2025
+55,2025 R3 Japanese Grand Prix,4,Carlos Sainz,9.0,14,5.0,0.0,clean,False,2025
+56,2025 R4 Bahrain Grand Prix,4,Carlos Sainz,9.0,19,10.0,0.30000000000000004,moderate,True,2025
+57,2025 R5 Saudi Arabian Grand Prix,14,Yuki Tsunoda,9.0,19,10.0,0.5,moderate,True,2025
+60,2025 R6 Miami Grand Prix,4,Carlos Sainz,9.0,9,0.0,1.0,chaotic,False,2025
+58,2025 R7 Emilia Romagna Grand Prix,23,Isack Hadjar,9.0,9,0.0,0.5,moderate,False,2025
+59,2025 R8 Monaco Grand Prix,25,Liam Lawson,9.0,8,1.0,0.5,moderate,False,2025
+77,2025 R9 Spanish Grand Prix,20,Pierre Gasly,9.0,8,1.0,0.5263157894736842,moderate,False,2025
+78,2025 R10 Canadian Grand Prix,14,Yuki Tsunoda,9.0,12,3.0,0.75,chaotic,False,2025
+79,2025 R11 Austrian Grand Prix,24,Gabriel Bortoleto,9.0,8,1.0,0.75,chaotic,False,2025
+80,2025 R12 British Grand Prix,26,Oliver Bearman,9.0,11,2.0,1.0,chaotic,False,2025
+81,2025 R13 Belgian Grand Prix,25,Liam Lawson,9.0,8,1.0,0.0,clean,False,2025
+82,2025 R14 Hungarian Grand Prix,25,Liam Lawson,9.0,8,1.0,0.25,moderate,False,2025
+54,2025 R1 Australian Grand Prix,4,Carlos Sainz,10.0,18,8.0,1.5,chaotic,True,2025
+61,2025 R2 Chinese Grand Prix,23,Isack Hadjar,10.0,11,1.0,0.4,moderate,False,2025
+55,2025 R3 Japanese Grand Prix,26,Oliver Bearman,10.0,10,0.0,0.0,clean,False,2025
+56,2025 R4 Bahrain Grand Prix,14,Yuki Tsunoda,10.0,9,1.0,0.30000000000000004,moderate,False,2025
+57,2025 R5 Saudi Arabian Grand Prix,20,Pierre Gasly,10.0,20,10.0,0.5,moderate,True,2025
+60,2025 R6 Miami Grand Prix,9,Esteban Ocon,10.0,12,2.0,1.0,chaotic,False,2025
+58,2025 R7 Emilia Romagna Grand Prix,20,Pierre Gasly,10.0,13,3.0,0.5,moderate,False,2025
+59,2025 R8 Monaco Grand Prix,4,Carlos Sainz,10.0,10,0.0,0.5,moderate,False,2025
+77,2025 R9 Spanish Grand Prix,5,Fernando Alonso,10.0,9,1.0,0.5263157894736842,moderate,False,2025
+78,2025 R10 Canadian Grand Prix,15,Alexander Albon,10.0,20,10.0,0.75,chaotic,True,2025
+79,2025 R11 Austrian Grand Prix,29,Kimi Antonelli,10.0,19,9.0,0.75,chaotic,True,2025
+80,2025 R12 British Grand Prix,4,Carlos Sainz,10.0,12,2.0,1.0,chaotic,False,2025
+81,2025 R13 Belgian Grand Prix,24,Gabriel Bortoleto,10.0,9,1.0,0.0,clean,False,2025
+82,2025 R14 Hungarian Grand Prix,26,Oliver Bearman,10.0,20,10.0,0.25,moderate,True,2025
+54,2025 R1 Australian Grand Prix,5,Fernando Alonso,11.0,17,6.0,1.5,chaotic,True,2025
+61,2025 R2 Chinese Grand Prix,10,Nico Hulkenberg,11.0,15,4.0,0.4,moderate,False,2025
+55,2025 R3 Japanese Grand Prix,20,Pierre Gasly,11.0,13,2.0,0.0,clean,False,2025
+56,2025 R4 Bahrain Grand Prix,9,Esteban Ocon,11.0,8,3.0,0.30000000000000004,moderate,False,2025
+57,2025 R5 Saudi Arabian Grand Prix,15,Alexander Albon,11.0,9,2.0,0.5,moderate,False,2025
+60,2025 R6 Miami Grand Prix,14,Yuki Tsunoda,11.0,10,1.0,1.0,chaotic,False,2025
+58,2025 R7 Emilia Romagna Grand Prix,29,Kimi Antonelli,11.0,19,8.0,0.5,moderate,True,2025
+59,2025 R8 Monaco Grand Prix,6,George Russell,11.0,11,0.0,0.5,moderate,False,2025
+77,2025 R9 Spanish Grand Prix,25,Liam Lawson,11.0,11,0.0,0.5263157894736842,moderate,False,2025
+78,2025 R10 Canadian Grand Prix,27,Franco Colapinto,11.0,13,2.0,0.75,chaotic,False,2025
+79,2025 R11 Austrian Grand Prix,20,Pierre Gasly,11.0,13,2.0,0.75,chaotic,False,2025
+80,2025 R12 British Grand Prix,29,Kimi Antonelli,11.0,16,5.0,1.0,chaotic,True,2025
+81,2025 R13 Belgian Grand Prix,26,Oliver Bearman,11.0,11,0.0,0.0,clean,False,2025
+82,2025 R14 Hungarian Grand Prix,7,Lewis Hamilton,11.0,12,1.0,0.25,moderate,False,2025
+54,2025 R1 Australian Grand Prix,29,Kimi Antonelli,12.0,4,8.0,1.5,chaotic,False,2025
+61,2025 R2 Chinese Grand Prix,8,Lance Stroll,12.0,9,3.0,0.4,moderate,False,2025
+55,2025 R3 Japanese Grand Prix,15,Alexander Albon,12.0,9,3.0,0.0,clean,False,2025
+56,2025 R4 Bahrain Grand Prix,28,Jack Doohan,12.0,14,2.0,0.30000000000000004,moderate,False,2025
+57,2025 R5 Saudi Arabian Grand Prix,23,Isack Hadjar,12.0,10,2.0,0.5,moderate,False,2025
+60,2025 R6 Miami Grand Prix,23,Isack Hadjar,12.0,11,1.0,1.0,chaotic,False,2025
+58,2025 R7 Emilia Romagna Grand Prix,8,Lance Stroll,12.0,15,3.0,0.5,moderate,False,2025
+59,2025 R8 Monaco Grand Prix,5,Fernando Alonso,12.0,19,7.0,0.5,moderate,True,2025
+77,2025 R9 Spanish Grand Prix,24,Gabriel Bortoleto,12.0,12,0.0,0.5263157894736842,moderate,False,2025
+78,2025 R10 Canadian Grand Prix,23,Isack Hadjar,12.0,16,4.0,0.75,chaotic,False,2025
+79,2025 R11 Austrian Grand Prix,23,Isack Hadjar,12.0,12,0.0,0.75,chaotic,False,2025
+80,2025 R12 British Grand Prix,15,Alexander Albon,12.0,8,4.0,1.0,chaotic,False,2025
+81,2025 R13 Belgian Grand Prix,20,Pierre Gasly,12.0,10,2.0,0.0,clean,False,2025
+82,2025 R14 Hungarian Grand Prix,29,Kimi Antonelli,12.0,10,2.0,0.25,moderate,False,2025
+54,2025 R1 Australian Grand Prix,8,Lance Stroll,13.0,6,7.0,1.5,chaotic,False,2025
+61,2025 R2 Chinese Grand Prix,4,Carlos Sainz,13.0,10,3.0,0.4,moderate,False,2025
+55,2025 R3 Japanese Grand Prix,5,Fernando Alonso,13.0,11,2.0,0.0,clean,False,2025
+56,2025 R4 Bahrain Grand Prix,23,Isack Hadjar,13.0,13,0.0,0.30000000000000004,moderate,False,2025
+57,2025 R5 Saudi Arabian Grand Prix,25,Liam Lawson,13.0,12,1.0,0.5,moderate,False,2025
+60,2025 R6 Miami Grand Prix,28,Jack Doohan,13.0,20,7.0,1.0,chaotic,True,2025
+58,2025 R7 Emilia Romagna Grand Prix,5,Fernando Alonso,13.0,11,2.0,0.5,moderate,False,2025
+59,2025 R8 Monaco Grand Prix,14,Yuki Tsunoda,13.0,17,4.0,0.5,moderate,False,2025
+77,2025 R9 Spanish Grand Prix,15,Alexander Albon,13.0,19,6.0,0.5263157894736842,moderate,True,2025
+78,2025 R10 Canadian Grand Prix,10,Nico Hulkenberg,13.0,8,5.0,0.75,chaotic,False,2025
+79,2025 R11 Austrian Grand Prix,27,Franco Colapinto,13.0,15,2.0,0.75,chaotic,False,2025
+80,2025 R12 British Grand Prix,23,Isack Hadjar,13.0,17,4.0,1.0,chaotic,True,2025
+81,2025 R13 Belgian Grand Prix,9,Esteban Ocon,13.0,15,2.0,0.0,clean,False,2025
+82,2025 R14 Hungarian Grand Prix,23,Isack Hadjar,13.0,11,2.0,0.25,moderate,False,2025
+54,2025 R1 Australian Grand Prix,24,Gabriel Bortoleto,14.0,16,2.0,1.5,chaotic,True,2025
+61,2025 R2 Chinese Grand Prix,5,Fernando Alonso,14.0,17,3.0,0.4,moderate,True,2025
+55,2025 R3 Japanese Grand Prix,14,Yuki Tsunoda,14.0,12,2.0,0.0,clean,False,2025
+56,2025 R4 Bahrain Grand Prix,5,Fernando Alonso,14.0,15,1.0,0.30000000000000004,moderate,False,2025
+57,2025 R5 Saudi Arabian Grand Prix,5,Fernando Alonso,14.0,11,3.0,0.5,moderate,False,2025
+60,2025 R6 Miami Grand Prix,24,Gabriel Bortoleto,14.0,18,4.0,1.0,chaotic,True,2025
+58,2025 R7 Emilia Romagna Grand Prix,24,Gabriel Bortoleto,14.0,18,4.0,0.5,moderate,False,2025
+59,2025 R8 Monaco Grand Prix,29,Kimi Antonelli,14.0,18,4.0,0.5,moderate,False,2025
+78,2025 R10 Canadian Grand Prix,26,Oliver Bearman,14.0,11,3.0,0.75,chaotic,False,2025
+79,2025 R11 Austrian Grand Prix,26,Oliver Bearman,14.0,11,3.0,0.75,chaotic,False,2025
+80,2025 R12 British Grand Prix,14,Yuki Tsunoda,14.0,15,1.0,1.0,chaotic,False,2025
+81,2025 R13 Belgian Grand Prix,10,Nico Hulkenberg,14.0,12,2.0,0.0,clean,False,2025
+82,2025 R14 Hungarian Grand Prix,4,Carlos Sainz,14.0,14,0.0,0.25,moderate,False,2025
+54,2025 R1 Australian Grand Prix,28,Jack Doohan,15.0,19,4.0,1.5,chaotic,True,2025
+61,2025 R2 Chinese Grand Prix,26,Oliver Bearman,15.0,8,7.0,0.4,moderate,False,2025
+55,2025 R3 Japanese Grand Prix,25,Liam Lawson,15.0,17,2.0,0.0,clean,False,2025
+56,2025 R4 Bahrain Grand Prix,15,Alexander Albon,15.0,12,3.0,0.30000000000000004,moderate,False,2025
+57,2025 R5 Saudi Arabian Grand Prix,8,Lance Stroll,15.0,16,1.0,0.5,moderate,False,2025
+60,2025 R6 Miami Grand Prix,25,Liam Lawson,15.0,17,2.0,1.0,chaotic,True,2025
+58,2025 R7 Emilia Romagna Grand Prix,27,Franco Colapinto,15.0,16,1.0,0.5,moderate,False,2025
+59,2025 R8 Monaco Grand Prix,10,Nico Hulkenberg,15.0,16,1.0,0.5,moderate,False,2025
+77,2025 R9 Spanish Grand Prix,26,Oliver Bearman,15.0,17,2.0,0.5263157894736842,moderate,False,2025
+78,2025 R10 Canadian Grand Prix,9,Esteban Ocon,15.0,9,6.0,0.75,chaotic,False,2025
+79,2025 R11 Austrian Grand Prix,15,Alexander Albon,15.0,17,2.0,0.75,chaotic,True,2025
+80,2025 R12 British Grand Prix,9,Esteban Ocon,15.0,13,2.0,1.0,chaotic,False,2025
+81,2025 R13 Belgian Grand Prix,23,Isack Hadjar,15.0,20,5.0,0.0,clean,False,2025
+82,2025 R14 Hungarian Grand Prix,27,Franco Colapinto,15.0,18,3.0,0.25,moderate,False,2025
+54,2025 R1 Australian Grand Prix,10,Nico Hulkenberg,16.0,7,9.0,1.5,chaotic,False,2025
+61,2025 R2 Chinese Grand Prix,20,Pierre Gasly,16.0,20,4.0,0.4,moderate,True,2025
+55,2025 R3 Japanese Grand Prix,10,Nico Hulkenberg,16.0,16,0.0,0.0,clean,False,2025
+56,2025 R4 Bahrain Grand Prix,10,Nico Hulkenberg,16.0,20,4.0,0.30000000000000004,moderate,True,2025
+57,2025 R5 Saudi Arabian Grand Prix,26,Oliver Bearman,16.0,13,3.0,0.5,moderate,False,2025
+60,2025 R6 Miami Grand Prix,10,Nico Hulkenberg,16.0,14,2.0,1.0,chaotic,False,2025
+58,2025 R7 Emilia Romagna Grand Prix,25,Liam Lawson,16.0,14,2.0,0.5,moderate,False,2025
+59,2025 R8 Monaco Grand Prix,26,Oliver Bearman,16.0,12,4.0,0.5,moderate,False,2025
+77,2025 R9 Spanish Grand Prix,10,Nico Hulkenberg,16.0,5,11.0,0.5263157894736842,moderate,False,2025
+78,2025 R10 Canadian Grand Prix,24,Gabriel Bortoleto,16.0,14,2.0,0.75,chaotic,False,2025
+79,2025 R11 Austrian Grand Prix,8,Lance Stroll,16.0,14,2.0,0.75,chaotic,False,2025
+80,2025 R12 British Grand Prix,10,Nico Hulkenberg,16.0,3,13.0,1.0,chaotic,False,2025
+81,2025 R13 Belgian Grand Prix,4,Carlos Sainz,16.0,18,2.0,0.0,clean,False,2025
+82,2025 R14 Hungarian Grand Prix,14,Yuki Tsunoda,16.0,17,1.0,0.25,moderate,False,2025
+54,2025 R1 Australian Grand Prix,9,Esteban Ocon,17.0,13,4.0,1.5,chaotic,False,2025
+61,2025 R2 Chinese Grand Prix,14,Yuki Tsunoda,17.0,16,1.0,0.4,moderate,False,2025
+55,2025 R3 Japanese Grand Prix,24,Gabriel Bortoleto,17.0,19,2.0,0.0,clean,False,2025
+56,2025 R4 Bahrain Grand Prix,25,Liam Lawson,17.0,16,1.0,0.30000000000000004,moderate,False,2025
+57,2025 R5 Saudi Arabian Grand Prix,28,Jack Doohan,17.0,17,0.0,0.5,moderate,False,2025
+60,2025 R6 Miami Grand Prix,5,Fernando Alonso,17.0,15,2.0,1.0,chaotic,False,2025
+58,2025 R7 Emilia Romagna Grand Prix,10,Nico Hulkenberg,17.0,12,5.0,0.5,moderate,False,2025
+59,2025 R8 Monaco Grand Prix,24,Gabriel Bortoleto,17.0,14,3.0,0.5,moderate,False,2025
+77,2025 R9 Spanish Grand Prix,9,Esteban Ocon,17.0,16,1.0,0.5263157894736842,moderate,False,2025
+78,2025 R10 Canadian Grand Prix,4,Carlos Sainz,17.0,10,7.0,0.75,chaotic,False,2025
+79,2025 R11 Austrian Grand Prix,9,Esteban Ocon,17.0,10,7.0,0.75,chaotic,False,2025
+80,2025 R12 British Grand Prix,25,Liam Lawson,17.0,19,2.0,1.0,chaotic,True,2025
+81,2025 R13 Belgian Grand Prix,27,Franco Colapinto,17.0,19,2.0,0.0,clean,False,2025
+82,2025 R14 Hungarian Grand Prix,20,Pierre Gasly,17.0,19,2.0,0.25,moderate,False,2025
+54,2025 R1 Australian Grand Prix,23,Isack Hadjar,18.0,20,2.0,1.5,chaotic,True,2025
+61,2025 R2 Chinese Grand Prix,24,Gabriel Bortoleto,18.0,14,4.0,0.4,moderate,False,2025
+55,2025 R3 Japanese Grand Prix,28,Jack Doohan,18.0,15,3.0,0.0,clean,False,2025
+56,2025 R4 Bahrain Grand Prix,26,Oliver Bearman,18.0,10,8.0,0.30000000000000004,moderate,False,2025
+57,2025 R5 Saudi Arabian Grand Prix,10,Nico Hulkenberg,18.0,15,3.0,0.5,moderate,False,2025
+60,2025 R6 Miami Grand Prix,20,Pierre Gasly,18.0,13,5.0,1.0,chaotic,False,2025
+58,2025 R7 Emilia Romagna Grand Prix,14,Yuki Tsunoda,18.0,10,8.0,0.5,moderate,False,2025
+59,2025 R8 Monaco Grand Prix,27,Franco Colapinto,18.0,13,5.0,0.5,moderate,False,2025
+77,2025 R9 Spanish Grand Prix,4,Carlos Sainz,18.0,14,4.0,0.5263157894736842,moderate,False,2025
+78,2025 R10 Canadian Grand Prix,20,Pierre Gasly,18.0,15,3.0,0.75,chaotic,False,2025
+79,2025 R11 Austrian Grand Prix,10,Nico Hulkenberg,18.0,9,9.0,0.75,chaotic,False,2025
+80,2025 R12 British Grand Prix,8,Lance Stroll,18.0,7,11.0,1.0,chaotic,False,2025
+81,2025 R13 Belgian Grand Prix,8,Lance Stroll,18.0,14,4.0,0.0,clean,False,2025
+82,2025 R14 Hungarian Grand Prix,10,Nico Hulkenberg,18.0,13,5.0,0.25,moderate,False,2025
+54,2025 R1 Australian Grand Prix,26,Oliver Bearman,19.0,14,5.0,1.5,chaotic,False,2025
+61,2025 R2 Chinese Grand Prix,25,Liam Lawson,19.0,12,7.0,0.4,moderate,False,2025
+55,2025 R3 Japanese Grand Prix,9,Esteban Ocon,19.0,18,1.0,0.0,clean,False,2025
+56,2025 R4 Bahrain Grand Prix,24,Gabriel Bortoleto,19.0,18,1.0,0.30000000000000004,moderate,False,2025
+57,2025 R5 Saudi Arabian Grand Prix,24,Gabriel Bortoleto,19.0,18,1.0,0.5,moderate,False,2025
+60,2025 R6 Miami Grand Prix,8,Lance Stroll,19.0,16,3.0,1.0,chaotic,False,2025
+58,2025 R7 Emilia Romagna Grand Prix,9,Esteban Ocon,19.0,20,1.0,0.5,moderate,True,2025
+59,2025 R8 Monaco Grand Prix,8,Lance Stroll,19.0,15,4.0,0.5,moderate,False,2025
+77,2025 R9 Spanish Grand Prix,14,Yuki Tsunoda,19.0,13,6.0,0.5263157894736842,moderate,False,2025
+78,2025 R10 Canadian Grand Prix,8,Lance Stroll,19.0,17,2.0,0.75,chaotic,False,2025
+79,2025 R11 Austrian Grand Prix,14,Yuki Tsunoda,19.0,16,3.0,0.75,chaotic,False,2025
+80,2025 R12 British Grand Prix,24,Gabriel Bortoleto,19.0,18,1.0,1.0,chaotic,True,2025
+81,2025 R13 Belgian Grand Prix,29,Kimi Antonelli,19.0,16,3.0,0.0,clean,False,2025
+82,2025 R14 Hungarian Grand Prix,15,Alexander Albon,19.0,15,4.0,0.25,moderate,False,2025
+54,2025 R1 Australian Grand Prix,25,Liam Lawson,20.0,15,5.0,1.5,chaotic,True,2025
+61,2025 R2 Chinese Grand Prix,28,Jack Doohan,20.0,13,7.0,0.4,moderate,False,2025
+55,2025 R3 Japanese Grand Prix,8,Lance Stroll,20.0,20,0.0,0.0,clean,False,2025
+56,2025 R4 Bahrain Grand Prix,8,Lance Stroll,20.0,17,3.0,0.30000000000000004,moderate,False,2025
+57,2025 R5 Saudi Arabian Grand Prix,9,Esteban Ocon,20.0,14,6.0,0.5,moderate,False,2025
+60,2025 R6 Miami Grand Prix,26,Oliver Bearman,20.0,19,1.0,1.0,chaotic,True,2025
+58,2025 R7 Emilia Romagna Grand Prix,26,Oliver Bearman,20.0,17,3.0,0.5,moderate,False,2025
+59,2025 R8 Monaco Grand Prix,20,Pierre Gasly,20.0,20,0.0,0.5,moderate,True,2025
+77,2025 R9 Spanish Grand Prix,27,Franco Colapinto,20.0,15,5.0,0.5263157894736842,moderate,False,2025
+78,2025 R10 Canadian Grand Prix,25,Liam Lawson,20.0,19,1.0,0.75,chaotic,True,2025
+79,2025 R11 Austrian Grand Prix,4,Carlos Sainz,20.0,20,0.0,0.75,chaotic,False,2025
+80,2025 R12 British Grand Prix,27,Franco Colapinto,20.0,20,0.0,1.0,chaotic,False,2025
+81,2025 R13 Belgian Grand Prix,5,Fernando Alonso,20.0,17,3.0,0.0,clean,False,2025
+82,2025 R14 Hungarian Grand Prix,9,Esteban Ocon,20.0,16,4.0,0.25,moderate,False,2025

@@ -14,7 +14,7 @@ class Circuit(models.Model):
     location = models.CharField(max_length=100)
     country = models.CharField(max_length=100)
     circuit_ref = models.CharField(max_length=50, unique=True, default='unknown')
-    
+
     # FastF1 specific metadata
     circuit_id = models.CharField(max_length=50, unique=True, blank=True, null=True)
     circuit_type = models.CharField(
@@ -30,18 +30,18 @@ class Circuit(models.Model):
     latitude = models.FloatField(null=True, blank=True)
     longitude = models.FloatField(null=True, blank=True)
     altitude = models.FloatField(null=True, blank=True)
-    
+
     def __str__(self):
         return self.name
 
 class Team(models.Model):
     name = models.CharField(max_length=100)
     team_ref = models.CharField(max_length=50, unique=True, default='unknown')
-    
+
     # FastF1 specific metadata
     team_id = models.CharField(max_length=50, unique=True, blank=True, null=True)
     country = models.CharField(max_length=50, blank=True, null=True)
-    
+
     # Performance metrics
     season_dnf_rate = models.FloatField(
         null=True,
@@ -53,7 +53,7 @@ class Team(models.Model):
         blank=True,
         help_text="Average pit stop time in milliseconds"
     )
-    
+
     def __str__(self):
         return self.name
 
@@ -65,11 +65,11 @@ class Driver(models.Model):
     driver_ref = models.CharField(max_length=50, unique=True, default='unknown')
     code = models.CharField(max_length=3, blank=True, null=True)
     permanent_number = models.IntegerField(null=True, blank=True)
-    
+
     # FastF1 specific metadata
     full_name = models.CharField(max_length=100, blank=True, null=True)
     date_of_birth = models.DateField(null=True, blank=True)
-    
+
     # Performance metrics
     recent_form = models.FloatField(
         null=True,
@@ -81,7 +81,7 @@ class Driver(models.Model):
         blank=True,
         help_text="Position variance over season"
     )
-    
+
     def __str__(self):
         return f"{self.given_name} {self.family_name}"
 
@@ -93,7 +93,7 @@ class Event(models.Model):
     date = models.DateField()
     circuit = models.ForeignKey(Circuit, on_delete=models.CASCADE)
     official_name = models.CharField(max_length=200, blank=True, null=True)
-    
+
     # FastF1 specific metadata
     event_id = models.CharField(max_length=50, unique=True, blank=True, null=True)
     event_format = models.CharField(
@@ -104,7 +104,7 @@ class Event(models.Model):
         ],
         default='CONVENTIONAL'
     )
-    
+
     # Weather data
     weather_data = models.JSONField(
         default=dict,
@@ -117,7 +117,7 @@ class Event(models.Model):
         blank=True,
         help_text="Calculated weather impact score"
     )
-    
+
     class Meta:
         unique_together = ('year', 'round')
         indexes = [
@@ -141,7 +141,7 @@ class Session(models.Model):
     session_type = models.ForeignKey(SessionType, on_delete=models.CASCADE)
     date = models.DateTimeField()
     session_id = models.CharField(max_length=50, unique=True, blank=True, null=True)
-    
+
     # Session-specific weather
     air_temp = models.FloatField(null=True, blank=True)
     track_temp = models.FloatField(null=True, blank=True)
@@ -149,10 +149,10 @@ class Session(models.Model):
     wind_speed = models.FloatField(null=True, blank=True)
     wind_direction = models.FloatField(null=True, blank=True)
     rain = models.BooleanField(default=False)
-    
+
     class Meta:
         unique_together = ('event', 'session_type')
-        
+
     def __str__(self):
         return f"{self.event} - {self.session_type}"
 
@@ -166,11 +166,11 @@ class SessionResult(models.Model):
     time = models.DurationField(null=True, blank=True)
     time_millis = models.IntegerField(null=True, blank=True)  # For faster calculations
     points = models.FloatField(null=True, blank=True)
-    
+
     # FastF1 specific
     status = models.CharField(max_length=50, null=True, blank=True)
     laps = models.IntegerField(null=True, blank=True)
-    
+
     class Meta:
         abstract = True
 
@@ -184,14 +184,14 @@ class QualifyingResult(SessionResult):
     q1 = models.DurationField(null=True, blank=True)
     q2 = models.DurationField(null=True, blank=True)
     q3 = models.DurationField(null=True, blank=True)
-    
+
     # Add qualifying delta (critical feature from Bell 2021)
     pole_delta = models.FloatField(
         null=True,
         blank=True,
         help_text="Time delta to pole position in seconds"
     )
-    
+
     # FastF1 specific
     q1_millis = models.IntegerField(null=True, blank=True)
     q2_millis = models.IntegerField(null=True, blank=True)
@@ -218,14 +218,14 @@ class RaceResult(SessionResult):
         blank=True,
         help_text="Position change from grid to finish"
     )
-    
+
     # FastF1 specific
     fastest_lap_rank = models.IntegerField(null=True, blank=True)
     fastest_lap_time = models.DurationField(null=True, blank=True)
     fastest_lap_speed = models.FloatField(null=True, blank=True)
     pit_stops = models.IntegerField(null=True, blank=True)
     tyre_stints = models.JSONField(null=True, blank=True)  # Store tyre strategy
-    
+
     class Meta:
         unique_together = ('session', 'driver')
         ordering = ['position']
@@ -254,7 +254,7 @@ class DriverPerformance(models.Model):
     points_per_race = models.FloatField(
         help_text="Average points per race in current season"
     )
-    
+
     # Existing fields
     circuit_affinity = models.FloatField(
         null=True, blank=True,
@@ -273,11 +273,11 @@ class DriverPerformance(models.Model):
         help_text="Performance metric in wet weather conditions"
     )
     reliability_score = models.FloatField(
-        null=True, 
+        null=True,
         blank=True,
         help_text="Driver's reliability score"
     )
-    
+
     # New fields
     rivalry_performance = models.FloatField(
         null=True, blank=True,
@@ -293,7 +293,7 @@ class DriverPerformance(models.Model):
     )
     dnf_rate = models.FloatField(default=0.0, help_text="Driver's DNF rate")
     pit_stop_avg = models.FloatField(default=0.0, help_text="Average pit stop time in seconds")
-    
+
     class Meta:
         unique_together = ('driver', 'event')
         indexes = [
@@ -317,13 +317,13 @@ class TeamPerformance(models.Model):
         null=True, blank=True,
         help_text="Standard deviation of qualifying positions"
     )
-    
+
     # New field
     pit_stop_std = models.FloatField(
         null=True, blank=True,
         help_text="Standard deviation of pit stop times"
     )
-    
+
     class Meta:
         unique_together = ('team', 'event')
 
@@ -343,7 +343,7 @@ class TrackCharacteristics(models.Model):
     avg_pit_loss = models.FloatField(
         help_text="Average time loss per pit stop (seconds)"
     )
-    
+
     class Meta:
         unique_together = ('circuit',)
 
@@ -359,9 +359,9 @@ class PredictionModel(models.Model):
     version = models.CharField(max_length=20)
     model_type = models.CharField(max_length=20, choices=MODEL_TYPES)
     circuit = models.ForeignKey(
-        Circuit, 
-        null=True, 
-        blank=True, 
+        Circuit,
+        null=True,
+        blank=True,
         on_delete=models.SET_NULL
     )
     created_at = models.DateTimeField(auto_now_add=True)
@@ -392,7 +392,7 @@ class RacePrediction(models.Model):
         blank=True,
         help_text="Actual accuracy after session completion"
     )
-    
+
     class Meta:
         unique_together = ('session', 'model')
 
@@ -415,12 +415,12 @@ class PitStop(models.Model):
 
     def __str__(self):
         return f"{self.session} - {self.driver} - Lap {self.lap}"
-    
+
 
 class ridgeregression(models.Model):
     driver = models.ForeignKey(Driver, on_delete=models.CASCADE)
     event = models.ForeignKey(Event, on_delete=models.CASCADE)
-    
+
     year = models.IntegerField()
     round_number = models.IntegerField()
 
@@ -443,7 +443,7 @@ class ridgeregression(models.Model):
 class xgboostprediction(models.Model):
     driver = models.ForeignKey(Driver, on_delete=models.CASCADE)
     event = models.ForeignKey(Event, on_delete=models.CASCADE)
-    
+
     year = models.IntegerField()  # Temporary default
     round_number = models.IntegerField()  # Temporary default
 
@@ -459,14 +459,14 @@ class xgboostprediction(models.Model):
     def __str__(self):
         actual = f" (Actual: {self.actual_position})" if self.actual_position else ""
         return f"{self.driver} - {self.event} - Pred: {self.predicted_position}{actual}"
-    
+
 
 
 # Add these classes to your existing models.py file
 
 class TrackSpecialization(models.Model):
     """Track categorization for specialized predictions"""
-    
+
     TRACK_CATEGORIES = [
         ('POWER', 'Power Circuits'),
         ('TECHNICAL', 'Technical Circuits'),
@@ -474,10 +474,10 @@ class TrackSpecialization(models.Model):
         ('HYBRID', 'Hybrid Circuits'),
         ('HIGH_SPEED', 'High Speed Circuits'),
     ]
-    
+
     circuit = models.OneToOneField(Circuit, on_delete=models.CASCADE)
     category = models.CharField(max_length=20, choices=TRACK_CATEGORIES)
-    
+
     overtaking_difficulty = models.FloatField(
         default=5.0,
         help_text="Scale 1-10, where 10 is very difficult to overtake"
@@ -502,17 +502,17 @@ class TrackSpecialization(models.Model):
         default=5.0,
         help_text="Scale 1-10, where 10 means weather greatly affects results"
     )
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     class Meta:
         verbose_name = "Track Specialization"
         verbose_name_plural = "Track Specializations"
-    
+
     def __str__(self):
         return f"{self.circuit.name} - {self.get_category_display()}"
-    
+
 
     # [Previous models.py content up to initialize_track_data]
     @classmethod
@@ -772,7 +772,7 @@ class TrackSpecialization(models.Model):
         }
         # [Rest of initialize_track_data implementation unchanged]
 # [Rest of models.py unchanged]
-        
+
         def find_circuit(search_terms):
             """Find circuit using multiple search strategies"""
             for term in search_terms:
@@ -790,26 +790,26 @@ class TrackSpecialization(models.Model):
                     return circuit
             logger.warning(f"No circuit found for search terms: {search_terms}")
             return None
-        
+
         created_count = 0
         updated_count = 0
         not_found = []
-        
+
         for circuit_name, config in track_data.items():
             try:
                 circuit = find_circuit(config['search_terms'])
-                
+
                 if not circuit:
                     not_found.append(f"{circuit_name} (searched: {config['search_terms']})")
                     continue
-                
+
                 data = {k: v for k, v in config.items() if k != 'search_terms'}
-                
+
                 specialization, created = cls.objects.get_or_create(
                     circuit=circuit,
                     defaults=data
                 )
-                
+
                 if created:
                     created_count += 1
                     logger.info(f"Created track specialization for {circuit_name} -> {circuit.name}")
@@ -819,51 +819,51 @@ class TrackSpecialization(models.Model):
                     specialization.save()
                     updated_count += 1
                     logger.info(f"Updated track specialization for {circuit_name} -> {circuit.name}")
-                    
+
             except Exception as e:
                 logger.error(f"Error processing {circuit_name}: {str(e)}", exc_info=True)
-        
+
         if not_found:
             logger.warning(f"Could not find circuits for: {not_found}")
-        
+
         logger.info(f"Track specialization initialization complete: {created_count} created, {updated_count} updated")
         return created_count, updated_count
 
 
 class DriverSpecialization(models.Model):
     """Driver specialization characteristics"""
-    
+
     SPECIALIZATION_TYPES = [
         ('OVERTAKING', 'Overtaking Specialist'),
-        ('QUALIFYING', 'Qualifying Specialist'), 
+        ('QUALIFYING', 'Qualifying Specialist'),
         ('CONSISTENCY', 'Consistency Specialist'),
         ('WET_WEATHER', 'Wet Weather Specialist'),
         ('TIRE_MANAGEMENT', 'Tire Management Specialist'),
         ('TECHNICAL', 'Technical Circuit Specialist'),
         ('POWER', 'Power Circuit Specialist'),
     ]
-    
+
     driver = models.ForeignKey(Driver, on_delete=models.CASCADE)
     specialization_type = models.CharField(max_length=20, choices=SPECIALIZATION_TYPES)
     strength_score = models.FloatField(
         help_text="Strength in this specialization (1-10 scale)"
     )
-    
+
     # Track type performance modifiers
     power_circuit_modifier = models.FloatField(default=1.0)
     technical_circuit_modifier = models.FloatField(default=1.0)
     street_circuit_modifier = models.FloatField(default=1.0)
     wet_weather_modifier = models.FloatField(default=1.0)
-    
+
     year = models.IntegerField(help_text="Year this specialization applies to")
     created_at = models.DateTimeField(auto_now_add=True)
-    
+
     class Meta:
         unique_together = ('driver', 'specialization_type', 'year')
         indexes = [
             models.Index(fields=['driver', 'year']),
         ]
-    
+
     def __str__(self):
         return f"{self.driver} - {self.get_specialization_type_display()} ({self.year})"
 
@@ -873,36 +873,36 @@ class CatBoostPrediction(models.Model):
     """CatBoost predictions with track specialization"""
     driver = models.ForeignKey(Driver, on_delete=models.CASCADE)
     event = models.ForeignKey(Event, on_delete=models.CASCADE)
-    
+
     year = models.IntegerField()
     round_number = models.IntegerField()
-    
+
     # Base model predictions (inputs to CatBoost)
     ridge_prediction = models.FloatField(null=True, blank=True)
     xgboost_prediction = models.FloatField(null=True, blank=True)
     ensemble_prediction = models.FloatField(null=True, blank=True)
-    
+
     # Track specialization features
     track_category = models.CharField(max_length=20, null=True, blank=True)
     track_power_sensitivity = models.FloatField(null=True, blank=True)
     track_overtaking_difficulty = models.FloatField(null=True, blank=True)
     track_qualifying_importance = models.FloatField(null=True, blank=True)
-    
+
     # Final CatBoost prediction
     predicted_position = models.FloatField()
     prediction_confidence = models.FloatField(null=True, blank=True)
-    
+
     # Actual results for comparison
     actual_position = models.IntegerField(null=True, blank=True)
-    
+
     # OpenF1 integration flags
     used_live_data = models.BooleanField(default=False)
     weather_condition = models.CharField(max_length=20, null=True, blank=True)
     tire_strategy_available = models.BooleanField(default=False)
-    
+
     model_name = models.CharField(max_length=100, default='catboost_ensemble')
     created_at = models.DateTimeField(auto_now_add=True)
-    
+
     class Meta:
         unique_together = ('driver', 'event', 'model_name')
         indexes = [
@@ -910,7 +910,7 @@ class CatBoostPrediction(models.Model):
             models.Index(fields=['event', 'track_category']),
         ]
         ordering = ['predicted_position']
-    
+
     def __str__(self):
         actual = f" (Actual: {self.actual_position})" if self.actual_position else ""
         return f"CatBoost | {self.driver} | {self.event} → {self.predicted_position:.2f}{actual}"
@@ -927,18 +927,18 @@ class UserProfile(models.Model):
     favorite_circuit = models.ForeignKey('Circuit', on_delete=models.SET_NULL, null=True, blank=True)
     join_date = models.DateTimeField(auto_now_add=True)
     last_active = models.DateTimeField(auto_now=True)
-    
+
     # Achievement tracking
     circuits_visited = models.ManyToManyField('Circuit', blank=True, related_name='visitors')
     achievements_unlocked = models.ManyToManyField('Achievement', blank=True, related_name='unlocked_by')
-    
+
     # Risk management and betting limits
     max_bet_amount = models.IntegerField(default=1000, help_text="Maximum bet amount allowed")
     daily_bet_limit = models.IntegerField(default=5000, help_text="Daily betting limit")
     daily_bets_placed = models.IntegerField(default=0, help_text="Bets placed today")
     daily_bet_amount = models.IntegerField(default=0, help_text="Total amount bet today")
     last_bet_date = models.DateField(null=True, blank=True, help_text="Date of last bet")
-    
+
     # Risk tolerance settings
     risk_tolerance = models.CharField(
         max_length=20,
@@ -949,14 +949,14 @@ class UserProfile(models.Model):
         ],
         default='MODERATE'
     )
-    
+
     # Subscription tier system
     SUBSCRIPTION_TIERS = [
         ('BASIC', 'Basic (Free)'),
         ('PREMIUM', 'Premium'),
         ('PRO', 'Pro'),
     ]
-    
+
     subscription_tier = models.CharField(
         max_length=20,
         choices=SUBSCRIPTION_TIERS,
@@ -966,19 +966,19 @@ class UserProfile(models.Model):
     subscription_start_date = models.DateTimeField(null=True, blank=True)
     subscription_end_date = models.DateTimeField(null=True, blank=True)
     is_subscription_active = models.BooleanField(default=True)
-    
+
     # Betting restrictions
     is_suspended = models.BooleanField(default=False, help_text="Account suspended from betting")
     suspension_reason = models.TextField(blank=True, help_text="Reason for suspension")
     suspension_until = models.DateTimeField(null=True, blank=True, help_text="Suspension end date")
-    
+
     class Meta:
         verbose_name = "User Profile"
         verbose_name_plural = "User Profiles"
-    
+
     def __str__(self):
         return f"{self.user.username}'s Profile"
-    
+
     @property
     def win_rate(self):
         """Calculate win rate percentage"""
@@ -986,12 +986,12 @@ class UserProfile(models.Model):
         if total_bets == 0:
             return 0.0
         return round((self.total_credits_won / (self.total_credits_won + self.total_credits_lost)) * 100, 1)
-    
+
     @property
     def net_profit(self):
         """Calculate net profit/loss"""
         return self.total_credits_won - self.total_credits_lost
-    
+
     def can_place_bet(self, amount):
         """Check if user can place a bet of given amount"""
         # Check if account is suspended
@@ -1004,15 +1004,15 @@ class UserProfile(models.Model):
                 self.suspension_reason = ""
                 self.suspension_until = None
                 self.save()
-        
+
         # Check if user has enough credits
         if self.credits < amount:
             return False, "Insufficient credits"
-        
+
         # Check maximum bet amount
         if amount > self.max_bet_amount:
             return False, f"Bet amount exceeds maximum allowed ({self.max_bet_amount} credits)"
-        
+
         # Check daily limits
         today = timezone.now().date()
         if self.last_bet_date != today:
@@ -1021,25 +1021,25 @@ class UserProfile(models.Model):
             self.daily_bet_amount = 0
             self.last_bet_date = today
             self.save()
-        
+
         if self.daily_bet_amount + amount > self.daily_bet_limit:
             return False, f"Daily betting limit exceeded ({self.daily_bet_limit} credits)"
-        
+
         return True, "OK"
-    
+
     def update_betting_stats(self, bet_amount, won=False, payout=0):
         """Update betting statistics after a bet"""
         self.total_bets_placed += 1
         self.daily_bets_placed += 1
         self.daily_bet_amount += bet_amount
-        
+
         if won:
             self.total_credits_won += payout
         else:
             self.total_credits_lost += bet_amount
-        
+
         self.save()
-    
+
     def get_risk_adjusted_limits(self):
         """Get risk-adjusted betting limits based on user's risk tolerance"""
         base_limits = {
@@ -1059,14 +1059,14 @@ class UserProfile(models.Model):
                 'max_concurrent_bets': 8
             }
         }
-        
+
         limits = base_limits.get(self.risk_tolerance, base_limits['MODERATE'])
         return {
             'max_bet_amount': int(self.credits * limits['max_bet_percent']),
             'daily_bet_limit': int(self.credits * limits['daily_limit_percent']),
             'max_concurrent_bets': limits['max_concurrent_bets']
         }
-    
+
     def get_available_models(self):
         """Get list of ML models available to user based on subscription tier"""
         model_access = {
@@ -1075,24 +1075,24 @@ class UserProfile(models.Model):
             'PRO': ['ridge_regression', 'xgboost', 'catboost']
         }
         return model_access.get(self.subscription_tier, ['ridge_regression'])
-    
+
     def can_access_model(self, model_name):
         """Check if user can access a specific ML model"""
         # Basic model is always available to authenticated users
         if model_name == 'ridge_regression':
             return True
-            
+
         # For premium/pro models, check subscription status
         if not self.is_subscription_active:
             return False
-        
+
         # Check if subscription has expired
         if self.subscription_end_date and timezone.now() > self.subscription_end_date:
             return False
-            
+
         available_models = self.get_available_models()
         return model_name in available_models
-    
+
     def get_subscription_display_info(self):
         """Get subscription tier display information"""
         tier_info = {
@@ -1129,24 +1129,24 @@ class CreditTransaction(models.Model):
         ('CIRCUIT_VISIT', 'Circuit Visit Bonus'),
         ('ADMIN_ADJUSTMENT', 'Admin Adjustment'),
     ]
-    
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='credit_transactions')
     transaction_type = models.CharField(max_length=20, choices=TRANSACTION_TYPES)
     amount = models.IntegerField(help_text="Positive for credits gained, negative for credits spent")
     description = models.CharField(max_length=200)
     balance_after = models.IntegerField(help_text="User's credit balance after this transaction")
     timestamp = models.DateTimeField(auto_now_add=True)
-    
+
     # Optional references
     bet = models.ForeignKey('Bet', on_delete=models.SET_NULL, null=True, blank=True)
     achievement = models.ForeignKey('Achievement', on_delete=models.SET_NULL, null=True, blank=True)
     circuit = models.ForeignKey('Circuit', on_delete=models.SET_NULL, null=True, blank=True)
-    
+
     class Meta:
         ordering = ['-timestamp']
         verbose_name = "Credit Transaction"
         verbose_name_plural = "Credit Transactions"
-    
+
     def __str__(self):
         return f"{self.user.username} - {self.get_transaction_type_display()} ({self.amount:+d})"
 
@@ -1164,7 +1164,7 @@ class Bet(models.Model):
         ('SAFETY_CAR', 'Safety Car'),
         ('WEATHER_BET', 'Weather Bet'),
     ]
-    
+
     STATUS_CHOICES = [
         ('PENDING', 'Pending'),
         ('WON', 'Won'),
@@ -1172,44 +1172,44 @@ class Bet(models.Model):
         ('CANCELLED', 'Cancelled'),
         ('VOID', 'Void'),
     ]
-    
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='bets')
     event = models.ForeignKey('Event', on_delete=models.CASCADE)
     bet_type = models.CharField(max_length=20, choices=BET_TYPES)
-    
+
     # Primary selection
     driver = models.ForeignKey('Driver', on_delete=models.CASCADE, null=True, blank=True)
     team = models.ForeignKey('Team', on_delete=models.CASCADE, null=True, blank=True)
-    
+
     # For head-to-head and team battles
     opponent_driver = models.ForeignKey('Driver', on_delete=models.CASCADE, null=True, blank=True, related_name='opponent_bets')
     opponent_team = models.ForeignKey('Team', on_delete=models.CASCADE, null=True, blank=True, related_name='opponent_bets')
-    
+
     # Bet details
     predicted_position = models.IntegerField(null=True, blank=True)
     credits_staked = models.IntegerField()
     odds = models.FloatField(help_text="Decimal odds (e.g., 2.5 means 2.5x return)")
     potential_payout = models.IntegerField(help_text="Credits to be won if bet succeeds")
-    
+
     # Market tracking
     market_volume_at_time = models.IntegerField(default=0, help_text="Total market volume when bet was placed")
     odds_movement = models.JSONField(default=list, help_text="Odds movement history")
-    
+
     # Result tracking
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='PENDING')
     actual_result = models.CharField(max_length=50, null=True, blank=True)
     payout_received = models.IntegerField(default=0)
-    
+
     # ML prediction integration
     ml_prediction_used = models.BooleanField(default=False)
     ml_predicted_position = models.FloatField(null=True, blank=True)
     ml_confidence = models.FloatField(null=True, blank=True)
-    
+
     # Metadata
     created_at = models.DateTimeField(auto_now_add=True)
     settled_at = models.DateTimeField(null=True, blank=True)
     notes = models.TextField(blank=True)
-    
+
     class Meta:
         ordering = ['-created_at']
         verbose_name = "Bet"
@@ -1219,7 +1219,7 @@ class Bet(models.Model):
             models.Index(fields=['user', 'status']),
             models.Index(fields=['created_at']),
         ]
-    
+
     def __str__(self):
         bet_description = f"{self.get_bet_type_display()}"
         if self.driver:
@@ -1227,12 +1227,12 @@ class Bet(models.Model):
         elif self.team:
             bet_description += f" - {self.team.name}"
         return f"{self.user.username}: {bet_description} ({self.event.name})"
-    
+
     def save(self, *args, **kwargs):
         # Calculate potential payout if not set
         if not self.potential_payout:
             self.potential_payout = int(self.credits_staked * self.odds)
-        
+
         # Track market volume at time of bet
         if not self.market_volume_at_time:
             self.market_volume_at_time = Bet.objects.filter(
@@ -1241,32 +1241,80 @@ class Bet(models.Model):
                 driver=self.driver,
                 team=self.team
             ).aggregate(total=Sum('credits_staked'))['total'] or 0
-        
+
         super().save(*args, **kwargs)
-    
+
+    def settle(self, won: bool, actual_result: str = None):
+        """Settle this bet as won or lost, crediting winnings if applicable.
+        Returns True if settled, False if already settled.
+        """
+        if self.status != 'PENDING':
+            return False
+
+        # Set status and payout
+        if won:
+            self.status = 'WON'
+            self.payout_received = int(self.potential_payout)
+        else:
+            self.status = 'LOST'
+            self.payout_received = 0
+
+        if actual_result:
+            self.actual_result = actual_result
+
+        self.settled_at = timezone.now()
+        self.save()
+
+        # Update user profile credits and stats without double-counting bets placed
+        profile = self.user.profile
+        if won:
+            profile.credits += self.payout_received
+            profile.total_credits_won += self.payout_received
+            profile.save()
+            CreditTransaction.objects.create(
+                user=self.user,
+                transaction_type='BET_WON',
+                amount=self.payout_received,
+                description=f'Bet won: {self.get_bet_type_display()} ({self.event.name})',
+                balance_after=profile.credits,
+                bet=self
+            )
+        else:
+            # Losing bet: stake was already deducted at placement and loss recorded
+            CreditTransaction.objects.create(
+                user=self.user,
+                transaction_type='BET_LOST',
+                amount=0,
+                description=f'Bet lost: {self.get_bet_type_display()} ({self.event.name})',
+                balance_after=profile.credits,
+                bet=self
+            )
+
+        return True
+
     @property
     def is_winning_bet(self):
         """Determine if bet is winning based on actual results"""
         if self.status != 'PENDING':
             return self.status == 'WON'
-        
+
         # This would need to be implemented based on actual race results
         # For now, return None for pending bets
         return None
-    
+
     @property
     def market_performance(self):
         """Calculate how this bet performed relative to market"""
         if not self.market_volume_at_time:
             return 0
-        
+
         current_volume = Bet.objects.filter(
             event=self.event,
             bet_type=self.bet_type,
             driver=self.driver,
             team=self.team
         ).aggregate(total=Sum('credits_staked'))['total'] or 0
-        
+
         return ((current_volume - self.market_volume_at_time) / self.market_volume_at_time * 100) if self.market_volume_at_time > 0 else 0
 
 
@@ -1280,22 +1328,22 @@ class Achievement(models.Model):
         ('EXPLORER', 'Circuit Explorer'),
         ('SPECIAL', 'Special Achievement'),
     ]
-    
+
     name = models.CharField(max_length=100)
     description = models.TextField()
     achievement_type = models.CharField(max_length=20, choices=ACHIEVEMENT_TYPES)
     icon = models.CharField(max_length=50, help_text="FontAwesome icon class")
-    
+
     # Unlock conditions
     required_accuracy = models.FloatField(null=True, blank=True, help_text="Required prediction accuracy %")
     required_circuits = models.IntegerField(null=True, blank=True, help_text="Required circuits visited")
     required_bets = models.IntegerField(null=True, blank=True, help_text="Required number of bets")
     required_profit = models.IntegerField(null=True, blank=True, help_text="Required profit in credits")
-    
+
     # Rewards
     bonus_credits = models.IntegerField(default=0)
     special_perks = models.JSONField(default=dict, blank=True)
-    
+
     # Display
     rarity = models.CharField(max_length=20, choices=[
         ('COMMON', 'Common'),
@@ -1303,14 +1351,14 @@ class Achievement(models.Model):
         ('EPIC', 'Epic'),
         ('LEGENDARY', 'Legendary'),
     ], default='COMMON')
-    
+
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    
+
     class Meta:
         verbose_name = "Achievement"
         verbose_name_plural = "Achievements"
-    
+
     def __str__(self):
         return self.name
 
@@ -1332,32 +1380,32 @@ class MarketMaker(models.Model):
     bet_type = models.CharField(max_length=20, choices=Bet.BET_TYPES)
     driver = models.ForeignKey('Driver', on_delete=models.CASCADE, null=True, blank=True)
     team = models.ForeignKey('Team', on_delete=models.CASCADE, null=True, blank=True)
-    
+
     # Market state
     total_volume = models.IntegerField(default=0, help_text="Total betting volume")
     total_bets = models.IntegerField(default=0, help_text="Total number of bets")
     current_odds = models.FloatField(help_text="Current market odds")
     base_odds = models.FloatField(help_text="Base odds without market adjustment")
-    
+
     # Liquidity management
     available_liquidity = models.IntegerField(default=10000, help_text="Available credits for market making")
     max_exposure = models.IntegerField(default=5000, help_text="Maximum exposure per bet")
-    
+
     # Market maker settings
     spread_percentage = models.FloatField(default=0.05, help_text="Bid-ask spread as percentage")
     adjustment_sensitivity = models.FloatField(default=0.1, help_text="How quickly odds adjust to volume")
-    
+
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     class Meta:
         unique_together = ('event', 'bet_type', 'driver', 'team')
         indexes = [
             models.Index(fields=['event', 'bet_type']),
             models.Index(fields=['total_volume']),
         ]
-    
+
     def __str__(self):
         bet_description = f"{self.get_bet_type_display()}"
         if self.driver:
@@ -1365,47 +1413,47 @@ class MarketMaker(models.Model):
         elif self.team:
             bet_description += f" - {self.team.name}"
         return f"{self.event.name}: {bet_description}"
-    
+
     def calculate_adjusted_odds(self, bet_amount):
         """Calculate adjusted odds based on market dynamics"""
         # Base odds from historical data and ML predictions
         base_odds = self.base_odds
-        
+
         # Volume impact adjustment
         volume_ratio = self.total_volume / max(self.available_liquidity, 1)
         volume_adjustment = 1 + (volume_ratio * self.adjustment_sensitivity)
-        
+
         # Exposure adjustment
         exposure_ratio = (self.total_volume + bet_amount) / max(self.max_exposure, 1)
         if exposure_ratio > 1:
             exposure_adjustment = 1 + (exposure_ratio - 1) * 0.2
         else:
             exposure_adjustment = 1.0
-        
+
         # Calculate final odds
         adjusted_odds = base_odds * volume_adjustment * exposure_adjustment
-        
+
         # Apply spread
         bid_odds = adjusted_odds * (1 - self.spread_percentage)
         ask_odds = adjusted_odds * (1 + self.spread_percentage)
-        
+
         return {
             'bid': round(bid_odds, 2),
             'ask': round(ask_odds, 2),
             'mid': round(adjusted_odds, 2)
         }
-    
+
     def update_market_state(self, bet_amount):
         """Update market state after a bet is placed"""
         self.total_volume += bet_amount
         self.total_bets += 1
-        
+
         # Recalculate current odds
         new_odds = self.calculate_adjusted_odds(0)
         self.current_odds = new_odds['mid']
-        
+
         self.save()
-    
+
     def get_market_depth(self):
         """Get market depth information"""
         recent_bets = Bet.objects.filter(
@@ -1414,7 +1462,7 @@ class MarketMaker(models.Model):
             driver=self.driver,
             team=self.team
         ).order_by('-created_at')[:10]
-        
+
         depth_data = {
             'total_volume': self.total_volume,
             'total_bets': self.total_bets,
@@ -1422,14 +1470,14 @@ class MarketMaker(models.Model):
             'available_liquidity': self.available_liquidity,
             'recent_activity': []
         }
-        
+
         for bet in recent_bets:
             depth_data['recent_activity'].append({
                 'amount': bet.credits_staked,
                 'odds': bet.odds,
                 'timestamp': bet.created_at.isoformat()
             })
-        
+
         return depth_data
 
 
@@ -1440,72 +1488,72 @@ class MarketOrder(models.Model):
         ('LIMIT', 'Limit Order'),
         ('STOP', 'Stop Order'),
     ]
-    
+
     SIDE_CHOICES = [
         ('BUY', 'Buy'),
         ('SELL', 'Sell'),
     ]
-    
+
     STATUS_CHOICES = [
         ('PENDING', 'Pending'),
         ('FILLED', 'Filled'),
         ('CANCELLED', 'Cancelled'),
         ('REJECTED', 'Rejected'),
     ]
-    
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='market_orders')
     market_maker = models.ForeignKey(MarketMaker, on_delete=models.CASCADE)
-    
+
     order_type = models.CharField(max_length=10, choices=ORDER_TYPES)
     side = models.CharField(max_length=4, choices=SIDE_CHOICES)
     amount = models.IntegerField(help_text="Amount in credits")
     limit_price = models.FloatField(null=True, blank=True, help_text="Limit price for limit orders")
     stop_price = models.FloatField(null=True, blank=True, help_text="Stop price for stop orders")
-    
+
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='PENDING')
     filled_amount = models.IntegerField(default=0)
     average_price = models.FloatField(null=True, blank=True)
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
     filled_at = models.DateTimeField(null=True, blank=True)
-    
+
     class Meta:
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['user', 'status']),
             models.Index(fields=['market_maker', 'side']),
         ]
-    
+
     def __str__(self):
         return f"{self.user.username}: {self.side} {self.amount} @ {self.market_maker}"
-    
+
     def execute_market_order(self):
         """Execute a market order"""
         if self.order_type != 'MARKET':
             return False
-        
+
         # Get current market odds
         odds = self.market_maker.calculate_adjusted_odds(self.amount)
-        
+
         if self.side == 'BUY':
             execution_price = odds['ask']
         else:  # SELL
             execution_price = odds['bid']
-        
+
         # Check if we have enough liquidity
         if self.amount > self.market_maker.available_liquidity:
             self.status = 'REJECTED'
             self.save()
             return False
-        
+
         # Execute the order
         self.filled_amount = self.amount
         self.average_price = execution_price
         self.status = 'FILLED'
         self.filled_at = timezone.now()
         self.save()
-        
+
         # Update market maker state
         self.market_maker.update_market_state(self.amount)
-        
+
         return True

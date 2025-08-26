@@ -1,4 +1,12 @@
 from django.shortcuts import get_object_or_404, render, get_list_or_404, redirect
+from django.contrib.auth.decorators import login_required
+from dashboard.decorators import subscription_required
+from prediction.analysis.chaos import analyze_prediction_errors_by_events, CounterfactualAnalyzer, analyze_event
+import numpy as np
+import math
+from django.http import JsonResponse
+
+
 from django.db.models import Count, Avg, Q, Max, Sum, CharField, Value
 from django.db.models.functions import Concat
 
@@ -1561,6 +1569,75 @@ def betting(request):
     return render(request, 'betting.html', context)
 
 
+@login_required
+@subscription_required(allowed_models=['catboost_ensemble'])
+def chaos_impact(request):
+    # Section A: build 2022–2025 overview on the fly
+    df = analyze_prediction_errors_by_events(season=None, model_name='catboost_ensemble')
+    overall_mae = float(np.mean(np.abs(df['error']))) if not df.empty else float('nan')
+    cfa = CounterfactualAnalyzer(df)
+    clean_mae = cfa.analyze_clean_race_accuracy()
+    # Perfect chaos knowledge: set affected drivers' error to 0
+    df_cf = df.copy()
+    if not df_cf.empty:
+        df_cf.loc[df_cf['driver_affected'] == True, 'error'] = 0.0
+        perfect_mae = float(np.mean(np.abs(df_cf['error'])))
+    else:
+        perfect_mae = float('nan')
+
+    # Simple bootstrap CI for clean MAE
+    clean_mask = (df['race_category'] == 'clean') & (~df['driver_affected'])
+    clean_errors = df.loc[clean_mask, 'error'].to_numpy() if not df.empty else np.array([])
+    def bootstrap_ci(arr, n=1000, alpha=0.05):
+        if arr.size == 0:
+            return None
+        rng = np.random.default_rng(42)
+        boots = []
+        for _ in range(n):
+            sample = rng.choice(arr, size=arr.size, replace=True)
+            boots.append(np.mean(np.abs(sample)))
+        lo = float(np.quantile(boots, alpha/2))
+        hi = float(np.quantile(boots, 1 - alpha/2))
+        return (lo, hi)
+    ci = bootstrap_ci(clean_errors)
+
+    overview = {
+        'overall_mae': f"{overall_mae:.2f}" if not math.isnan(overall_mae) else '—',
+        'clean_mae': f"{clean_mae:.2f}" if not math.isnan(clean_mae) else '—',
+        'perfect_mae': f"{perfect_mae:.2f}" if not math.isnan(perfect_mae) else '—',
+        'clean_ci': f"{ci[0]:.2f}-{ci[1]:.2f}" if ci else '—',
+        'p_value': request.GET.get('p','~')  # optional: we can compute with scipy if installed
+    }
+
+    # Figures: try to use saved assets if available
+    import os
+    base = os.path.join(os.getcwd(), 'chaos_analysis')
+    figures = {
+        'box_by_category': None,
+        'scatter_chaos_vs_error': None,
+    }
+    for name in ['box_mae_by_category_all_years.png', 'scatter_chaos_vs_error_all_years.png']:
+        path = os.path.join(base, name)
+        if os.path.exists(path):
+            figures['box_by_category' if 'box' in name else 'scatter_chaos_vs_error'] = f"/static-cache/{name}"
+
+    # Section B: 2025 events list
+    season2025 = models.Event.objects.filter(year=2025).order_by('round').values('id','name','round')
+
+    return render(request, 'chaos_impact.html', {
+        'overview': overview,
+        'figures': figures,
+        'season2025': season2025,
+    })
+
+
+@login_required
+@subscription_required(allowed_models=['catboost_ensemble'])
+def api_chaos_event(request, event_id: int):
+    data = analyze_event(event_id, model_name='catboost_ensemble')
+    return JsonResponse(data or {}, safe=False)
+
+
 def place_bet(request):
     """Enhanced bet placement with market maker integration"""
     if not request.user.is_authenticated:
@@ -1655,7 +1732,7 @@ def place_bet(request):
             })
 
         # Get ML prediction if available
-        ml_prediction = None
+        ml_prediction = False
         ml_predicted_position = None
         ml_confidence = None
         if driver and event:
@@ -1691,10 +1768,11 @@ def place_bet(request):
         # Update market maker state
         market_maker.update_market_state(credits_staked)
 
-        # Update user profile with new betting statistics
+        # Deduct credits and update stats
+        profile.credits -= credits_staked
         profile.update_betting_stats(credits_staked, won=False, payout=0)
 
-        # Create credit transaction
+        # Create credit transaction reflecting new balance
         CreditTransaction.objects.create(
             user=request.user,
             transaction_type='BET_PLACED',
@@ -1703,6 +1781,7 @@ def place_bet(request):
             balance_after=profile.credits,
             bet=bet
         )
+        profile.save()
 
         # Get updated market statistics
         market_stats = get_market_statistics(event, bet_type, driver, team)
@@ -1738,17 +1817,17 @@ def my_bets(request):
         'event', 'driver', 'team'
     ).order_by('-created_at')
 
-    # Separate active and completed bets
-    active_bets = bets.filter(status='pending')
-    completed_bets = bets.filter(status__in=['won', 'lost'])
+    # Separate active and completed bets (status choices are uppercase)
+    active_bets = bets.filter(status='PENDING')
+    completed_bets = bets.filter(status__in=['WON', 'LOST'])
 
     # Calculate betting statistics
     total_bets = bets.count()
-    won_bets = completed_bets.filter(status='won').count()
+    won_bets = completed_bets.filter(status='WON').count()
     win_rate = (won_bets / total_bets * 100) if total_bets > 0 else 0
 
     total_wagered = bets.aggregate(total=Sum('credits_staked'))['total'] or 0
-    total_won = completed_bets.filter(status='won').aggregate(total=Sum('payout_received'))['total'] or 0
+    total_won = completed_bets.filter(status='WON').aggregate(total=Sum('payout_received'))['total'] or 0
     net_profit = total_won - total_wagered
 
     context = {
@@ -1829,7 +1908,11 @@ def get_historical_odds(bet_type, driver, team, event, position=None, opponent_d
             recent_races = RaceResult.objects.filter(driver=driver).count()
             if recent_races > 0:
                 dnf_rate = recent_dnfs / recent_races
-                base_odds = max(1.2, min(15.0, 1 / dnf_rate))
+                if dnf_rate > 0:
+                    base_odds = max(1.2, min(15.0, 1 / dnf_rate))
+                else:
+                    # No DNFs observed: set high base odds (unlikely to DNF)
+                    base_odds = 15.0
 
     elif bet_type == 'QUALIFYING_POSITION':
         if driver:
@@ -2106,20 +2189,24 @@ def get_market_statistics(event, bet_type, driver, team):
         ).count()
 
         # Get recent odds movement (last 10 bets)
-        recent_odds = Bet.objects.filter(
+        recent_odds = list(Bet.objects.filter(
             event=event,
             bet_type=bet_type,
             driver=driver,
             team=team
-        ).order_by('-created_at').values_list('odds', flat=True)[:10]
+        ).order_by('-created_at').values_list('odds', flat=True)[:10])
 
         odds_trend = 'stable'
         if len(recent_odds) >= 2:
             first_odds = recent_odds[-1]
             last_odds = recent_odds[0]
-            if last_odds > first_odds * 1.1:
+            try:
+                ratio = last_odds / first_odds if first_odds else 1.0
+            except Exception:
+                ratio = 1.0
+            if ratio > 1.1:
                 odds_trend = 'increasing'
-            elif last_odds < first_odds * 0.9:
+            elif ratio < 0.9:
                 odds_trend = 'decreasing'
 
         return {
@@ -2262,7 +2349,7 @@ def place_market_order(request):
                 # Create credit transaction
                 CreditTransaction.objects.create(
                     user=request.user,
-                    transaction_type='MARKET_ORDER',
+                    transaction_type='ADMIN_ADJUSTMENT',
                     amount=-amount,
                     description=f'Market order: {side} {amount} credits',
                     balance_after=profile.credits
