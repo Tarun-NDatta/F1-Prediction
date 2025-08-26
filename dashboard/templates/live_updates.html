@@ -3,18 +3,12 @@
 
 {% block title %}Live Updates - F1 Race Commentary{% endblock %}
 
+{% load static %}
 {% block extra_css %}
-<style>
-.live-header {
-    background: linear-gradient(135deg, #dc0000 0%, #ff6b6b 100%);
-    color: white;
-    padding: 2rem;
-    margin-bottom: 2rem;
-    border-radius: 12px;
-    text-align: center;
-}
+<link rel="stylesheet" href="{% static 'css/live_updates.css' %}">
 
-.live-status {
+{% comment %}
+
     display: inline-block;
     background: rgba(255, 255, 255, 0.2);
     padding: 0.5rem 1rem;
@@ -228,7 +222,7 @@ body.dark-mode .active-bet {
     margin-bottom: 1rem;
 }
 
-body.dark-mode .pre-race-predictions, 
+body.dark-mode .pre-race-predictions,
 body.dark-mode .live-predictions {
     background: #332b00;
 }
@@ -250,10 +244,10 @@ body.dark-mode .prediction-comparison {
 @media (max-width: 768px) {
     .commentary-section,
     .prediction-updates {
+{% endcomment %}
         height: 300px;
     }
 }
-</style>
 {% endblock %}
 
 {% block content %}
@@ -264,7 +258,7 @@ body.dark-mode .prediction-comparison {
         {% if current_event %}
             <h3>{{ current_event.name }}</h3>
             <p class="mb-0">
-                <i class="fas fa-map-marker-alt me-1"></i>{{ current_event.circuit.name }} | 
+                <i class="fas fa-map-marker-alt me-1"></i>{{ current_event.circuit.name }} |
                 <i class="fas fa-calendar me-1"></i>{{ current_event.date|date:"F j, Y" }}
             </p>
             <div class="live-status">
@@ -442,7 +436,7 @@ body.dark-mode .prediction-comparison {
                     <h4 class="mb-3">
                         <i class="fas fa-flag-checkered me-2"></i>Race Progress
                     </h4>
-                    
+
                     <div class="race-info">
                         <div class="row">
                             <div class="col-md-3">
@@ -459,24 +453,24 @@ body.dark-mode .prediction-comparison {
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="race-progress">
                         <div class="race-progress-bar"></div>
                     </div>
-                    
+
                     <div class="text-center">
                         <small class="text-muted">Race will begin in approximately 5 minutes</small>
                     </div>
                 </div>
             {% endif %}
         </div>
-        
+
         <div class="col-lg-4">
             <div class="betting-section">
                 <h4 class="mb-3">
                     <i class="fas fa-coins me-2"></i>Your Active Bets
                 </h4>
-                
+
                 {% if active_bets %}
                     {% for bet in active_bets %}
                         <div class="active-bet">
@@ -506,7 +500,7 @@ body.dark-mode .prediction-comparison {
                         </a>
                     </div>
                 {% endif %}
-                
+
                 <div class="mt-3 text-center">
                     <a href="{% url 'betting' %}" class="btn btn-outline-primary">
                         <i class="fas fa-edit me-1"></i>Update Betting
@@ -517,38 +511,16 @@ body.dark-mode .prediction-comparison {
     </div>
 </div>
 
+<script src="{% static 'js/live_updates.js' %}"></script>
 <script>
-// 2025 F1 Driver lineup (confirmed drivers only)
-const f1_2025_drivers = [
-    // Red Bull Racing
-    "Max Verstappen", "Sergio Pérez",
-    // Ferrari 
-    "Charles Leclerc", "Lewis Hamilton",
-    // McLaren
-    "Lando Norris", "Oscar Piastri",
-    // Mercedes
-    "George Russell", "Kimi Antonelli",
-    // Aston Martin
-    "Fernando Alonso", "Lance Stroll",
-    // Alpine
-    "Pierre Gasly", "Jack Doohan",
-    // Williams
-    "Alexander Albon", "Carlos Sainz Jr.",
-    // Kick Sauber (Sauber)
-    "Nico Hülkenberg", "Gabriel Bortoleto",
-    // RB (AlphaTauri)
-    "Yuki Tsunoda", "Isack Hadjar",
-    // Haas
-    "Oliver Bearman", "Esteban Ocon"
-];
-
+// Page JS extracted to static/js/live_updates.js
 // Auto-scroll commentary to bottom
 document.addEventListener('DOMContentLoaded', function() {
     const commentarySection = document.querySelector('.commentary-section');
     if (commentarySection) {
         commentarySection.scrollTop = commentarySection.scrollHeight;
     }
-    
+
     const predictionSection = document.querySelector('.prediction-updates');
     if (predictionSection) {
         predictionSection.scrollTop = predictionSection.scrollHeight;
@@ -591,12 +563,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // Show mock race details
                 document.getElementById('mockRaceDetails').classList.remove('d-none');
-                
-                // Generate and display starting grid
-                generateStartingGrid();
-                
-                // Generate pre-race prediction
-                generatePreRacePrediction();
+
+                // Generate and display starting grid and pre-race prediction using same order
+                const startingOrder = generateStartingGrid();
+                generatePreRacePrediction(startingOrder);
 
                 // Update UI
                 document.getElementById('startRaceBtn').classList.add('d-none');
@@ -627,13 +597,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function generateStartingGrid() {
         const startingGrid = document.getElementById('startingGrid');
-        const shuffledDrivers = [...f1_2025_drivers].sort(() => Math.random() - 0.5);
-        
+        const order = [...f1_2025_drivers].slice(0, 20).sort(() => Math.random() - 0.5);
+
         let gridHtml = '';
-        shuffledDrivers.slice(0, 20).forEach((driver, index) => {
+        order.forEach((driver, index) => {
             const position = index + 1;
             let positionClass = 'grid-position';
-            
+
             if (position === 1) {
                 positionClass += ' pole';
             } else if (position === 2) {
@@ -641,20 +611,21 @@ document.addEventListener('DOMContentLoaded', function() {
             } else if (position <= 10) {
                 positionClass += ' top-10';
             }
-            
+
             gridHtml += `<span class="${positionClass}">P${position}: ${driver}</span>`;
         });
-        
+
         startingGrid.innerHTML = gridHtml;
+        return order;
     }
 
-    function generatePreRacePrediction() {
-        const drivers = [...f1_2025_drivers].slice(0, 20);
-        preRacePrediction = drivers.sort(() => Math.random() - 0.5);
-        
+    function generatePreRacePrediction(order) {
+        const drivers = order && order.length ? order : [...f1_2025_drivers].slice(0, 20);
+        preRacePrediction = [...drivers];
+
         const preRaceContent = document.getElementById('preRacePredictionContent');
         let predictionHtml = '';
-        
+
         preRacePrediction.slice(0, 10).forEach((driver, index) => {
             const position = index + 1;
             predictionHtml += `
@@ -664,7 +635,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             `;
         });
-        
+
         preRaceContent.innerHTML = predictionHtml;
     }
 
@@ -779,7 +750,7 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             // Use 2025 drivers only
             const randomDriver = f1_2025_drivers[Math.floor(Math.random() * f1_2025_drivers.length)];
-            
+
             const response = await fetch('/api/mock-race/event/', {
                 method: 'POST',
                 headers: {
@@ -916,7 +887,7 @@ document.addEventListener('DOMContentLoaded', function() {
             predictions.slice(0, 5).forEach((pred, index) => {
                 const driver = positions[index];
                 const currentPos = driver ? driver.position : index + 1;
-                
+
                 // Convert decimal predictions to proper position format (P1-P20)
                 const predictedPosition = Math.max(1, Math.min(20, Math.round(pred)));
                 const change = predictedPosition - currentPos;
@@ -949,19 +920,19 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateLivePredictionTimeline(mlPredictions, positions) {
         const livePredictions = document.getElementById('livePredictions');
         const livePredictionContent = document.getElementById('livePredictionContent');
-        
+
         livePredictions.classList.remove('d-none');
-        
+
         // Show top 5 current predictions from the first model
         const firstModel = Object.keys(mlPredictions)[0];
         if (firstModel && mlPredictions[firstModel].predictions) {
             const predictions = mlPredictions[firstModel].predictions;
-            
+
             let timelineHtml = '';
             predictions.slice(0, 5).forEach((pred, index) => {
                 const driver = positions[index];
                 const predictedPosition = Math.max(1, Math.min(20, Math.round(pred)));
-                
+
                 timelineHtml += `
                     <div class="prediction-comparison">
                         <span>P${predictedPosition}: ${driver ? driver.driver_name : f1_2025_drivers[index] || 'Unknown'}</span>
@@ -969,7 +940,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 `;
             });
-            
+
             livePredictionContent.innerHTML = timelineHtml;
         }
     }
@@ -983,7 +954,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const change = Math.random() > 0.5 ? '+' : '-';
             const changeValue = Math.floor(Math.random() * 3) + 1; // 1-3 positions
             const probability = 85 - (index * 10) + Math.floor(Math.random() * 10); // Add some variation
-            
+
             predictionsHtml += `
                 <div class="prediction-item">
                     <div class="prediction-driver">P${driver.position}: ${driver.driver_name}</div>
@@ -1014,7 +985,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function resetRaceUI() {
         isRaceActive = false;
         preRacePrediction = null;
-        
+
         if (raceInterval) {
             clearInterval(raceInterval);
             raceInterval = null;

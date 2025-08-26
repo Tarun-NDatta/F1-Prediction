@@ -353,13 +353,28 @@ class MockRaceSimulator:
 
     def _initialize_drivers(self) -> List[DriverState]:
         """Initialize driver grid based on typical F1 field"""
-        # Realistic F1 2025 driver lineup
+        # Updated 2025 driver lineup (no Ricciardo, Bottas, Magnussen, Sargeant, de Vries)
         driver_names = [
-            "Max Verstappen", "Lando Norris", "Charles Leclerc", "Oscar Piastri",
-            "Carlos Sainz", "Lewis Hamilton", "George Russell", "Fernando Alonso",
-            "Lance Stroll", "Nico Hulkenberg", "Kevin Magnussen", "Yuki Tsunoda",
-            "Daniel Ricciardo", "Pierre Gasly", "Esteban Ocon", "Alexander Albon",
-            "Logan Sargeant", "Valtteri Bottas", "Zhou Guanyu", "Nyck de Vries"
+            # Red Bull
+            "Max Verstappen", "Yuki Tsunoda",
+            # Ferrari
+            "Charles Leclerc", "Lewis Hamilton",
+            # McLaren
+            "Lando Norris", "Oscar Piastri",
+            # Mercedes
+            "George Russell", "Kimi Antonelli",
+            # Aston Martin
+            "Fernando Alonso", "Lance Stroll",
+            # Alpine
+            "Pierre Gasly", "Jack Doohan",
+            # Williams
+            "Alexander Albon", "Franco Colapinto",
+            # Sauber
+            "Nico Hulkenberg", "Gabriel Bortoleto",
+            # RB
+            "Isack Hadjar", "Liam Lawson",
+            # Haas
+            "Oliver Bearman", "Esteban Ocon"
         ]
 
         drivers = []

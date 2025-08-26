@@ -1,0 +1,23 @@
+/* Live updates page CSS extracted from template */
+.live-header { background: linear-gradient(135deg, #dc0000 0%, #ff6b6b 100%); color: white; padding: 2rem; margin-bottom: 2rem; border-radius: 12px; text-align: center; }
+.live-status { display: inline-block; background: rgba(255, 255, 255, 0.2); padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.9rem; margin-top: 1rem; }
+.commentary-section { background: #f8f9fa; border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; height: 400px; overflow-y: auto; border: 1px solid #e9ecef; }
+body.dark-mode .commentary-section { background: #232527; border-color: #333; }
+.commentary-item { padding: 0.8rem; margin-bottom: 0.8rem; border-left: 3px solid #dc0000; background: white; border-radius: 0 8px 8px 0; }
+body.dark-mode .commentary-item { background: #2a2d30; }
+.commentary-time { font-size: 0.8rem; color: #6b7280; font-weight: bold; }
+.commentary-text { margin-top: 0.3rem; line-height: 1.4; }
+.prediction-updates { background: #e8f4fd; border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; height: 400px; overflow-y: auto; border: 1px solid #bee5eb; }
+body.dark-mode .prediction-updates { background: #1a1d1f; border-color: #2c3e50; }
+.prediction-item { padding: 0.8rem; margin-bottom: 0.8rem; background: white; border-radius: 8px; border-left: 3px solid #17a2b8; }
+body.dark-mode .prediction-item { background: #2a2d30; }
+.prediction-driver { font-weight: bold; color: #17a2b8; }
+.prediction-change { font-size: 0.9rem; color: #6b7280; }
+.mock-race-details { background: white; border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+body.dark-mode .mock-race-details { background: #232527; }
+.grid-position { display: inline-block; background: #f8f9fa; padding: 0.3rem 0.6rem; margin: 0.2rem; border-radius: 4px; font-size: 0.85rem; }
+body.dark-mode .grid-position { background: #2a2d30; }
+.grid-position.pole { background: #ffd700; color: #000; font-weight: bold; }
+.grid-position.front-row { background: #c0c0c0; color: #000; font-weight: bold; }
+.grid-position.top-10 { background: #cd7f32; color: #fff; }
+

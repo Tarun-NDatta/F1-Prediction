@@ -2,41 +2,12 @@
 {% load dashboard_extras %}
 {% block title %}F1 Predictions{% endblock %}
 
+{% load static %}
 {% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/prediction.css' %}">
+<!-- page-specific styles extracted to static/css/prediction.css -->
 <style>
-.prediction-header {
-    background: var(--f1-gradient);
-    color: white;
-    padding: 2rem;
-    margin-bottom: 2rem;
-    border-radius: 12px;
-    text-align: center;
-}
-.content-box {
-    border-radius: 20px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-    margin-bottom: 2rem;
-    padding: 2rem 1.5rem;
-}
-.model-selector .form-select {
-    border-radius: 8px;
-    min-height: 44px;
-    font-size: 1.1rem;
-    background: #fff;
-    color: #232527;
-    border: 1.5px solid #e9ecef;
-}
-body.dark-mode .model-selector .form-select {
-    background: #232527;
-    color: #fff;
-    border: 1.5px solid #444;
-}
-.model-selector .form-select option:disabled {
-    color: #999;
-    font-style: italic;
-}
-.overview-stats {
-    display: flex;
+
     justify-content: center;
     gap: 2.5rem;
     margin-top: 1.5rem;
@@ -454,7 +425,6 @@ body.dark-mode .model-performance-metrics h3 {
     .locked-prompt h4 { font-size: 1.3rem; }
     .locked-prompt p { font-size: 1rem; }
     .locked-prompt .btn-primary, .locked-prompt .btn-secondary { font-size: 1rem; padding: 0.6rem 1.2rem; }
-}
 </style>
 {% endblock %}
 
@@ -500,7 +470,7 @@ body.dark-mode .model-performance-metrics h3 {
                     {% endif %}
                 </div>
             </div>
-            
+
         </div>
 
         <div class="content-box mb-4">
@@ -509,8 +479,8 @@ body.dark-mode .model-performance-metrics h3 {
                 <span style="font-size: 1.4rem; font-weight: bold; color: var(--f1-red);">2025 Season Overview</span>
                 <span class="model-badge model-badge-active">{{ model_name }}</span>
             </div>
-            
-            
+
+
             <div style="display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap;">
                 {% if selected_model_key == 'catboost' and race_data.track_info %}
                 <div class="season-stat-card" style="background: #f8f9fa; border-radius: 20px; padding: 1.2rem 2.2rem; min-width: 260px; text-align: left;">
@@ -581,21 +551,55 @@ body.dark-mode .model-performance-metrics h3 {
             <div class="row g-3">
                 <div class="col-md-4">
                     <div class="chart-container" style="height: 260px;">
-                        <canvas id="maeCompare"></canvas>
+                        <h6 class="text-muted mb-2">MAE (lower is better)</h6>
+<canvas id="maeCompare"></canvas>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="chart-container" style="height: 260px;">
-                        <canvas id="top3Compare"></canvas>
+                        <h6 class="text-muted mb-2">Top 3 Accuracy</h6>
+<canvas id="top3Compare"></canvas>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="chart-container" style="height: 260px;">
-                        <canvas id="top10Compare"></canvas>
+                        <h6 class="text-muted mb-2">Top 10 Accuracy</h6>
+<canvas id="top10Compare"></canvas>
                     </div>
                 </div>
             </div>
         </div>
+
+
+<!-- Consistency (per-race MAE for selected model) -->
+<div class="content-box mb-4">
+    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.2rem;">
+        <span style="font-size: 1.8rem; color: var(--f1-red);"><i class="fas fa-wave-square"></i></span>
+        <span style="font-size: 1.3rem; font-weight: bold; color: var(--f1-red);">Per-Race Consistency (Selected Model)</span>
+    </div>
+    <div class="chart-container" style="height: 320px;">
+        <canvas id="perRaceMae"></canvas>
+    </div>
+</div>
+
+<!-- Top-10 vs Out-of-Top-10 (Selected Model) -->
+<div class="content-box mb-4">
+    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.2rem;">
+        <span style="font-size: 1.8rem; color: var(--f1-red);"><i class="fas fa-list-ol"></i></span>
+        <span style="font-size: 1.3rem; font-weight: bold; color: var(--f1-red);">Top-10 Prediction Performance (Selected Model)</span>
+    </div>
+    <div class="row text-center">
+        <div class="col-md-6">
+            <div style="font-size: 2rem; font-weight: 700; color: #16a34a;">{{ top10_hits|default:0 }}</div>
+            <div class="text-muted">Predicted Top 10 and Finished Top 10</div>
+        </div>
+        <div class="col-md-6">
+            <div style="font-size: 2rem; font-weight: 700; color: #dc2626;">{{ top10_misses|default:0 }}</div>
+            <div class="text-muted">Predicted Top 10 but Finished Outside</div>
+        </div>
+    </div>
+</div>
+
 
         {% if is_authenticated %}
             {% if True %}
@@ -642,6 +646,20 @@ body.dark-mode .model-performance-metrics h3 {
                                         </tbody>
                                     </table>
                                 </div>
+
+                                {% if race_data.incident_notes %}
+                                <div class="content-box mt-3" style="padding: 1rem 1.25rem;">
+                                    <div style="display:flex; align-items:center; gap: .5rem; color: var(--f1-red); font-weight:600; margin-bottom: .4rem;">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        <span>Notable race incidents impacting results</span>
+                                    </div>
+                                    <ul style="margin: 0; padding-left: 1.2rem;">
+                                        {% for note in race_data.incident_notes %}
+                                        <li class="text-muted" style="margin-bottom: .2rem;">{{ note }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                                {% endif %}
                             {% else %}
                                 <div class="coming-soon-table-message">
                                     <span class="model-badge model-badge-coming-soon"><i class="fas fa-tools"></i> Predictions Coming Soon!</span>
@@ -654,7 +672,7 @@ body.dark-mode .model-performance-metrics h3 {
             {% endif %}
         {% endif %}
     </div>
-    
+
     {% if not is_authenticated %}
     <div class="predictions-locked-overlay">
         <div class="locked-prompt">
@@ -673,30 +691,22 @@ body.dark-mode .model-performance-metrics h3 {
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-// === RACE DETAILS TOGGLE FUNCTIONALITY ===
-function toggleRaceDetails(idx) {
-    var details = document.getElementById('details-' + idx);
-    var arrow = document.getElementById('arrow-' + idx);
-    if (details.style.display === 'block') {
-        details.style.display = 'none';
-        arrow.classList.remove('rotated');
-    } else {
-        details.style.display = 'block';
-        arrow.classList.add('rotated');
-    }
-}
+  window.predictionData = {
+    perRaceLabels: {{ per_race_labels|default:'[]'|safe }},
+    perRaceMae: {{ per_race_mae|default:'[]'|safe }}
+  };
+</script>
+<script src="{% static 'js/prediction.js' %}"></script>
+<script>
 
-// === MODEL SELECTION FUNCTIONALITY ===
-function changeModel(modelKey) {
-    window.location.href = '?model=' + modelKey;
-}
-
-// Add event listener for model selection
 document.addEventListener('DOMContentLoaded', function() {
     const selectElement = document.querySelector('#modelSelect');
     if (selectElement) {
         selectElement.addEventListener('change', function(e) {
-            changeModel(this.value);
+            const key = this.value;
+            const url = new URL(window.location.href);
+            url.searchParams.set('model', key);
+            window.location.href = url.toString();
         });
     }
 });

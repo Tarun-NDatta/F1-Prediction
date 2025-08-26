@@ -1,0 +1,52 @@
+/* Prediction page CSS extracted from template */
+.prediction-header { background: var(--f1-gradient); color: white; padding: 2rem; margin-bottom: 2rem; border-radius: 12px; text-align: center; }
+.content-box { border-radius: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); margin-bottom: 2rem; padding: 2rem 1.5rem; }
+.model-selector .form-select { border-radius: 8px; min-height: 44px; font-size: 1.1rem; background: #fff; color: #232527; border: 1.5px solid #e9ecef; }
+body.dark-mode .model-selector .form-select { background: #232527; color: #fff; border: 1.5px solid #444; }
+.model-selector .form-select option:disabled { color: #999; font-style: italic; }
+.overview-stats { display: flex; justify-content: center; gap: 2.5rem; margin-top: 1.5rem; }
+.overview-stat { text-align: center; flex: 1; }
+.overview-stat-value { font-size: 2.2rem; font-weight: bold; margin-bottom: 0.2rem; }
+body.light-mode .overview-stat-value { color: var(--f1-red); }
+body.dark-mode .overview-stat-value { color: var(--f1-gold); }
+.overview-stat-label { font-size: 1rem; color: #6b7280; }
+body.dark-mode .overview-stat-label { color: #ccc; }
+.table th, .table td { vertical-align: middle; font-size: 1rem; padding: 0.9rem 1.2rem; }
+.table th { background: #f8f9fa; color: var(--f1-red); font-weight: 700; border-bottom: 2px solid #e9ecef; }
+body.dark-mode .table th { background: #232527 !important; color: #fff !important; border-color: #333 !important; }
+body.dark-mode .table td { background: #232527 !important; color: #fff !important; border-color: #333 !important; }
+.table tbody tr:hover { background: rgba(220, 20, 60, 0.06); }
+body.dark-mode .table tbody tr:hover { background: rgba(255,255,255,0.04) !important; }
+.model-stats { background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 12px; padding: 1.5rem; margin-top: 1rem; border-left: 4px solid var(--f1-red); }
+body.dark-mode .model-stats { background: linear-gradient(135deg, #2a2d30 0%, #232527 100%); border-left-color: var(--f1-gold); }
+.model-stats h5 { color: var(--f1-red); margin-bottom: 1rem; font-weight: 600; }
+body.dark-mode .model-stats h5 { color: var(--f1-gold); }
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 1rem; }
+.stat-item { text-align: center; padding: 0.8rem; background: rgba(255,255,255,0.7); border-radius: 8px; border: 1px solid rgba(0,0,0,0.1); }
+body.dark-mode .stat-item { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); }
+.stat-value { font-size: 1.5rem; font-weight: bold; color: var(--f1-red); margin-bottom: 0.2rem; }
+body.dark-mode .stat-value { color: var(--f1-gold); }
+.stat-label { font-size: 0.8rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; }
+body.dark-mode .stat-label { color: #ccc; }
+.subscription-alert { background: rgba(220, 53, 69, 0.1); border-radius: 8px; padding: 1rem; margin-top: 1rem; border-left: 4px solid #dc3545; }
+body.dark-mode .subscription-alert { background: rgba(220, 53, 69, 0.2); }
+.subscription-alert h6 { color: #dc3545; margin-bottom: 0.5rem; }
+.subscription-alert p { margin: 0; color: #6b7280; }
+body.dark-mode .subscription-alert p { color: #ccc; }
+.subscription-alert a { color: var(--f1-red); text-decoration: none; font-weight: 500; }
+.subscription-alert a:hover { text-decoration: underline; }
+.prediction-vs-actual { margin-top: 3rem; padding: 2rem; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 16px; border: 1px solid rgba(0,0,0,0.1); }
+body.dark-mode .prediction-vs-actual { background: linear-gradient(135deg, #2a2d30 0%, #232527 100%); border-color: rgba(255,255,255,0.1); }
+.prediction-vs-actual h3 { color: var(--f1-red); margin-bottom: 1.5rem; text-align: center; font-weight: 600; }
+body.dark-mode .prediction-vs-actual h3 { color: var(--f1-gold); }
+.chart-container { position: relative; height: 400px; margin: 2rem 0; }
+.scatter-plot { width: 100%; height: 100%; background: rgba(255,255,255,0.9); border-radius: 8px; border: 1px solid rgba(0,0,0,0.1); }
+body.dark-mode .scatter-plot { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); }
+/* Responsive tweaks */
+@media (max-width: 600px) {
+  .locked-prompt { padding: 1.2rem 0.5rem; min-width: 0; }
+  .locked-prompt h4 { font-size: 1.3rem; }
+  .locked-prompt p { font-size: 1rem; }
+  .locked-prompt .btn-primary, .locked-prompt .btn-secondary { font-size: 1rem; padding: 0.6rem 1.2rem; }
+}
+
