@@ -29,8 +29,12 @@ class Command(BaseCommand):
                             help='Save trained CatBoost model')
         parser.add_argument('--compare', action='store_true',
                             help='Compare predictions with actual results when making predictions')
+        parser.add_argument('--margin', type=int, default=2,
+                            help='± margin to display alongside predicted positions (default: 2)')
 
     def handle(self, *args, **options):
+        # expose options for later methods
+        self.options = options
         try:
             pipeline = EnhancedF1Pipeline(model_dir=options['model_dir'])
             
@@ -132,6 +136,8 @@ class Command(BaseCommand):
             raise
 
     def make_predictions(self, pipeline, year, round_num, use_openf1=False, compare=False):
+        # carry CLI margin into instance for printing
+        self.margin = self.options.get('margin', 2) if hasattr(self, 'options') else 2
         """Make predictions for a specific race"""
         try:
             event = Event.objects.get(year=year, round=round_num)
@@ -167,27 +173,29 @@ class Command(BaseCommand):
             raise
 
     def display_predictions(self, predictions_df, event):
-        """Display race predictions in a formatted table"""
+        """Display race predictions in a formatted table with ± margin."""
+        margin = getattr(self, 'margin', 2)
         self.stdout.write(f"\n=== CatBoost Predictions for {event.name} ===")
         self.stdout.write(f"Track Category: {predictions_df.iloc[0]['track_category']}")
         self.stdout.write("")
-        
+
         # Header
-        self.stdout.write(f"{'Pos':<4} {'Driver':<20} {'CatBoost':<9} {'Ensemble':<9} {'Ridge':<8} {'XGBoost':<8} {'Qual':<5}")
-        self.stdout.write("-" * 65)
-        
+        self.stdout.write(f"{'Pos':<4} {'Driver':<20} {'CatBoost':<9} {'±':<2} {'Ensemble':<9} {'Ridge':<8} {'XGBoost':<8} {'Qual':<5}")
+        self.stdout.write("-" * 70)
+
         # Predictions
         for _, row in predictions_df.iterrows():
             self.stdout.write(
                 f"{int(row['final_predicted_position']):<4} "
                 f"{row['driver']:<20} "
                 f"{row['catboost_prediction']:<9.2f} "
+                f"±{margin:<1} "
                 f"{row['ensemble_prediction']:<9.2f} "
                 f"{row['ridge_prediction']:<8.2f} "
                 f"{row['xgboost_prediction']:<8.2f} "
                 f"{int(row['qualifying_position']):<5}"
             )
-        
+
         # Track characteristics
         self.stdout.write(f"\n=== Track Characteristics ===")
         self.stdout.write(f"Power Sensitivity: {predictions_df.iloc[0]['track_power_sensitivity']:.1f}/10")
@@ -279,31 +287,42 @@ class Command(BaseCommand):
             return
         
         from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-        from scipy.stats import spearmanr
-        
+        from prediction.metrics.ranking import calculate_lsd_score, kendall_tau, spearman_rho
+
         y_true = comparison_df['actual_position']
         catboost_pred = comparison_df['final_predicted_position']
         ensemble_pred = comparison_df['ensemble_prediction']
-        
+
+        # Build ranking orders by driver display name
+        actual_order = list(comparison_df.sort_values('actual_position')['driver'])
+        catboost_order = list(comparison_df.sort_values('final_predicted_position')['driver'])
+        ensemble_order = list(comparison_df.sort_values('ensemble_prediction')['driver'])
+
         # Calculate metrics
         catboost_mae = mean_absolute_error(y_true, catboost_pred)
         catboost_rmse = np.sqrt(mean_squared_error(y_true, catboost_pred))
         catboost_r2 = r2_score(y_true, catboost_pred)
-        catboost_spearman = spearmanr(y_true, catboost_pred)[0]
-        
+        catboost_spearman = spearman_rho(catboost_order, actual_order)
+        catboost_kendall = kendall_tau(catboost_order, actual_order)
+        catboost_lsd = calculate_lsd_score(catboost_order, actual_order)
+
         ensemble_mae = mean_absolute_error(y_true, ensemble_pred)
         ensemble_rmse = np.sqrt(mean_squared_error(y_true, ensemble_pred))
         ensemble_r2 = r2_score(y_true, ensemble_pred)
-        ensemble_spearman = spearmanr(y_true, ensemble_pred)[0]
-        
+        ensemble_spearman = spearman_rho(ensemble_order, actual_order)
+        ensemble_kendall = kendall_tau(ensemble_order, actual_order)
+        ensemble_lsd = calculate_lsd_score(ensemble_order, actual_order)
+
         self.stdout.write(f"\n=== Performance Metrics ({len(comparison_df)} drivers) ===")
         self.stdout.write(f"{'Metric':<20} {'CatBoost':<10} {'Ensemble':<10} {'Improvement':<12}")
         self.stdout.write("-" * 55)
         self.stdout.write(f"{'MAE':<20} {catboost_mae:<10.3f} {ensemble_mae:<10.3f} {ensemble_mae - catboost_mae:+12.3f}")
         self.stdout.write(f"{'RMSE':<20} {catboost_rmse:<10.3f} {ensemble_rmse:<10.3f} {ensemble_rmse - catboost_rmse:+12.3f}")
         self.stdout.write(f"{'R²':<20} {catboost_r2:<10.3f} {ensemble_r2:<10.3f} {catboost_r2 - ensemble_r2:+12.3f}")
-        self.stdout.write(f"{'Spearman':<20} {catboost_spearman:<10.3f} {ensemble_spearman:<10.3f} {catboost_spearman - ensemble_spearman:+12.3f}")
-        
+        self.stdout.write(f"{'Spearman (rho)':<20} {catboost_spearman:<10.3f} {ensemble_spearman:<10.3f} {catboost_spearman - ensemble_spearman:+12.3f}")
+        self.stdout.write(f"{'Kendall (tau)':<20} {catboost_kendall:<10.3f} {ensemble_kendall:<10.3f} {catboost_kendall - ensemble_kendall:+12.3f}")
+        self.stdout.write(f"{'LSD (score)':<20} {catboost_lsd['normalized_score']:<10.1f} {ensemble_lsd['normalized_score']:<10.1f} {ensemble_lsd['normalized_score'] - catboost_lsd['normalized_score']:+12.1f}")
+
         # Top-N accuracy
         for n in [3, 5, 10]:
             if len(comparison_df) >= n:

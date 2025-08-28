@@ -353,6 +353,29 @@ class CounterfactualAnalyzer:
         upper = float(np.percentile(boot, (1+ci)/2*100))
         return float(np.mean(x)), lower, upper
 
+    def significance_test(self, mask_a: pd.Series, mask_b: pd.Series) -> Dict:
+        xa = self.df.loc[mask_a, 'error'].to_numpy()
+        xb = self.df.loc[mask_b, 'error'].to_numpy()
+        if xa.size == 0 or xb.size == 0:
+            return {'method': 'NA', 'p_value': float('nan')}
+        try:
+            from scipy.stats import mannwhitneyu
+            stat, p = mannwhitneyu(xa, xb, alternative='two-sided')
+            return {'method': 'mannwhitneyu', 'stat': float(stat), 'p_value': float(p)}
+        except Exception:
+            # Fallback: bootstrap difference in means
+            rng = np.random.default_rng(42)
+            n_boot = 2000
+            diffs = []
+            for _ in range(n_boot):
+                sa = xa[rng.integers(0, xa.size, xa.size)]
+                sb = xb[rng.integers(0, xb.size, xb.size)]
+                diffs.append(float(np.mean(sa) - np.mean(sb)))
+            diffs = np.array(diffs)
+            p = float(2 * min(np.mean(diffs >= 0), np.mean(diffs <= 0)))
+            return {'method': 'bootstrap_diff_means', 'p_value': p}
+
+
 
 def analyze_event(event_id: int, model_name: str = 'catboost_ensemble') -> Dict:
     """Analyze a single race event with driver-level reasons for errors.

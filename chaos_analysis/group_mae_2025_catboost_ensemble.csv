@@ -1,3 +1,6 @@
 race_category,driver_affected,mae
-clean,False,2.0614754098360657
-clean,True,5.857142857142857
+chaotic,False,2.4875
+chaotic,True,4.95
+clean,False,1.45
+moderate,False,1.9838709677419355
+moderate,True,7.066666666666666

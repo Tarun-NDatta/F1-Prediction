@@ -1,6 +1,6 @@
 """
 Live Prediction System for F1 Races
-Integrates with OpenF1 API and continuously updates predictions until 15 laps to go
+RapidAPI-only integration for live updates
 """
 
 import os
@@ -1204,32 +1204,118 @@ class MockMLPredictionManager:
             ]
         }
 
+class RapidAPIClient:
+    """Client for RapidAPI f1-live-pulse provider with monthly quota tracking."""
+    def __init__(self, api_key: str | None = None, monthly_limit: int = 40, usage_file: str | None = None):
+        import datetime
+        from django.conf import settings
+        self.base_url = "https://f1-live-pulse.p.rapidapi.com"
+        self.host = "f1-live-pulse.p.rapidapi.com"
+        self.api_key = api_key or os.getenv("RAPIDAPI_KEY")
+        self.session = None
+        self.monthly_limit = monthly_limit
+        # Persist usage under project root
+        base_dir = getattr(settings, 'BASE_DIR', os.getcwd())
+        self.usage_file = usage_file or os.path.join(base_dir, 'rapidapi_usage.json')
+        self._now = datetime.datetime.utcnow
+        if not self.api_key:
+            raise RuntimeError("RAPIDAPI_KEY not set. Add it to .env or environment.")
+
+    def _load_usage(self) -> dict:
+        try:
+            with open(self.usage_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            return data if isinstance(data, dict) else {}
+        except Exception:
+            return {}
+
+    def _save_usage(self, data: dict) -> None:
+        try:
+            with open(self.usage_file, 'w', encoding='utf-8') as f:
+                json.dump(data, f)
+        except Exception:
+            pass
+
+    def _current_month_key(self) -> str:
+        now = self._now()
+        return f"{now.year:04d}-{now.month:02d}"
+
+    def can_make_request(self) -> bool:
+        data = self._load_usage()
+        mon = self._current_month_key()
+        if data.get('month') != mon:
+            data = {'month': mon, 'count': 0}
+            self._save_usage(data)
+            return True
+        return int(data.get('count', 0)) < int(self.monthly_limit)
+
+    def record_request(self) -> None:
+        data = self._load_usage()
+        mon = self._current_month_key()
+        if data.get('month') != mon:
+            data = {'month': mon, 'count': 0}
+        data['count'] = int(data.get('count', 0)) + 1
+        self._save_usage(data)
+
+    def quota_status(self) -> dict:
+        data = self._load_usage()
+        mon = self._current_month_key()
+        count = int(data.get('count', 0)) if data.get('month') == mon else 0
+        return {'month': mon, 'used': count, 'limit': int(self.monthly_limit), 'remaining': max(0, int(self.monthly_limit) - count)}
+
+    async def __aenter__(self):
+        self.session = aiohttp.ClientSession()
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb):
+        if self.session:
+            await self.session.close()
+
+    async def _get(self, path: str):
+        if not self.can_make_request():
+            raise RuntimeError("RapidAPI monthly quota reached. Aborting request.")
+        url = f"{self.base_url}{path}"
+        headers = {
+            "x-rapidapi-host": self.host,
+            "x-rapidapi-key": self.api_key,
+        }
+        async with self.session.get(url, headers=headers, timeout=15) as resp:
+            resp.raise_for_status()
+            data = await resp.json()
+            # Only record on success
+            self.record_request()
+            return data
+
+    async def get_fia_documents(self):
+        return await self._get("/fiaDocuments")
+
+
 class OpenF1Client:
     """Client for OpenF1 API to get live race data via GitHub"""
-    
+
     def __init__(self):
         # Get GitHub credentials from environment variables with mock defaults
         self.github_username = os.getenv('GITHUB_USERNAME', 'mock_username')
         self.github_token = os.getenv('GITHUB_TOKEN', 'mock_token')
         self.github_repo = os.getenv('GITHUB_REPO', 'mock_repo')
-        
+
         # GitHub API base URL
         self.github_api_url = "https://api.github.com"
         self.session = None
-        
+
         # Mock data for testing (remove when real credentials are added)
-        self.use_mock_data = (self.github_username == 'mock_username' or 
-                             self.github_token == 'mock_token' or 
+        self.use_mock_data = (self.github_username == 'mock_username' or
+                             self.github_token == 'mock_token' or
                              self.github_repo == 'mock_repo')
-    
+
     async def __aenter__(self):
         self.session = aiohttp.ClientSession()
         return self
-    
+
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         if self.session:
             await self.session.close()
-    
+
     async def get_current_session(self) -> Optional[Dict]:
         """Get current F1 session from GitHub or mock data"""
         try:
@@ -1243,17 +1329,17 @@ class OpenF1Client:
                     'date': '2025-08-24',
                     'total_laps': 50
                 }
-            
+
             # GitHub API call to get OpenF1 data
             headers = {
                 'Authorization': f'token {self.github_token}',
                 'Accept': 'application/vnd.github.v3+json'
             }
-            
+
             # This would be the actual GitHub API call to your private repo
             # For now, returning mock data
             url = f"{self.github_api_url}/repos/{self.github_username}/{self.github_repo}/contents/openf1/sessions.json"
-            
+
             async with self.session.get(url, headers=headers) as response:
                 if response.status == 200:
                     data = await response.json()
@@ -1262,7 +1348,7 @@ class OpenF1Client:
                     import json
                     content = base64.b64decode(data['content']).decode('utf-8')
                     sessions = json.loads(content)
-                    
+
                     # Find current/active session
                     for session in sessions:
                         if session.get('session_status') == 'active':
@@ -1274,7 +1360,7 @@ class OpenF1Client:
         except Exception as e:
             logger.error(f"Error getting current session: {e}")
             return None
-    
+
     async def get_lap_times(self, session_id: int, lap_number: int = None) -> List[Dict]:
         """Get lap times for a session from GitHub or mock data"""
         try:
@@ -1291,15 +1377,15 @@ class OpenF1Client:
                         'sector3_time': 28.0 + (driver_num * 0.3),
                     })
                 return mock_lap_times
-            
+
             # GitHub API call for lap times
             headers = {
                 'Authorization': f'token {self.github_token}',
                 'Accept': 'application/vnd.github.v3+json'
             }
-            
+
             url = f"{self.github_api_url}/repos/{self.github_username}/{self.github_repo}/contents/openf1/lap_times.json"
-            
+
             async with self.session.get(url, headers=headers) as response:
                 if response.status == 200:
                     data = await response.json()
@@ -1307,12 +1393,12 @@ class OpenF1Client:
                     import json
                     content = base64.b64decode(data['content']).decode('utf-8')
                     lap_times = json.loads(content)
-                    
+
                     # Filter by session_id and lap_number if provided
                     filtered_times = [lt for lt in lap_times if lt.get('session_id') == session_id]
                     if lap_number:
                         filtered_times = [lt for lt in filtered_times if lt.get('lap_number') == lap_number]
-                    
+
                     return filtered_times
                 else:
                     logger.warning(f"GitHub API returned status {response.status}")
@@ -1321,7 +1407,7 @@ class OpenF1Client:
         except Exception as e:
             logger.error(f"Error getting lap times: {e}")
             return []
-    
+
     async def get_driver_positions(self, session_id: int) -> List[Dict]:
         """Get current driver positions from GitHub or mock data"""
         try:
@@ -1340,15 +1426,15 @@ class OpenF1Client:
                         ]
                     })
                 return mock_positions
-            
+
             # GitHub API call for driver positions
             headers = {
                 'Authorization': f'token {self.github_token}',
                 'Accept': 'application/vnd.github.v3+json'
             }
-            
+
             url = f"{self.github_api_url}/repos/{self.github_username}/{self.github_repo}/contents/openf1/positions.json"
-            
+
             async with self.session.get(url, headers=headers) as response:
                 if response.status == 200:
                     data = await response.json()
@@ -1356,7 +1442,7 @@ class OpenF1Client:
                     import json
                     content = base64.b64decode(data['content']).decode('utf-8')
                     positions = json.loads(content)
-                    
+
                     # Filter by session_id
                     filtered_positions = [pos for pos in positions if pos.get('session_id') == session_id]
                     return filtered_positions
@@ -1367,7 +1453,7 @@ class OpenF1Client:
         except Exception as e:
             logger.error(f"Error getting driver positions: {e}")
             return []
-    
+
     async def get_weather_data(self, session_id: int) -> Optional[Dict]:
         """Get weather data for session from GitHub or mock data"""
         try:
@@ -1381,15 +1467,15 @@ class OpenF1Client:
                     'wind_speed': 8.5,
                     'wind_direction': 180
                 }
-            
+
             # GitHub API call for weather data
             headers = {
                 'Authorization': f'token {self.github_token}',
                 'Accept': 'application/vnd.github.v3+json'
             }
-            
+
             url = f"{self.github_api_url}/repos/{self.github_username}/{self.github_repo}/contents/openf1/weather.json"
-            
+
             async with self.session.get(url, headers=headers) as response:
                 if response.status == 200:
                     data = await response.json()
@@ -1397,7 +1483,7 @@ class OpenF1Client:
                     import json
                     content = base64.b64decode(data['content']).decode('utf-8')
                     weather_data = json.loads(content)
-                    
+
                     # Filter by session_id
                     filtered_weather = [w for w in weather_data if w.get('session_id') == session_id]
                     return filtered_weather[0] if filtered_weather else None
@@ -1408,7 +1494,7 @@ class OpenF1Client:
         except Exception as e:
             logger.error(f"Error getting weather data: {e}")
             return None
-    
+
     async def get_tire_data(self, session_id: int) -> List[Dict]:
         """Get tire compound data from GitHub or mock data"""
         try:
@@ -1424,15 +1510,15 @@ class OpenF1Client:
                         'wear': (driver_num * 5) % 100  # Mock tire wear
                     })
                 return mock_tire_data
-            
+
             # GitHub API call for tire data
             headers = {
                 'Authorization': f'token {self.github_token}',
                 'Accept': 'application/vnd.github.v3+json'
             }
-            
+
             url = f"{self.github_api_url}/repos/{self.github_username}/{self.github_repo}/contents/openf1/tyres.json"
-            
+
             async with self.session.get(url, headers=headers) as response:
                 if response.status == 200:
                     data = await response.json()
@@ -1440,7 +1526,7 @@ class OpenF1Client:
                     import json
                     content = base64.b64decode(data['content']).decode('utf-8')
                     tire_data = json.loads(content)
-                    
+
                     # Filter by session_id
                     filtered_tires = [t for t in tire_data if t.get('session_id') == session_id]
                     return filtered_tires
@@ -1454,7 +1540,7 @@ class OpenF1Client:
 
 class LivePredictionSystem:
     """Main live prediction system"""
-    
+
     def __init__(self):
         self.openf1_client = None
         self.models = {}
@@ -1464,70 +1550,70 @@ class LivePredictionSystem:
         self.prediction_interval = 30  # seconds
         self.final_prediction_lap = 15  # Make final prediction with 15 laps to go
         self.should_stop = False  # Flag to stop gracefully
-        
+
         # Load ML models
         self._load_models()
         self._load_feature_pipeline()
-    
+
     def _load_models(self):
         """Load all trained ML models"""
         try:
             models_dir = "models"
-            
+
             # Load latest models (assuming most recent timestamp)
             model_files = [f for f in os.listdir(models_dir) if f.endswith('.pkl')]
             if not model_files:
                 logger.error("No model files found")
                 return
-            
+
             # Get latest timestamp
             timestamps = set()
             for file in model_files:
                 if '_v' in file and '_' in file.split('_v')[1]:
                     timestamp = file.split('_v')[1].split('_')[0]
                     timestamps.add(timestamp)
-            
+
             if not timestamps:
                 logger.error("No valid model timestamps found")
                 return
-            
+
             latest_timestamp = max(timestamps)
             logger.info(f"Loading models with timestamp: {latest_timestamp}")
-            
+
             # Load Ridge Regression
             ridge_path = os.path.join(models_dir, f"f1_v{latest_timestamp}_ridge.pkl")
             if os.path.exists(ridge_path):
                 self.models['ridge'] = load_model(ridge_path)
                 logger.info("Loaded Ridge Regression model")
-            
+
             # Load XGBoost
             xgb_path = os.path.join(models_dir, f"f1_v{latest_timestamp}_xgboost.pkl")
             if os.path.exists(xgb_path):
                 self.models['xgboost'] = load_model(xgb_path)
                 logger.info("Loaded XGBoost model")
-            
+
             # Load Stacked Model (CatBoost)
             stacked_path = os.path.join(models_dir, f"f1_v{latest_timestamp}_stacked_model.pkl")
             if os.path.exists(stacked_path):
                 self.models['catboost'] = load_model(stacked_path)
                 logger.info("Loaded CatBoost ensemble model")
-            
+
             # Load preprocessor
             preprocessor_path = os.path.join(models_dir, f"f1_v{latest_timestamp}_preprocessor.pkl")
             if os.path.exists(preprocessor_path):
                 self.models['preprocessor'] = load_model(preprocessor_path)
                 logger.info("Loaded preprocessor")
-            
+
             # Load feature list
             features_path = os.path.join(models_dir, f"f1_v{latest_timestamp}_features.pkl")
             if os.path.exists(features_path):
                 with open(features_path, 'rb') as f:
                     self.models['feature_list'] = pickle.load(f)
                 logger.info("Loaded feature list")
-            
+
         except Exception as e:
             logger.error(f"Error loading models: {e}")
-    
+
     def _load_feature_pipeline(self):
         """Load feature pipeline for live data processing"""
         try:
@@ -1535,38 +1621,38 @@ class LivePredictionSystem:
             logger.info("Loaded feature pipeline")
         except Exception as e:
             logger.error(f"Error loading feature pipeline: {e}")
-    
+
     async def get_current_race_event(self) -> Optional[Event]:
         """Get current race event from database"""
         try:
             # Get current date
             now = timezone.now().date()
-            
+
             # Find current/upcoming race
             current_event = Event.objects.filter(
                 date__gte=now,
                 year=2025  # Adjust year as needed
             ).order_by('date').first()
-            
+
             if current_event:
                 logger.info(f"Current event: {current_event.name} ({current_event.date})")
                 return current_event
-            
+
             return None
         except Exception as e:
             logger.error(f"Error getting current race event: {e}")
             return None
-    
+
     def _extract_live_features(self, live_data: Dict, event: Event) -> pd.DataFrame:
         """Extract features from live race data"""
         try:
             features = {}
-            
+
             # Basic event features
             features['year'] = event.year
             features['round'] = event.round
             features['circuit_id'] = event.circuit.circuit_ref
-            
+
             # Weather features
             if 'weather_data' in live_data and live_data['weather_data']:
                 weather = live_data['weather_data']
@@ -1579,40 +1665,40 @@ class LivePredictionSystem:
                 features['track_temp'] = 25.0
                 features['humidity'] = 50.0
                 features['rain'] = 0
-            
+
             # Lap and race progress
             features['current_lap'] = live_data.get('current_lap', 1)
             features['total_laps'] = live_data.get('total_laps', 50)
             features['race_progress'] = features['current_lap'] / features['total_laps']
-            
+
             # Driver-specific features from live data
             driver_features = []
             for driver_data in live_data.get('driver_positions', []):
                 driver_id = driver_data.get('driver_number')
                 if not driver_id:
                     continue
-                
+
                 try:
                     driver = Driver.objects.get(driver_id=str(driver_id))
-                    
+
                     # Get historical performance data
                     driver_perf = DriverPerformance.objects.filter(
                         driver=driver,
                         event__year__lt=event.year
                     ).order_by('-event__date').first()
-                    
+
                     team_perf = TeamPerformance.objects.filter(
                         team=driver.team,
                         event__year__lt=event.year
                     ).order_by('-event__date').first()
-                    
+
                     # Current race position
                     current_position = driver_data.get('position', 20)
-                    
+
                     # Lap times (if available)
                     lap_time = driver_data.get('last_lap_time', 0)
                     sector_times = driver_data.get('sector_times', [0, 0, 0])
-                    
+
                     driver_feature = {
                         'driver_id': driver.driver_id,
                         'driver_ref': driver.driver_ref,
@@ -1631,39 +1717,39 @@ class LivePredictionSystem:
                         'team_dnf_rate': team_perf.dnf_rate if team_perf else 0.1,
                         'team_pit_stop_avg': team_perf.pit_stop_avg if team_perf else 2.5,
                     }
-                    
+
                     driver_features.append(driver_feature)
-                    
+
                 except Driver.DoesNotExist:
                     logger.warning(f"Driver not found: {driver_id}")
                     continue
-            
+
             # Create DataFrame with all driver features
             if driver_features:
                 df = pd.DataFrame(driver_features)
-                
+
                 # Add global features to each row
                 for key, value in features.items():
                     df[key] = value
-                
+
                 return df
             else:
                 logger.warning("No driver features extracted")
                 return pd.DataFrame()
-                
+
         except Exception as e:
             logger.error(f"Error extracting live features: {e}")
             return pd.DataFrame()
-    
+
     def _make_predictions(self, features_df: pd.DataFrame) -> Dict:
         """Make predictions using all loaded models"""
         try:
             if features_df.empty:
                 logger.warning("No features available for prediction")
                 return {}
-            
+
             predictions = {}
-            
+
             # Preprocess features
             if 'preprocessor' in self.models:
                 try:
@@ -1673,7 +1759,7 @@ class LivePredictionSystem:
                     return {}
             else:
                 processed_features = features_df
-            
+
             # Ridge Regression predictions
             if 'ridge' in self.models:
                 try:
@@ -1682,7 +1768,7 @@ class LivePredictionSystem:
                     logger.info("Made Ridge Regression predictions")
                 except Exception as e:
                     logger.error(f"Error in Ridge Regression: {e}")
-            
+
             # XGBoost predictions
             if 'xgboost' in self.models:
                 try:
@@ -1691,7 +1777,7 @@ class LivePredictionSystem:
                     logger.info("Made XGBoost predictions")
                 except Exception as e:
                     logger.error(f"Error in XGBoost: {e}")
-            
+
             # CatBoost ensemble predictions
             if 'catboost' in self.models:
                 try:
@@ -1701,7 +1787,7 @@ class LivePredictionSystem:
                         ensemble_features.append(predictions['ridge'])
                     if 'xgboost' in predictions:
                         ensemble_features.append(predictions['xgboost'])
-                    
+
                     if ensemble_features:
                         ensemble_input = np.column_stack(ensemble_features)
                         catboost_preds = self.models['catboost'].predict(ensemble_input)
@@ -1709,20 +1795,20 @@ class LivePredictionSystem:
                         logger.info("Made CatBoost ensemble predictions")
                 except Exception as e:
                     logger.error(f"Error in CatBoost: {e}")
-            
+
             return predictions
-            
+
         except Exception as e:
             logger.error(f"Error making predictions: {e}")
             return {}
-    
-    def _save_predictions_to_db(self, predictions: Dict, event: Event, session: Session, 
+
+    def _save_predictions_to_db(self, predictions: Dict, event: Event, session: Session,
                                live_data: Dict, is_final: bool = False):
         """Save predictions to database"""
         try:
             with transaction.atomic():
                 current_lap = live_data.get('current_lap', 1)
-                
+
                 # Get driver mapping
                 driver_mapping = {}
                 for driver_data in live_data.get('driver_positions', []):
@@ -1733,14 +1819,14 @@ class LivePredictionSystem:
                             driver_mapping[driver_id] = driver
                         except Driver.DoesNotExist:
                             continue
-                
+
                 # Save Ridge predictions
                 if 'ridge' in predictions:
                     for i, pred in enumerate(predictions['ridge']):
                         if i < len(driver_mapping):
                             driver_id = list(driver_mapping.keys())[i]
                             driver = driver_mapping[driver_id]
-                            
+
                             ridgeregression.objects.update_or_create(
                                 driver=driver,
                                 event=event,
@@ -1752,14 +1838,14 @@ class LivePredictionSystem:
                                     'created_at': timezone.now()
                                 }
                             )
-                
+
                 # Save XGBoost predictions
                 if 'xgboost' in predictions:
                     for i, pred in enumerate(predictions['xgboost']):
                         if i < len(driver_mapping):
                             driver_id = list(driver_mapping.keys())[i]
                             driver = driver_mapping[driver_id]
-                            
+
                             xgboostprediction.objects.update_or_create(
                                 driver=driver,
                                 event=event,
@@ -1772,17 +1858,19 @@ class LivePredictionSystem:
                             )
                 
                 # Save CatBoost predictions
+                # (placeholder: moved further below in RapidAPI loop)
+
                 if 'catboost' in predictions:
                     for i, pred in enumerate(predictions['catboost']):
                         if i < len(driver_mapping):
                             driver_id = list(driver_mapping.keys())[i]
                             driver = driver_mapping[driver_id]
-                            
+
                             # Get track specialization data
                             track_spec = TrackSpecialization.objects.filter(
                                 circuit=event.circuit
                             ).first()
-                            
+
                             CatBoostPrediction.objects.update_or_create(
                                 driver=driver,
                                 event=event,
@@ -1804,139 +1892,97 @@ class LivePredictionSystem:
                                     'created_at': timezone.now()
                                 }
                             )
-                
+
                 logger.info(f"Saved {'final' if is_final else 'live'} predictions to database (Lap {current_lap})")
-                
+
         except Exception as e:
             logger.error(f"Error saving predictions to database: {e}")
-    
+
     async def _collect_live_data(self, session_id: int) -> Dict:
-        """Collect all live data from OpenF1"""
+        """Collect live data via RapidAPI (placeholder scaffolding)."""
         try:
             live_data = {}
-            
-            # Get current positions
-            positions = await self.openf1_client.get_driver_positions(session_id)
-            live_data['driver_positions'] = positions
-            
-            # Get weather data
-            weather = await self.openf1_client.get_weather_data(session_id)
-            live_data['weather_data'] = weather
-            
-            # Get tire data
-            tire_data = await self.openf1_client.get_tire_data(session_id)
-            live_data['tire_data'] = tire_data
-            
-            # Get latest lap times
-            lap_times = await self.openf1_client.get_lap_times(session_id)
-            if lap_times:
-                # Find current lap number
-                current_lap = max([lt.get('lap_number', 0) for lt in lap_times])
-                live_data['current_lap'] = current_lap
-                live_data['total_laps'] = 50  # Default, should be extracted from session data
-                
-                # Add lap times to driver positions
-                for position in live_data['driver_positions']:
-                    driver_number = position.get('driver_number')
-                    if driver_number:
-                        driver_laps = [lt for lt in lap_times if lt.get('driver_number') == driver_number]
-                        if driver_laps:
-                            latest_lap = max(driver_laps, key=lambda x: x.get('lap_number', 0))
-                            position['last_lap_time'] = latest_lap.get('lap_duration', 0)
-                            position['sector_times'] = [
-                                latest_lap.get('sector1_time', 0),
-                                latest_lap.get('sector2_time', 0),
-                                latest_lap.get('sector3_time', 0)
-                            ]
-            
+            # TODO: Map RapidAPI endpoints to normalized live_data structure
+            # Keeping structure keys so downstream code remains stable
+            live_data['driver_positions'] = []
+            live_data['weather_data'] = {}
+            live_data['tire_data'] = []
+            live_data['current_lap'] = None
+            live_data['total_laps'] = None
             return live_data
-            
         except Exception as e:
             logger.error(f"Error collecting live data: {e}")
             return {}
-    
+
+
     async def run_live_prediction(self):
-        """Main method to run live prediction system"""
+        """Main method to run live prediction system using RapidAPI polling."""
         try:
-            logger.info("Starting Live Prediction System")
-            
+            logger.info("Starting Live Prediction System (RapidAPI)")
+
             # Get current race event
             self.current_event = await self.get_current_race_event()
             if not self.current_event:
                 logger.warning("No current race event found")
                 return
-            
-            # Initialize OpenF1 client
-            async with OpenF1Client() as client:
-                self.openf1_client = client
-                
-                # Get current session
-                session_data = await self.openf1_client.get_current_session()
-                if not session_data:
-                    logger.warning("No active session found")
-                    return
-                
-                session_id = session_data.get('session_id')
-                logger.info(f"Active session found: {session_id}")
-                
-                # Main prediction loop
-                while not self.should_stop:
-                    try:
-                        # Collect live data
-                        live_data = await self._collect_live_data(session_id)
-                        
-                        if not live_data:
-                            logger.warning("No live data collected")
-                            await asyncio.sleep(self.prediction_interval)
-                            continue
-                        
-                        current_lap = live_data.get('current_lap', 1)
-                        total_laps = live_data.get('total_laps', 50)
-                        
-                        logger.info(f"Processing lap {current_lap}/{total_laps}")
-                        
-                        # Check if we should make final prediction
-                        is_final = (total_laps - current_lap) <= self.final_prediction_lap
-                        
-                        if is_final:
-                            logger.info(f"Making FINAL prediction with {total_laps - current_lap} laps to go")
-                        
-                        # Extract features
-                        features_df = self._extract_live_features(live_data, self.current_event)
-                        
-                        if not features_df.empty:
-                            # Make predictions
-                            predictions = self._make_predictions(features_df)
-                            
-                            if predictions:
-                                # Save to database
-                                self._save_predictions_to_db(
-                                    predictions, 
-                                    self.current_event, 
-                                    None,  # Session object not available
-                                    live_data,
-                                    is_final
-                                )
-                                
-                                # Log prediction summary
-                                if 'catboost' in predictions:
-                                    top_5 = np.argsort(predictions['catboost'])[:5]
-                                    logger.info(f"Top 5 predicted positions: {top_5}")
-                        
-                        # If final prediction made, exit
-                        if is_final:
-                            logger.info("Final prediction completed. Exiting live prediction system.")
-                            break
-                        
-                        # Wait before next prediction
+
+            # Main prediction loop
+            while not self.should_stop:
+                try:
+                    # Collect live data from RapidAPI (placeholder until mapping is implemented)
+                    live_data = await self._collect_live_data(session_id=0)
+
+                    if not live_data:
+                        logger.warning("No live data collected")
                         await asyncio.sleep(self.prediction_interval)
-                        
-                    except Exception as e:
-                        logger.error(f"Error in prediction loop: {e}")
-                        await asyncio.sleep(self.prediction_interval)
-                        
-        except Exception as e:
-            logger.error(f"Error in live prediction system: {e}")
+                        continue
+
+                    current_lap = live_data.get('current_lap', 1)
+                    total_laps = live_data.get('total_laps', 50)
+
+                    logger.info(f"Processing lap {current_lap}/{total_laps}")
+
+                    # Check if we should make final prediction
+                    is_final = (total_laps - current_lap) <= self.final_prediction_lap
+
+                    if is_final:
+                        logger.info(f"Making FINAL prediction with {total_laps - current_lap} laps to go")
+
+                    # Extract features
+                    features_df = self._extract_live_features(live_data, self.current_event)
+
+                    if not features_df.empty:
+                        # Make predictions
+                        predictions = self._make_predictions(features_df)
+
+                        if predictions:
+                            # Save to database
+                            self._save_predictions_to_db(
+                                predictions,
+                                self.current_event,
+                                None,  # Session object not available
+                                live_data,
+                                is_final
+                            )
+
+                            # Log prediction summary
+                            if 'catboost' in predictions:
+                                top_5 = np.argsort(predictions['catboost'])[:5]
+                                logger.info(f"Top 5 predicted positions: {top_5}")
+
+                    # If final prediction made, exit
+                    if is_final:
+                        logger.info("Final prediction completed. Exiting live prediction system.")
+                        break
+
+                    # Wait before next prediction
+                    await asyncio.sleep(self.prediction_interval)
+
+                except Exception as e:
+                    logger.error(f"Error in prediction loop: {e}")
+                    await asyncio.sleep(self.prediction_interval)
+        finally:
+            logger.info("Live prediction system stopped")
 
 async def main():
     """Main entry point"""
@@ -1949,4 +1995,4 @@ async def main():
         logger.error(f"Error in main: {e}")
 
 if __name__ == "__main__":
-    asyncio.run(main()) 
+    asyncio.run(main())

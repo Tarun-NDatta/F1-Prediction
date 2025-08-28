@@ -847,17 +847,27 @@ class EnhancedF1Pipeline:
             catboost_pred = comparison_df['catboost_prediction']
             ensemble_pred = comparison_df['ensemble_prediction']
             
+            from prediction.metrics.ranking import calculate_lsd_score, kendall_tau, spearman_rho
+            # Build orderings by driver name
+            actual_order = list(comparison_df.sort_values('actual_position')['driver'])
+            catboost_order = list(comparison_df.sort_values('catboost_prediction')['driver'])
+            ensemble_order = list(comparison_df.sort_values('ensemble_prediction')['driver'])
+
             metrics = {
                 'catboost_mae': mean_absolute_error(actual, catboost_pred),
                 'catboost_rmse': np.sqrt(mean_squared_error(actual, catboost_pred)),
                 'catboost_r2': r2_score(actual, catboost_pred),
-                'catboost_spearman': spearmanr(actual, catboost_pred)[0],
+                'catboost_spearman': float(spearman_rho(catboost_order, actual_order)),
+                'catboost_kendall': float(kendall_tau(catboost_order, actual_order)),
+                'catboost_lsd': calculate_lsd_score(catboost_order, actual_order),
                 'ensemble_mae': mean_absolute_error(actual, ensemble_pred),
                 'ensemble_rmse': np.sqrt(mean_squared_error(actual, ensemble_pred)),
                 'ensemble_r2': r2_score(actual, ensemble_pred),
-                'ensemble_spearman': spearmanr(actual, ensemble_pred)[0]
+                'ensemble_spearman': float(spearman_rho(ensemble_order, actual_order)),
+                'ensemble_kendall': float(kendall_tau(ensemble_order, actual_order)),
+                'ensemble_lsd': calculate_lsd_score(ensemble_order, actual_order),
             }
-            
+
             for _, row in comparison_df.iterrows():
                 CatBoostPrediction.objects.filter(
                     event=event,
