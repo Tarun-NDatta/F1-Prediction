@@ -873,7 +873,8 @@ class CatBoostPrediction(models.Model):
     """CatBoost predictions with track specialization"""
     driver = models.ForeignKey(Driver, on_delete=models.CASCADE)
     event = models.ForeignKey(Event, on_delete=models.CASCADE)
-
+    simple_avg_prediction = models.FloatField(null=True, blank=True)
+    median_ensemble_prediction = models.FloatField(null=True, blank=True)
     year = models.IntegerField()
     round_number = models.IntegerField()
 

@@ -12,7 +12,10 @@ from data.models import (
     TrackSpecialization, DriverSpecialization, CatBoostPrediction,
     ridgeregression, xgboostprediction, Driver, QualifyingResult
 )
+import matplotlib
+matplotlib.use('Agg')  # Use the non-interactive 'Agg' backend to avoid font logging
 import logging
+logging.getLogger('matplotlib.font_manager').setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
 
@@ -226,7 +229,7 @@ class EnhancedF1Pipeline:
                 
                 qual_results = QualifyingResult.objects.filter(
                     session__event=event
-                ).select_related('driver', 'team').order_by('position')
+                    ).select_related('driver', 'team').order_by('position')
                 
                 if not qual_results.exists():
                     logger.warning(f"No qualifying results for {event.name}, skipping")
@@ -597,6 +600,12 @@ class EnhancedF1Pipeline:
                 ridge_pred = self._get_stored_prediction(driver_name, event, 'ridge')
                 xgb_pred = self._get_stored_prediction(driver_name, event, 'xgboost')
                 
+                # === ADD SIMPLE ENSEMBLE CALCULATIONS HERE ===
+                # Calculate simple ensemble baselines
+                simple_avg_pred = (ridge_pred + xgb_pred) / 2
+                median_pred = np.median([ridge_pred, xgb_pred])
+                # =============================================
+                
                 if ridge_pred is None or xgb_pred is None:
                     logger.warning(f"Missing base predictions for {driver_name}, generating new ones")
                     driver_features = self._get_driver_features(driver, event)
@@ -695,9 +704,11 @@ class EnhancedF1Pipeline:
                     'qualifying_position': qual_result.position,
                     'ridge_prediction': ridge_pred,
                     'xgboost_prediction': xgb_pred,
+                    'simple_avg_prediction': simple_avg_pred,      # ADDED: Simple average prediction
+                    'median_ensemble_prediction': median_pred,     # ADDED: Median ensemble prediction
                     'ensemble_prediction': ensemble_pred,
                     'catboost_prediction': catboost_pred,
-                    'track_category': track_features['category'] , # Use 'category' instead of 'track_category'
+                    'track_category': track_features['category'],
                     'track_power_sensitivity': track_features['power_sensitivity'],
                     'track_overtaking_difficulty': track_features['overtaking_difficulty'],
                     'track_qualifying_importance': track_features['qualifying_importance']
@@ -783,8 +794,10 @@ class EnhancedF1Pipeline:
                         'round_number': event.round,
                         'ridge_prediction': row['ridge_prediction'],
                         'xgboost_prediction': row['xgboost_prediction'],
+                        'simple_avg_prediction': row['simple_avg_prediction'],      # ADDED
+                        'median_ensemble_prediction': row['median_ensemble_prediction'],  # ADDED
                         'ensemble_prediction': row['ensemble_prediction'],
-                        'track_category': row['track_category'],  # Use 'category' from the DataFrame
+                        'track_category': row['track_category'],
                         'track_power_sensitivity': row['track_power_sensitivity'],
                         'track_overtaking_difficulty': row['track_overtaking_difficulty'],
                         'track_qualifying_importance': row['track_qualifying_importance'],
@@ -833,6 +846,8 @@ class EnhancedF1Pipeline:
                         'catboost_prediction': prediction.predicted_position,
                         'ridge_prediction': prediction.ridge_prediction,
                         'xgboost_prediction': prediction.xgboost_prediction,
+                        'simple_avg_prediction': prediction.simple_avg_prediction,      # ADDED
+                        'median_ensemble_prediction': prediction.median_ensemble_prediction,  # ADDED
                         'ensemble_prediction': prediction.ensemble_prediction,
                         'track_category': prediction.track_category
                     })

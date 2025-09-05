@@ -4,6 +4,11 @@ from django.conf import settings
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('Agg')  # Use the non-interactive 'Agg' backend to avoid font logging
+import logging
+logging.getLogger('matplotlib.font_manager').setLevel(logging.WARNING)
+
 
 from prediction.analysis.chaos import (
     analyze_prediction_errors_by_events,

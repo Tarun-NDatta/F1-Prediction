@@ -154,6 +154,9 @@ class Command(BaseCommand):
             # Make predictions
             predictions_df = pipeline.predict_race(year, round_num, use_openf1)
             
+            self.stdout.write("Calculating simple ensemble baselines...")
+            predictions_df = self.calculate_simple_ensembles(predictions_df)
+
             # Display predictions (with or without comparison)
             if compare:
                 self.display_predictions_with_comparison(predictions_df, event)
@@ -171,7 +174,24 @@ class Command(BaseCommand):
             self.stdout.write(self.style.ERROR(f"Prediction error: {str(e)}"))
             logger.error(f"Prediction error: {str(e)}", exc_info=True)
             raise
-
+    
+    def calculate_simple_ensembles(self, predictions_df):
+        """Calculate simple average and median ensemble predictions"""
+        import numpy as np
+        
+        # Extract base model predictions
+        ridge_preds = predictions_df['ridge_prediction'].values
+        xgb_preds = predictions_df['xgboost_prediction'].values
+        
+        # Calculate simple ensembles
+        simple_avg_preds = (ridge_preds + xgb_preds) / 2
+        median_preds = np.median([ridge_preds, xgb_preds], axis=0)
+        
+        # Add to dataframe
+        predictions_df['simple_avg_prediction'] = simple_avg_preds
+        predictions_df['median_ensemble_prediction'] = median_preds
+        
+        return predictions_df
     def display_predictions(self, predictions_df, event):
         """Display race predictions in a formatted table with ± margin."""
         margin = getattr(self, 'margin', 2)
@@ -180,27 +200,28 @@ class Command(BaseCommand):
         self.stdout.write("")
 
         # Header
-        self.stdout.write(f"{'Pos':<4} {'Driver':<20} {'CatBoost':<9} {'±':<2} {'Ensemble':<9} {'Ridge':<8} {'XGBoost':<8} {'Qual':<5}")
-        self.stdout.write("-" * 70)
+        self.stdout.write(f"{'Pos':<4} {'Driver':<20} {'CatBoost':<9} {'±':<2} {'SimpleAvg':<9} {'Median':<9} {'Ridge':<8} {'XGBoost':<8} {'Qual':<5}")
+        self.stdout.write("-" * 85)  # Increased width
 
-        # Predictions
+    # Predictions - UPDATED
         for _, row in predictions_df.iterrows():
             self.stdout.write(
                 f"{int(row['final_predicted_position']):<4} "
                 f"{row['driver']:<20} "
                 f"{row['catboost_prediction']:<9.2f} "
                 f"±{margin:<1} "
-                f"{row['ensemble_prediction']:<9.2f} "
+                f"{row['simple_avg_prediction']:<9.2f} "  # NEW
+                f"{row['median_ensemble_prediction']:<9.2f} "  # NEW
                 f"{row['ridge_prediction']:<8.2f} "
                 f"{row['xgboost_prediction']:<8.2f} "
                 f"{int(row['qualifying_position']):<5}"
             )
 
-        # Track characteristics
-        self.stdout.write(f"\n=== Track Characteristics ===")
-        self.stdout.write(f"Power Sensitivity: {predictions_df.iloc[0]['track_power_sensitivity']:.1f}/10")
-        self.stdout.write(f"Overtaking Difficulty: {predictions_df.iloc[0]['track_overtaking_difficulty']:.1f}/10")
-        self.stdout.write(f"Qualifying Importance: {predictions_df.iloc[0]['track_qualifying_importance']:.1f}/10")
+            # Track characteristics
+            self.stdout.write(f"\n=== Track Characteristics ===")
+            self.stdout.write(f"Power Sensitivity: {predictions_df.iloc[0]['track_power_sensitivity']:.1f}/10")
+            self.stdout.write(f"Overtaking Difficulty: {predictions_df.iloc[0]['track_overtaking_difficulty']:.1f}/10")
+            self.stdout.write(f"Qualifying Importance: {predictions_df.iloc[0]['track_qualifying_importance']:.1f}/10")
 
     def display_predictions_with_comparison(self, predictions_df, event):
         """Display race predictions with actual results comparison"""
