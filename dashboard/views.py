@@ -1,5 +1,6 @@
 from django.shortcuts import get_object_or_404, render, get_list_or_404, redirect
 from django.contrib.auth.decorators import login_required
+from django.views import View
 from dashboard.decorators import subscription_required
 from prediction.analysis.chaos import analyze_prediction_errors_by_events, CounterfactualAnalyzer, analyze_event
 import numpy as np
@@ -2864,3 +2865,291 @@ F1 Dashboard Team''',
     except User.DoesNotExist:
         messages.error(request, 'User not found. Please try again.')
         return redirect('forgot_password')
+
+class LiveRaceDataView(View):
+    """View to provide live race data to frontend"""
+    
+    def get(self, request):
+        try:
+            # Get live race status from cache (set by management command)
+            race_status = cache.get('live_race_status', {})
+            
+            if not race_status.get('active', False):
+                return JsonResponse({
+                    'success': True,
+                    'race_active': False,
+                    'message': 'No active live race'
+                })
+            
+            # Get latest commentary from cache
+            commentary = cache.get('live_commentary', [])
+            
+            # Get latest ML predictions
+            ml_predictions = self.get_live_ml_predictions()
+            
+            # Get race progress
+            race_progress = self.get_race_progress()
+            
+            return JsonResponse({
+                'success': True,
+                'race_active': True,
+                'commentary': commentary[-5:],  # Last 5 comments
+                'ml_predictions': ml_predictions,
+                'race_progress': race_progress,
+                'timestamp': datetime.now().isoformat()
+            })
+            
+        except Exception as e:
+            logger.error(f"Error in LiveRaceDataView: {e}")
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+    
+    def get_live_ml_predictions(self):
+        """Get the latest ML predictions from database"""
+        try:
+            # Get the most recent predictions (within last 2 minutes)
+            recent_time = datetime.now() - timedelta(minutes=2)
+            
+            predictions = CatBoostPrediction.objects.filter(
+                created_at__gte=recent_time
+            ).order_by('-created_at')
+            
+            if not predictions.exists():
+                return {'models': {}, 'message': 'No recent predictions available'}
+            
+            # Group by model type and get top predictions
+            models_data = {}
+            
+            for pred in predictions[:20]:  # Limit to recent predictions
+                model_name = getattr(pred, 'model_name', 'catboost_v1')
+                
+                if model_name not in models_data:
+                    models_data[model_name] = {
+                        'top_predictions': [],
+                        'last_updated': pred.created_at.isoformat(),
+                        'confidence': getattr(pred, 'confidence', 0.85)
+                    }
+                
+                # Add prediction data
+                if len(models_data[model_name]['top_predictions']) < 10:
+                    models_data[model_name]['top_predictions'].append({
+                        'driver_name': getattr(pred, 'driver_name', 'Unknown'),
+                        'predicted_position': getattr(pred, 'predicted_position', 0),
+                        'current_position': getattr(pred, 'current_position', 0),
+                        'confidence': round(getattr(pred, 'confidence', 0.0) * 100, 1)
+                    })
+            
+            return {
+                'models': models_data,
+                'total_predictions': predictions.count()
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting ML predictions: {e}")
+            return {'models': {}, 'error': str(e)}
+    
+    def get_race_progress(self):
+        """Get current race progress"""
+        try:
+            progress_data = cache.get('live_race_progress', {})
+            
+            return {
+                'current_lap': progress_data.get('current_lap', 0),
+                'total_laps': progress_data.get('total_laps', 53),
+                'leader': progress_data.get('leader', 'Unknown'),
+                'gap': progress_data.get('gap', '----'),
+                'weather': progress_data.get('weather', 'Clear'),
+                'progress_percentage': progress_data.get('progress_percentage', 0),
+                'status_text': progress_data.get('status_text', 'Race in progress')
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting race progress: {e}")
+            return {}
+from django.views.generic import TemplateView 
+
+class LiveUpdatesView(TemplateView):
+    template_name = 'dashboard/live_updates.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Add context for current event, available tracks, etc.
+        context['current_event'] = self.get_current_race_event()
+        context['available_tracks'] = self.get_available_tracks()
+        
+        return context
+    
+    def get_current_race_event(self):
+        """Get the current or next race event"""
+        try:
+            from datetime import datetime
+            from .models import RaceEvent
+            
+            now = datetime.now()
+            # Get the next upcoming race or current race
+            event = RaceEvent.objects.filter(date__gte=now).order_by('date').first()
+            return event
+        except:
+            return None
+    
+    def get_available_tracks(self):
+        """Get available tracks for simulation"""
+        return [
+            {'name': 'Bahrain GP', 'type': 'upcoming', 'mae': None},
+            {'name': 'Saudi Arabian GP', 'type': 'upcoming', 'mae': None},
+            {'name': 'Australian GP', 'type': 'upcoming', 'mae': None},
+            {'name': 'Monaco GP 2024', 'type': 'historical', 'mae': '2.1'},
+            {'name': 'Silverstone 2024', 'type': 'historical', 'mae': '1.8'},
+            {'name': 'Spa 2024', 'type': 'historical', 'mae': '2.3'},
+        ]
+
+from django.views import View
+from django.core.cache import cache
+from django.utils.decorators import method_decorator
+class LiveRaceDataView(View):
+    """View to provide live race data to frontend"""
+    
+    def get(self, request):
+        try:
+            # Get live race status from cache (set by management command)
+            race_status = cache.get('live_race_status', {})
+            
+            if not race_status.get('active', False):
+                return JsonResponse({
+                    'success': True,
+                    'race_active': False,
+                    'message': 'No active live race'
+                })
+            
+            # Get latest commentary from cache
+            commentary = cache.get('live_commentary', [])
+            
+            # Get latest ML predictions
+            ml_predictions = self.get_live_ml_predictions()
+            
+            # Get race progress
+            race_progress = self.get_race_progress()
+            
+            return JsonResponse({
+                'success': True,
+                'race_active': True,
+                'commentary': commentary[-5:],  # Last 5 comments
+                'ml_predictions': ml_predictions,
+                'race_progress': race_progress,
+                'timestamp': datetime.now().isoformat()
+            })
+            
+        except Exception as e:
+            logger.error(f"Error in LiveRaceDataView: {e}")
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+    
+    def get_live_ml_predictions(self):
+        """Get the latest ML predictions from database"""
+        try:
+            # Get the most recent predictions (within last 2 minutes)
+            recent_time = datetime.now() - timedelta(minutes=2)
+            
+            predictions = CatBoostPrediction.objects.filter(
+                created_at__gte=recent_time
+            ).order_by('-created_at')
+            
+            if not predictions.exists():
+                return {'models': {}, 'message': 'No recent predictions available'}
+            
+            # Group by model type and get top predictions
+            models_data = {}
+            
+            for pred in predictions[:20]:  # Limit to recent predictions
+                model_name = getattr(pred, 'model_name', 'catboost_v1')
+                
+                if model_name not in models_data:
+                    models_data[model_name] = {
+                        'top_predictions': [],
+                        'last_updated': pred.created_at.isoformat(),
+                        'confidence': getattr(pred, 'confidence', 0.85)
+                    }
+                
+                # Add prediction data
+                if len(models_data[model_name]['top_predictions']) < 10:
+                    models_data[model_name]['top_predictions'].append({
+                        'driver_name': getattr(pred, 'driver_name', 'Unknown'),
+                        'predicted_position': getattr(pred, 'predicted_position', 0),
+                        'current_position': getattr(pred, 'current_position', 0),
+                        'confidence': round(getattr(pred, 'confidence', 0.0) * 100, 1)
+                    })
+            
+            return {
+                'models': models_data,
+                'total_predictions': predictions.count()
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting ML predictions: {e}")
+            return {'models': {}, 'error': str(e)}
+    
+    def get_race_progress(self):
+        """Get current race progress"""
+        try:
+            progress_data = cache.get('live_race_progress', {})
+            
+            return {
+                'current_lap': progress_data.get('current_lap', 0),
+                'total_laps': progress_data.get('total_laps', 53),
+                'leader': progress_data.get('leader', 'Unknown'),
+                'gap': progress_data.get('gap', '----'),
+                'weather': progress_data.get('weather', 'Clear'),
+                'progress_percentage': progress_data.get('progress_percentage', 0),
+                'status_text': progress_data.get('status_text', 'Race in progress')
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting race progress: {e}")
+            return {}
+
+@method_decorator(csrf_exempt, name='dispatch')
+class LiveRaceControlView(View):
+    """View to control live race data collection"""
+    
+    def post(self, request):
+        try:
+            data = json.loads(request.body)
+            action = data.get('action')
+            
+            if action == 'start':
+                # Start live data collection
+                cache.set('live_race_control', {'action': 'start'}, 300)  # 5 minutes
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Live data collection started'
+                })
+            
+            elif action == 'stop':
+                # Stop live data collection
+                cache.set('live_race_control', {'action': 'stop'}, 300)
+                cache.delete('live_race_status')
+                cache.delete('live_commentary')
+                cache.delete('live_race_progress')
+                
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Live data collection stopped'
+                })
+            
+            else:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Invalid action'
+                }, status=400)
+                
+        except Exception as e:
+            logger.error(f"Error in LiveRaceControlView: {e}")
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=500)

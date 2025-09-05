@@ -58,4 +58,18 @@ urlpatterns = [
     path('reset-password/', view.reset_password, name='reset_password'),
     path('resend-temp-password/', view.resend_temp_password, name='resend_temp_password'),
     path('subscription/', view.subscription_management, name='subscription_management'),
+    path('api/live-race-data/', view.LiveRaceDataView.as_view(), name='live_race_data'),
+    path('api/live-race-control/', view.LiveRaceControlView.as_view(), name='live_race_control'),
+    path('live-updates/', view.LiveUpdatesView.as_view(), name='live_updates'),
 ]
+# Add this to your urls.py
+"""
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    # ... your existing URLs
+    path('api/live-race-data/', views.LiveRaceDataView.as_view(), name='live_race_data'),
+    path('api/live-race-control/', views.LiveRaceControlView.as_view(), name='live_race_control'),
+]
+"""
