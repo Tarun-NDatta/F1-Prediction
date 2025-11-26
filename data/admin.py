@@ -94,8 +94,8 @@ class BetAdmin(admin.ModelAdmin):
     search_fields = ('user__username', 'event__name')
     readonly_fields = ('created_at',)
 
-@admin.register(Achievement)
-class AchievementAdmin(admin.ModelAdmin):
-    list_display = ('name', 'achievement_type', 'rarity', 'bonus_credits', 'is_active')
-    list_filter = ('achievement_type', 'rarity', 'is_active')
-    search_fields = ('name', 'description')
+# @admin.register(Achievement)
+# class AchievementAdmin(admin.ModelAdmin):
+#     list_display = ('name', 'achievement_type', 'rarity', 'bonus_credits', 'is_active')
+#     list_filter = ('achievement_type', 'rarity', 'is_active')
+#     search_fields = ('name', 'description')
