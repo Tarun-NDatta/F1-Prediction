@@ -51,7 +51,9 @@ How DNFs, penalties, safety cars, and other chaos events affect prediction accur
 @st.cache_data
 def load_chaos_data():
     """Load chaos analysis data"""
-    data_dir = Path("data")
+    data_dir = Path(__file__).parent.parent / "data"
+#    st.write("Looking for chaos data in:", data_dir.resolve())
+#   st.write("Files found:", list(data_dir.glob("*.csv")))
     
     try:
         return {
@@ -81,6 +83,20 @@ except:
     st.info("The chaos analysis will show how the model performs when races have DNFs, penalties, safety cars, and other unpredictable events.")
     st.stop()
 
+st.header("Understanding Model Performance Under Race Incidents")
+st.write("How DNFs, penalties, safety cars, and other chaos events affect prediction accuracy")
+
+if chaos_data['raw'].empty:
+    st.warning("No chaos events recorded yet.")
+else:
+    st.write("Raw chaos data preview:")
+    st.dataframe(chaos_data['raw'].head())
+
+    st.write("Summary by category:")
+    st.dataframe(chaos_data['by_category'])
+
+    st.write("Summary by event:")
+    st.dataframe(chaos_data['by_event'])
 # ==================== OVERVIEW ====================
 
 st.header("📊 Overview")

@@ -44,7 +44,8 @@ Compare **Ridge Regression**, **XGBoost**, and **CatBoost** models with track sp
 @st.cache_data
 def load_data():
     """Load all predictor data"""
-    data_dir = Path("data")
+    data_dir = data_dir = Path(__file__).resolve().parent / "data"
+
     
     try:
         return {
