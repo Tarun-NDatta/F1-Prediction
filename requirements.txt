@@ -39,3 +39,4 @@ flake8>=5.0.0
 # Web & API Related
 gunicorn>=20.1.0  # For production deployment
 whitenoise>=6.2.0  # Static files serving
+
