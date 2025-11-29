@@ -55,9 +55,21 @@ except:
 
 # ==================== SIDEBAR WITH THEME ====================
 
+if 'theme' not in st.session_state:
+    st.session_state.theme = "Night Mode"
+
 with st.sidebar:
-    # Theme selection at the top
-    theme = st.selectbox("🌙 Theme", ["Day Mode", "Night Mode"], key="theme_selector_chaos")
+    # Theme selection at the top with session state
+    theme = st.selectbox(
+        "🌙 Theme", 
+        ["Day Mode", "Night Mode"], 
+        index=0 if st.session_state.theme == "Day Mode" else 1,
+        key="theme_selector"
+    )
+    
+    # Update session state when theme changes
+    if theme != st.session_state.theme:
+        st.session_state.theme = theme
     
     st.markdown("---")
     

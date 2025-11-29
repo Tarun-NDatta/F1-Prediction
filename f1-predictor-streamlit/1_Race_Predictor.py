@@ -104,9 +104,21 @@ def get_race_flag(event_name):
 
 # ==================== SIDEBAR ====================
 
+if 'theme' not in st.session_state:
+    st.session_state.theme = "Night Mode"
+
 with st.sidebar:
-    # Theme selection at the top
-    theme = st.selectbox("🌙 Theme", ["Day Mode", "Night Mode"], key="theme_selector")
+    # Theme selection at the top with session state
+    theme = st.selectbox(
+        "🌙 Theme", 
+        ["Day Mode", "Night Mode"], 
+        index=0 if st.session_state.theme == "Day Mode" else 1,
+        key="theme_selector"
+    )
+    
+    # Update session state when theme changes
+    if theme != st.session_state.theme:
+        st.session_state.theme = theme
     
     st.markdown("---")
     
@@ -279,6 +291,7 @@ st.markdown(f"""
         background: {card_bg};
         border-radius: 12px;
         animation: fadeIn 0.8s ease-out;
+        flex-wrap: wrap; 
     }}
     
     @keyframes fadeIn {{
@@ -290,6 +303,7 @@ st.markdown(f"""
         text-align: center;
         padding: 1.5rem 1rem;
         border-radius: 8px;
+        flex: 0 0 auto;
         min-width: 150px;
         transition: transform 0.3s ease, box-shadow 0.3s ease;
         animation: popIn 0.5s ease-out backwards;
@@ -313,19 +327,16 @@ st.markdown(f"""
     
     .podium-1 {{
         background: linear-gradient(135deg, {podium_gold}, #FFA500);
-        order: 2;
         animation-delay: 0.2s;
     }}
     
     .podium-2 {{
         background: linear-gradient(135deg, {podium_silver}, #A8A8A8);
-        order: 1;
         animation-delay: 0.1s;
     }}
     
     .podium-3 {{
         background: linear-gradient(135deg, {podium_bronze}, #A0522D);
-        order: 3;
         animation-delay: 0.3s;
     }}
     
@@ -514,6 +525,28 @@ st.markdown(f"""
         background-color: {input_bg} !important;
         color: {input_text} !important;
     }}
+    /* Button styling */
+    .stButton > button {{
+        background-color: {card_bg} !important;
+        color: {text_color} !important;
+        border: 1px solid {border_color} !important;
+        border-radius: 8px !important;
+        padding: 0.5rem 1rem !important;
+        transition: all 0.3s ease !important;
+        font-weight: 500 !important;
+    }}
+    
+    .stButton > button:hover {{
+        background-color: {metric_border} !important;
+        color: white !important;
+        border-color: {metric_border} !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
+    }}
+    
+    .stButton > button:active {{
+        transform: translateY(0) !important;
+    }}
     
     /* Dataframe styling */
     [data-testid="stDataFrame"] {{
@@ -689,30 +722,35 @@ if len(pred_pivot) >= 3:
     
     top3 = pred_pivot.head(3)
     
-    podium_html = '<div class="podium-container">'
+    # Use Streamlit columns for podium (2nd, 1st, 3rd)
+    col1, col2, col3 = st.columns(3)
     
-    positions = ['2nd', '1st', '3rd']
-    trophies = ['🥈', '🥇', '🥉']
-    classes = ['podium-2', 'podium-1', 'podium-3']
-    
-    for i, (pos, trophy, cls) in enumerate(zip(positions, trophies, classes)):
-        if i == 0:
-            driver = top3.iloc[1]['driver_name']
-        elif i == 1:
-            driver = top3.iloc[0]['driver_name']
-        else:
-            driver = top3.iloc[2]['driver_name']
-        
-        podium_html += f'''
-        <div class="podium-place {cls}">
-            <div class="podium-trophy">{trophy}</div>
-            <div class="podium-position">{pos}</div>
-            <div class="podium-driver">{driver}</div>
+    with col1:  # 2nd place
+        st.markdown(f'''
+        <div class="podium-place podium-2">
+            <div class="podium-trophy">🥈</div>
+            <div class="podium-position">2nd</div>
+            <div class="podium-driver">{top3.iloc[1]['driver_name']}</div>
         </div>
-        '''
+        ''', unsafe_allow_html=True)
     
-    podium_html += '</div>'
-    st.markdown(podium_html, unsafe_allow_html=True)
+    with col2:  # 1st place
+        st.markdown(f'''
+        <div class="podium-place podium-1">
+            <div class="podium-trophy">🥇</div>
+            <div class="podium-position">1st</div>
+            <div class="podium-driver">{top3.iloc[0]['driver_name']}</div>
+        </div>
+        ''', unsafe_allow_html=True)
+    
+    with col3:  # 3rd place
+        st.markdown(f'''
+        <div class="podium-place podium-3">
+            <div class="podium-trophy">🥉</div>
+            <div class="podium-position">3rd</div>
+            <div class="podium-driver">{top3.iloc[2]['driver_name']}</div>
+        </div>
+        ''', unsafe_allow_html=True)
 
 # ==================== TABS ====================
 
