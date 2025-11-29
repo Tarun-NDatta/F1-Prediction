@@ -840,10 +840,8 @@ with tab1:
         with col1:
             st.metric("Mean Absolute Error", f"{mae:.2f} pos", help="Average prediction error")
         with col2:
-            st.metric("Perfect Predictions", f"{perfect_preds}/{len(display_df)}", help="Exact position matches")
-        with col3:
             st.metric("Top-3 Accuracy", f"{top3_accuracy}/3", help="Correct podium predictions")
-        with col4:
+        with col3:
             st.metric("Max Error", f"{max_error:.1f} pos", help="Largest prediction miss")
 
 with tab2:
