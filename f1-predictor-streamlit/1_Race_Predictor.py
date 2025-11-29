@@ -164,15 +164,6 @@ with st.sidebar:
     
     st.markdown("---")
     
-    # Export options
-    st.subheader("💾 Export Options")
-    if st.button("📥 Download Predictions CSV"):
-        st.info("CSV download feature coming soon!")
-    
-    if st.button("📊 Generate Race Report"):
-        st.info("PDF report feature coming soon!")
-    
-    st.markdown("---")
     st.markdown("**Dissertation Project**  \n*ML-Based F1 Prediction System*")
     
     # Glossary
