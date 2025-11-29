@@ -18,42 +18,12 @@ st.set_page_config(
     layout="wide"
 )
 
-# Custom CSS
-st.markdown("""
-<style>
-    .chaos-header {
-        text-align: center;
-        padding: 1rem 0;
-        background: linear-gradient(90deg, #ff4500 0%, #ff6347 100%);
-        border-radius: 10px;
-        margin-bottom: 2rem;
-    }
-    .impact-card {
-        background: #fff3cd;
-        padding: 1rem;
-        border-radius: 8px;
-        border-left: 4px solid #ff4500;
-        margin: 1rem 0;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-# Title
-st.markdown('<div class="chaos-header"><h1 style="color: white; margin: 0;">🔥 Chaos Analysis</h1></div>', unsafe_allow_html=True)
-
-st.markdown("""
-**Understanding Model Performance Under Race Incidents**  
-How DNFs, penalties, safety cars, and other chaos events affect prediction accuracy
-""")
-
 # ==================== DATA LOADING ====================
 
 @st.cache_data
 def load_chaos_data():
     """Load chaos analysis data"""
     data_dir = Path(__file__).parent.parent / "data"
-#    st.write("Looking for chaos data in:", data_dir.resolve())
-#   st.write("Files found:", list(data_dir.glob("*.csv")))
     
     try:
         return {
@@ -83,20 +53,301 @@ except:
     st.info("The chaos analysis will show how the model performs when races have DNFs, penalties, safety cars, and other unpredictable events.")
     st.stop()
 
-st.header("Understanding Model Performance Under Race Incidents")
-st.write("How DNFs, penalties, safety cars, and other chaos events affect prediction accuracy")
+# ==================== SIDEBAR WITH THEME ====================
 
-if chaos_data['raw'].empty:
-    st.warning("No chaos events recorded yet.")
+with st.sidebar:
+    # Theme selection at the top
+    theme = st.selectbox("🌙 Theme", ["Day Mode", "Night Mode"], key="theme_selector_chaos")
+    
+    st.markdown("---")
+    
+    st.header("📊 About Chaos Analysis")
+    
+    st.markdown("""
+    ### What is Chaos?
+    
+    **Unpredictable race events:**
+    - 🔴 DNFs & Retirements
+    - ⚠️ Penalties
+    - 🚗 Safety Cars
+    - 🌧️ Weather Changes
+    - 💥 Collisions
+    
+    ### Categories
+    - **Clean**: No incidents
+    - **Minor**: 1-2 incidents
+    - **Major**: 3+ incidents
+    - **Extreme**: Red flags
+    """)
+    
+    st.markdown("---")
+    st.markdown("**Dissertation Project**  \n*ML-Based F1 Prediction System*")
+
+# ==================== THEME CONFIGURATION ====================
+
+# Set theme variables based on selection
+if theme == "Night Mode":
+    plotly_template = "plotly_dark"
+    app_bg_color = "#0e1117"
+    sidebar_bg_color = "#262730"
+    text_color = "#fafafa"
+    header_gradient = "linear-gradient(90deg, #cc0000 0%, #ff4500 100%)"
+    metric_bg = "#1e1e1e"
+    metric_border = "#ff4500"
+    card_bg = "#262730"
+    input_bg = "#1e1e1e"
+    input_text = "#fafafa"
+    table_bg = "#1e1e1e"
+    table_header_bg = "#262730"
+    border_color = "#404040"
+    impact_card_bg = "#262730"
+    impact_card_border = "#ff4500"
 else:
-    st.write("Raw chaos data preview:")
-    st.dataframe(chaos_data['raw'].head())
+    plotly_template = "plotly_white"
+    app_bg_color = "#ffffff"
+    sidebar_bg_color = "#f0f2f6"
+    text_color = "#262730"
+    header_gradient = "linear-gradient(90deg, #e10600 0%, #ff1801 100%)"
+    metric_bg = "#f0f2f6"
+    metric_border = "#e10600"
+    card_bg = "#f8f9fa"
+    input_bg = "#ffffff"
+    input_text = "#262730"
+    table_bg = "#ffffff"
+    table_header_bg = "#f0f2f6"
+    border_color = "#e0e0e0"
+    impact_card_bg = "#f8f9fa"
+    impact_card_border = "#e10600"
 
-    st.write("Summary by category:")
-    st.dataframe(chaos_data['by_category'])
+# Apply theme CSS
+st.markdown(f"""
+<style>
+    /* Main app container */
+    [data-testid="stAppViewContainer"] {{
+        background-color: {app_bg_color};
+        transition: background-color 0.3s ease;
+    }}
+    
+    /* Sidebar */
+    [data-testid="stSidebar"] {{
+        background-color: {sidebar_bg_color};
+        transition: background-color 0.3s ease;
+    }}
+    
+    /* All text elements */
+    .stMarkdown, .stText, p, span, label {{
+        color: {text_color} !important;
+        transition: color 0.3s ease;
+    }}
+    
+    /* Headers */
+    h1, h2, h3, h4, h5, h6 {{
+        color: {text_color} !important;
+        transition: color 0.3s ease;
+    }}
+    
+    /* Main header with animation */
+    .chaos-header {{
+        text-align: center;
+        padding: 1.5rem 0;
+        background: {header_gradient};
+        border-radius: 10px;
+        margin-bottom: 2rem;
+        animation: slideDown 0.5s ease-out;
+    }}
+    
+    @keyframes slideDown {{
+        from {{
+            opacity: 0;
+            transform: translateY(-20px);
+        }}
+        to {{
+            opacity: 1;
+            transform: translateY(0);
+        }}
+    }}
+    
+    .chaos-header h1 {{
+        color: white !important;
+        margin: 0;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }}
+    
+    /* Impact cards with animation */
+    .impact-card {{
+        background: {impact_card_bg};
+        padding: 1rem;
+        border-radius: 8px;
+        border-left: 4px solid {impact_card_border};
+        margin: 1rem 0;
+        color: {text_color};
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        animation: slideIn 0.5s ease-out;
+    }}
+    
+    .impact-card:hover {{
+        transform: translateX(5px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }}
+    
+    @keyframes slideIn {{
+        from {{
+            opacity: 0;
+            transform: translateX(-20px);
+        }}
+        to {{
+            opacity: 1;
+            transform: translateX(0);
+        }}
+    }}
+    
+    @keyframes fadeIn {{
+        from {{ opacity: 0; }}
+        to {{ opacity: 1; }}
+    }}
+    
+    /* Metric cards */
+    [data-testid="stMetricValue"] {{
+        color: {text_color} !important;
+        font-size: 1.5rem !important;
+    }}
+    
+    [data-testid="stMetricLabel"] {{
+        color: {text_color} !important;
+    }}
+    
+    .metric-card {{
+        background: {metric_bg} !important;
+        padding: 1rem;
+        border-radius: 8px;
+        border-left: 4px solid {metric_border};
+        animation: slideIn 0.5s ease-out;
+    }}
+    
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] {{
+        gap: 8px;
+    }}
+    
+    .stTabs [data-baseweb="tab"] {{
+        color: {text_color} !important;
+        background-color: {card_bg};
+        transition: all 0.3s ease;
+    }}
+    
+    .stTabs [data-baseweb="tab"]:hover {{
+        transform: translateY(-2px);
+    }}
+    
+    .stTabs [aria-selected="true"] {{
+        background-color: {metric_border} !important;
+        color: white !important;
+    }}
+    
+    /* Expander */
+    .streamlit-expanderHeader {{
+        background-color: {card_bg} !important;
+        color: {text_color} !important;
+        border: 1px solid {border_color} !important;
+        border-radius: 8px !important;
+        transition: all 0.3s ease;
+    }}
+    
+    .streamlit-expanderHeader:hover {{
+        border-color: {metric_border} !important;
+    }}
+    
+    .streamlit-expanderContent {{
+        background-color: {card_bg} !important;
+        border: 1px solid {border_color} !important;
+        border-top: none !important;
+        border-radius: 0 0 8px 8px !important;
+    }}
+    
+    /* Info/Warning boxes */
+    .stAlert {{
+        background-color: {card_bg} !important;
+        color: {text_color} !important;
+        border-radius: 8px;
+    }}
+    
+    /* Select boxes */
+    [data-baseweb="select"] {{
+        background-color: {input_bg} !important;
+    }}
+    
+    [data-baseweb="select"] > div {{
+        background-color: {input_bg} !important;
+        color: {input_text} !important;
+    }}
+    
+    /* Dropdown menu */
+    [data-baseweb="popover"] {{
+        background-color: {input_bg} !important;
+    }}
+    
+    [role="listbox"] {{
+        background-color: {input_bg} !important;
+    }}
+    
+    [role="option"] {{
+        background-color: {input_bg} !important;
+        color: {input_text} !important;
+        transition: background-color 0.2s ease;
+    }}
+    
+    [role="option"]:hover {{
+        background-color: {card_bg} !important;
+    }}
+    
+    /* Dataframe styling */
+    [data-testid="stDataFrame"] {{
+        background-color: {table_bg} !important;
+    }}
+    
+    [data-testid="stDataFrame"] div[role="gridcell"] {{
+        background-color: {table_bg} !important;
+        color: {text_color} !important;
+    }}
+    
+    [data-testid="stDataFrame"] div[role="columnheader"] {{
+        background-color: {table_header_bg} !important;
+        color: {text_color} !important;
+    }}
+    
+    /* Progress bars */
+    .stProgress > div > div {{
+        background-color: {metric_border} !important;
+    }}
+    
+    /* Container animations */
+    .element-container {{
+        animation: fadeIn 0.6s ease-out;
+    }}
+    
+    /* Mobile responsiveness */
+    @media (max-width: 768px) {{
+        .chaos-header h1 {{
+            font-size: 1.5rem;
+        }}
+        
+        .impact-card {{
+            margin: 0.5rem 0;
+            padding: 0.75rem;
+        }}
+    }}
+</style>
+""", unsafe_allow_html=True)
 
-    st.write("Summary by event:")
-    st.dataframe(chaos_data['by_event'])
+# ==================== TITLE ====================
+
+st.markdown('<div class="chaos-header"><h1 style="color: white; margin: 0;">🔥 Chaos Analysis</h1></div>', unsafe_allow_html=True)
+
+st.markdown("""
+**Understanding Model Performance Under Race Incidents**  
+How DNFs, penalties, safety cars, and other chaos events affect prediction accuracy
+""")
+
 # ==================== OVERVIEW ====================
 
 st.header("📊 Overview")
@@ -182,7 +433,8 @@ with col1:
         color_continuous_scale='RdYlGn_r',
         title='Prediction Error by Race Type',
         labels={'mae': 'Mean Absolute Error', 'category': 'Race Category'},
-        text='mae'
+        text='mae',
+        template=plotly_template
     )
     
     fig.update_traces(texttemplate='%{text:.2f}', textposition='outside')
@@ -258,7 +510,8 @@ with col1:
         xaxis_title='Mean Absolute Error',
         yaxis_title='',
         height=400,
-        yaxis={'categoryorder': 'total ascending'}
+        yaxis={'categoryorder': 'total ascending'},
+        template=plotly_template
     )
     
     st.plotly_chart(fig, use_container_width=True)
@@ -304,7 +557,6 @@ if not best_chaos.empty:
     
     with col2:
         # Scatter plot: affected drivers vs MAE
-        # Only include year in hover if column exists
         hover_cols = ['event_name']
         if 'year' in filtered_events.columns:
             hover_cols.append('year')
@@ -321,7 +573,8 @@ if not best_chaos.empty:
                 'affected_drivers': 'Number of Affected Drivers',
                 'mae': 'Mean Absolute Error',
                 'race_category': 'Race Type'
-            }
+            },
+            template=plotly_template
         )
         
         fig.update_layout(height=400)
@@ -388,7 +641,8 @@ fig.update_layout(
     title='Model Performance Under Different Scenarios',
     yaxis_title='Mean Absolute Error (positions)',
     height=400,
-    showlegend=False
+    showlegend=False,
+    template=plotly_template
 )
 
 st.plotly_chart(fig, use_container_width=True)
@@ -459,3 +713,9 @@ with st.expander("📋 Methodology & Conclusions"):
     - Develop fallback predictions for different incident scenarios
     - Improve first-lap chaos handling
     """)
+
+st.markdown("---")
+st.info("""
+**💡 Dissertation Project** • ML-Based F1 Race Outcome Prediction  
+Developed using Python, Scikit-learn, XGBoost, CatBoost, and Django
+""")
