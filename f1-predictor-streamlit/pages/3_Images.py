@@ -129,7 +129,7 @@ This Streamlit interface is a **live demo** of predictions from the full Django 
 st.markdown("---")
 
 # Path to screenshots
-img_path = Path(r"C:\Users\tarun\diss\td188\diss pictures")
+img_path = Path(__file__).resolve().parent / "diss pictures"
 
 # Get all images in the folder
 image_files = list(img_path.glob("*.png")) + list(img_path.glob("*.jpg")) + list(img_path.glob("*.jpeg"))
