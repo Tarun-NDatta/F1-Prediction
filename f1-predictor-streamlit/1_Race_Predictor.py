@@ -731,38 +731,42 @@ has_actual = not actual_results.empty
 if has_actual and len(actual_results) >= 3:
     st.subheader("🏆 Actual Podium")
     
-    # Sort by actual position and get top 3
-    actual_sorted = actual_results.sort_values('actual_position').head(3).reset_index(drop=True)
+    # Get drivers by their actual finishing position
+    first_place = actual_results[actual_results['actual_position'] == 1.0]
+    second_place = actual_results[actual_results['actual_position'] == 2.0]
+    third_place = actual_results[actual_results['actual_position'] == 3.0]
     
-    # Use Streamlit columns for podium (2nd, 1st, 3rd)
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:  # 2nd place
-        st.markdown(f'''
-        <div class="podium-place podium-2">
-            <div class="podium-trophy">🥈</div>
-            <div class="podium-position">2nd</div>
-            <div class="podium-driver">{actual_sorted.iloc[1]['driver_name']}</div>
-        </div>
-        ''', unsafe_allow_html=True)
-    
-    with col2:  # 1st place
-        st.markdown(f'''
-        <div class="podium-place podium-1">
-            <div class="podium-trophy">🥇</div>
-            <div class="podium-position">1st</div>
-            <div class="podium-driver">{actual_sorted.iloc[0]['driver_name']}</div>
-        </div>
-        ''', unsafe_allow_html=True)
-    
-    with col3:  # 3rd place
-        st.markdown(f'''
-        <div class="podium-place podium-3">
-            <div class="podium-trophy">🥉</div>
-            <div class="podium-position">3rd</div>
-            <div class="podium-driver">{actual_sorted.iloc[2]['driver_name']}</div>
-        </div>
-        ''', unsafe_allow_html=True)
+    # Check if we have all three positions
+    if len(first_place) > 0 and len(second_place) > 0 and len(third_place) > 0:
+        # Use Streamlit columns for podium (2nd, 1st, 3rd)
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:  # 2nd place
+            st.markdown(f'''
+            <div class="podium-place podium-2">
+                <div class="podium-trophy">🥈</div>
+                <div class="podium-position">2nd</div>
+                <div class="podium-driver">{second_place.iloc[0]['driver_name']}</div>
+            </div>
+            ''', unsafe_allow_html=True)
+        
+        with col2:  # 1st place
+            st.markdown(f'''
+            <div class="podium-place podium-1">
+                <div class="podium-trophy">🥇</div>
+                <div class="podium-position">1st</div>
+                <div class="podium-driver">{first_place.iloc[0]['driver_name']}</div>
+            </div>
+            ''', unsafe_allow_html=True)
+        
+        with col3:  # 3rd place
+            st.markdown(f'''
+            <div class="podium-place podium-3">
+                <div class="podium-trophy">🥉</div>
+                <div class="podium-position">3rd</div>
+                <div class="podium-driver">{third_place.iloc[0]['driver_name']}</div>
+            </div>
+            ''', unsafe_allow_html=True)
 elif len(pred_pivot) >= 3:
     st.subheader("🏆 Predicted Podium")
     
