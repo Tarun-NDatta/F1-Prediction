@@ -725,45 +725,42 @@ pred_pivot.index = pred_pivot.index + 1
 # ==================== PODIUM VISUALIZATION ====================
 
 # Check if we have actual results
-actual_results = event_preds[event_preds['actual_position'].notna()]
+actual_results = event_preds[event_preds['actual_position'].notna()].copy()
 has_actual = not actual_results.empty
 
 if has_actual and len(actual_results) >= 3:
     st.subheader("🏆 Actual Podium")
     
     # Sort by actual position and get top 3
-    actual_sorted = actual_results.sort_values('actual_position').head(3)
+    actual_sorted = actual_results.sort_values('actual_position').head(3).reset_index(drop=True)
     
     # Use Streamlit columns for podium (2nd, 1st, 3rd)
     col1, col2, col3 = st.columns(3)
     
     with col1:  # 2nd place
-        second_place = actual_sorted[actual_sorted['actual_position'] == 2].iloc[0]
         st.markdown(f'''
         <div class="podium-place podium-2">
             <div class="podium-trophy">🥈</div>
             <div class="podium-position">2nd</div>
-            <div class="podium-driver">{second_place['driver_name']}</div>
+            <div class="podium-driver">{actual_sorted.iloc[1]['driver_name']}</div>
         </div>
         ''', unsafe_allow_html=True)
     
     with col2:  # 1st place
-        first_place = actual_sorted[actual_sorted['actual_position'] == 1].iloc[0]
         st.markdown(f'''
         <div class="podium-place podium-1">
             <div class="podium-trophy">🥇</div>
             <div class="podium-position">1st</div>
-            <div class="podium-driver">{first_place['driver_name']}</div>
+            <div class="podium-driver">{actual_sorted.iloc[0]['driver_name']}</div>
         </div>
         ''', unsafe_allow_html=True)
     
     with col3:  # 3rd place
-        third_place = actual_sorted[actual_sorted['actual_position'] == 3].iloc[0]
         st.markdown(f'''
         <div class="podium-place podium-3">
             <div class="podium-trophy">🥉</div>
             <div class="podium-position">3rd</div>
-            <div class="podium-driver">{third_place['driver_name']}</div>
+            <div class="podium-driver">{actual_sorted.iloc[2]['driver_name']}</div>
         </div>
         ''', unsafe_allow_html=True)
 elif len(pred_pivot) >= 3:
