@@ -403,7 +403,7 @@ with col4:
 st.markdown("---")
 
 # Explanation
-with st.expander("💡 What is Chaos Analysis?"):
+with st.expander("💡 What is Chaos Analysis?", expanded = True):
     st.markdown("""
     ### Understanding the Impact of Unpredictable Events
     
@@ -419,7 +419,7 @@ with st.expander("💡 What is Chaos Analysis?"):
     **Key Metrics:**
     - **Overall MAE**: Average prediction error across all races
     - **Clean Race MAE**: Error when no major incidents occur
-    - **Perfect Knowledge MAE**: Theoretical error if we knew all incidents in advance
+    - **Perfect Knowledge MAE**: Theoretical error if we knew all incidents in real-time, in other words - If we had live updates
     - **Chaos Impact**: Additional error caused by unpredictable events
     
     A good model should:
