@@ -598,7 +598,11 @@ st.markdown(f"""
 st.markdown('<div class="main-header"><h1 style="color: white; margin: 0;">🏎️ F1 Race Predictor</h1></div>', unsafe_allow_html=True)
 
 st.markdown("""
-**Machine Learning-Powered Race Predictions** • Trained on 2022-2024 historical data  
+The project was implemented in two tiers: (1) a comprehensive Django web application serving as the primary development and testing platform, featuring full user management, live race integration, and prediction markets; and (2) a Streamlit deployment for public demonstration, providing streamlined access to the core prediction models and their outputs. The Streamlit version prioritizes accessibility and ease of deployment while maintaining the essential predictive capabilities.            
+
+**Machine Learning-Powered Race Predictions**
+            
+Trained on 2022-2024 historical data and updated after each race in 2025  
 Compare **Ridge Regression**, **XGBoost**, and **CatBoost** models with track specialization
 """)
 
@@ -748,11 +752,26 @@ if len(pred_pivot) >= 3:
 tab1, tab2, tab3, tab4 = st.tabs(["📋 Predicted Grid", "📊 Model Comparison", "🎯 Confidence Analysis", "📈 Driver Trends"])
 
 with tab1:
-    st.subheader("Predicted Finishing Order")
+    st.subheader("Race Results & Predictions")
+    
+    # Model definitions expander
+    with st.expander("🤖 Model Definitions"):
+        st.markdown("""
+        **CatBoost (Primary Model)**  
+        Categorical Boosting algorithm optimized for circuit-specific predictions. Excels at handling categorical features like track type, weather conditions, and team characteristics. Uses ordered boosting to reduce overfitting and provides the most accurate predictions for F1 races.
+        
+        **XGBoost**  
+        Extreme Gradient Boosting model using decision tree ensembles. Strong at capturing non-linear patterns in driver performance, recent form trends, and team dynamics. Handles feature interactions well but less specialized than CatBoost for categorical data.
+        
+        **Ridge Regression**  
+        Linear model with L2 regularization serving as a baseline. Assumes linear relationships between features and race positions. Simple and interpretable but limited in capturing complex racing dynamics.
+        
+        **Ensemble**  
+        Averages predictions from Ridge Regression and XGBoost to reduce individual model bias and variance. Provides robust predictions by combining different modeling approaches, though not always more accurate than the best individual model.
+        """)
     
     # Format predictions table
     display_df = pred_pivot.copy()
-    display_df.index.name = 'Pos'
     
     # Round predictions
     for col in ['Ridge', 'XGBoost', 'CatBoost', 'Ensemble']:
@@ -761,27 +780,114 @@ with tab1:
     
     # Add actual results if available
     actual_results = event_preds[event_preds['actual_position'].notna()]
-    if not actual_results.empty:
+    has_actual = not actual_results.empty
+    
+    if has_actual:
         actual_map = dict(zip(actual_results['driver_name'], actual_results['actual_position']))
         display_df['Actual'] = display_df['driver_name'].map(actual_map)
         
-        if 'Ensemble' in display_df.columns and 'Actual' in display_df.columns:
-            display_df['Diff'] = (display_df['Ensemble'] - display_df['Actual']).round(1)
+        # Sort by actual results when available
+        display_df = display_df.sort_values('Actual').reset_index(drop=True)
+        display_df.index = display_df.index + 1
+        display_df.index.name = 'Pos'
+    else:
+        # If no actual results, sort by CatBoost (or Ensemble if CatBoost unavailable)
+        sort_col = 'CatBoost' if 'CatBoost' in display_df.columns else 'Ensemble'
+        display_df = display_df.sort_values(sort_col).reset_index(drop=True)
+        display_df.index = display_df.index + 1
+        display_df.index.name = 'Pos'
+    
+    # Comparison mode selection
+    st.markdown("---")
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        if has_actual:
+            comparison_options = ['CatBoost vs Actual (Default)']
+            if 'Ridge' in display_df.columns:
+                comparison_options.append('Ridge vs CatBoost vs Actual')
+            if 'XGBoost' in display_df.columns:
+                comparison_options.append('XGBoost vs CatBoost vs Actual')
+            if 'Ensemble' in display_df.columns:
+                comparison_options.append('Ensemble vs CatBoost vs Actual')
+            
+            comparison_mode = st.selectbox(
+                "Select comparison view",
+                comparison_options,
+                help="Choose which models to compare against actual results"
+            )
+        else:
+            st.info("🏁 Race hasn't occurred yet - showing predictions only")
+            comparison_mode = 'Predictions Only'
+    
+    with col2:
+        show_all = st.checkbox("Show all models", value=False, help="Display all model predictions in one table")
+    
+    # Determine which columns to show
+    if show_all:
+        cols_to_show = ['driver_name']
+        if 'Ridge' in display_df.columns:
+            cols_to_show.append('Ridge')
+        if 'XGBoost' in display_df.columns:
+            cols_to_show.append('XGBoost')
+        if 'CatBoost' in display_df.columns:
+            cols_to_show.append('CatBoost')
+        if 'Ensemble' in display_df.columns:
+            cols_to_show.append('Ensemble')
+        if has_actual:
+            cols_to_show.append('Actual')
+        primary_model = 'CatBoost' if 'CatBoost' in display_df.columns else 'Ensemble'
+    elif has_actual:
+        if 'CatBoost' in comparison_mode:
+            if 'Ridge' in comparison_mode:
+                cols_to_show = ['driver_name', 'Ridge', 'CatBoost', 'Actual']
+                primary_model = 'CatBoost'
+            elif 'XGBoost' in comparison_mode:
+                cols_to_show = ['driver_name', 'XGBoost', 'CatBoost', 'Actual']
+                primary_model = 'CatBoost'
+            elif 'Ensemble' in comparison_mode:
+                cols_to_show = ['driver_name', 'Ensemble', 'CatBoost', 'Actual']
+                primary_model = 'CatBoost'
+            else:  # Default: CatBoost vs Actual
+                cols_to_show = ['driver_name', 'CatBoost', 'Actual']
+                primary_model = 'CatBoost'
+    else:
+        # No actual results - show predictions only
+        cols_to_show = ['driver_name']
+        if 'CatBoost' in display_df.columns:
+            cols_to_show.append('CatBoost')
+            primary_model = 'CatBoost'
+        if 'XGBoost' in display_df.columns:
+            cols_to_show.append('XGBoost')
+        if 'Ridge' in display_df.columns:
+            cols_to_show.append('Ridge')
+        if 'Ensemble' in display_df.columns:
+            cols_to_show.append('Ensemble')
+        if not any(m in display_df.columns for m in ['CatBoost', 'XGBoost', 'Ridge', 'Ensemble']):
+            primary_model = None
+        elif 'CatBoost' not in display_df.columns:
+            primary_model = 'Ensemble' if 'Ensemble' in display_df.columns else cols_to_show[1]
+    
+    # Calculate diff for primary model vs actual
+    if has_actual and primary_model and primary_model in display_df.columns:
+        display_df['Diff'] = (display_df[primary_model] - display_df['Actual']).round(1)
     
     # Create HTML table with team colors
     html_table = '<div class="prediction-table"><table style="width:100%"><thead><tr>'
     html_table += '<th style="width:8%">Pos</th><th style="width:30%">Driver</th>'
     
-    if 'Ridge' in display_df.columns:
-        html_table += '<th style="width:12%">Ridge</th>'
-    if 'XGBoost' in display_df.columns:
-        html_table += '<th style="width:12%">XGBoost</th>'
-    if 'CatBoost' in display_df.columns:
-        html_table += '<th style="width:12%">CatBoost</th>'
-    if 'Ensemble' in display_df.columns:
-        html_table += '<th style="width:12%">Ensemble</th>'
-    if 'Actual' in display_df.columns:
-        html_table += '<th style="width:10%">Actual</th><th style="width:8%">Diff</th>'
+    # Add column headers dynamically
+    col_widths = {
+        'Ridge': '12%', 'XGBoost': '12%', 'CatBoost': '12%', 
+        'Ensemble': '12%', 'Actual': '10%', 'Diff': '8%'
+    }
+    
+    for col in cols_to_show[1:]:  # Skip driver_name
+        width = col_widths.get(col, '12%')
+        html_table += f'<th style="width:{width}">{col}</th>'
+    
+    if has_actual and 'Diff' in display_df.columns:
+        html_table += '<th style="width:8%">Diff</th>'
     
     html_table += '</tr></thead><tbody>'
     
@@ -797,18 +903,23 @@ with tab1:
         
         html_table += f'<tr><td class="{highlight_class}">{idx}</td><td class="{highlight_class}">{driver_display}</td>'
         
-        if 'Ridge' in display_df.columns:
-            html_table += f'<td class="{highlight_class}">{row["Ridge"]:.1f}</td>'
-        if 'XGBoost' in display_df.columns:
-            html_table += f'<td class="{highlight_class}">{row["XGBoost"]:.1f}</td>'
-        if 'CatBoost' in display_df.columns:
-            html_table += f'<td class="{highlight_class}">{row["CatBoost"]:.1f}</td>'
-        if 'Ensemble' in display_df.columns:
-            html_table += f'<td class="{highlight_class}"><strong>{row["Ensemble"]:.1f}</strong></td>'
-        if 'Actual' in display_df.columns:
-            html_table += f'<td class="{highlight_class}">{row["Actual"]:.0f}</td>'
-            diff_sign = '+' if row["Diff"] > 0 else ''
-            html_table += f'<td class="{highlight_class}">{diff_sign}{row["Diff"]:.1f}</td>'
+        # Add data columns dynamically
+        for col in cols_to_show[1:]:
+            if col in row.index and pd.notna(row[col]):
+                if col == 'Actual':
+                    html_table += f'<td class="{highlight_class}"><strong>{row[col]:.0f}</strong></td>'
+                else:
+                    html_table += f'<td class="{highlight_class}">{row[col]:.1f}</td>'
+            else:
+                html_table += f'<td class="{highlight_class}">-</td>'
+        
+        # Add diff column if applicable
+        if has_actual and 'Diff' in display_df.columns and pd.notna(row.get('Diff')):
+            diff_val = row['Diff']
+            diff_sign = '+' if diff_val > 0 else ''
+            diff_color = '#ff6b6b' if abs(diff_val) > 3 else '#00cc00' if abs(diff_val) <= 1 else ''
+            diff_style = f'color: {diff_color}; font-weight: bold;' if diff_color else ''
+            html_table += f'<td class="{highlight_class}" style="{diff_style}">{diff_sign}{diff_val:.1f}</td>'
         
         html_table += '</tr>'
     
@@ -817,21 +928,20 @@ with tab1:
     st.markdown(html_table, unsafe_allow_html=True)
     
     # Show prediction statistics
-    if 'Actual' in display_df.columns:
+    if has_actual and primary_model and primary_model in display_df.columns:
         st.markdown("---")
-        st.subheader("📈 Prediction Accuracy")
+        st.subheader(f"📈 {primary_model} Model Accuracy")
         
-        col1, col2, col3, col4 = st.columns(4)
+        col1, col2, col3 = st.columns(3)
         
-        mae = abs(display_df['Ensemble'] - display_df['Actual']).mean()
-        perfect_preds = (display_df['Ensemble'].round() == display_df['Actual']).sum()
-        top3_accuracy = (display_df[display_df['Actual'] <= 3]['Ensemble'] <= 3.5).sum()
-        max_error = abs(display_df['Ensemble'] - display_df['Actual']).max()
+        mae = abs(display_df[primary_model] - display_df['Actual']).mean()
+        top3_correct = (display_df[display_df['Actual'] <= 3][primary_model].round() <= 3).sum()
+        max_error = abs(display_df[primary_model] - display_df['Actual']).max()
         
         with col1:
-            st.metric("Mean Absolute Error", f"{mae:.2f} pos", help="Average prediction error")
+            st.metric("Mean Absolute Error", f"{mae:.2f} pos", help=f"Average prediction error for {primary_model}")
         with col2:
-            st.metric("Top-3 Accuracy", f"{top3_accuracy}/3", help="Correct podium predictions")
+            st.metric("Podium Predictions", f"{top3_correct}/3", help="Drivers correctly predicted in top 3")
         with col3:
             st.metric("Max Error", f"{max_error:.1f} pos", help="Largest prediction miss")
 

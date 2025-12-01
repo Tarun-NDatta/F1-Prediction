@@ -109,6 +109,10 @@ st.markdown(f"""
 st.markdown('<div class="main-header"><h1>📸 Full Django Project</h1></div>', unsafe_allow_html=True)
 
 st.markdown("""
+**Primary Development Platform**
+
+This is the comprehensive Django web application mentioned on the home page - the full-stack implementation that serves as the primary development and testing platform.
+
 ### 🎯 Complete ML-Based F1 Prediction System
 This Streamlit interface is a **live demo** of predictions from the full Django application.
 
