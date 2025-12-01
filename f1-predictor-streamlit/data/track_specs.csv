@@ -21,3 +21,4 @@ circuit_id,circuit_name,track_category,power_sensitivity,overtaking_difficulty,q
 22,Shanghai,TECHNICAL,6.5,5.5,6.5
 23,Spielberg,POWER,8.0,3.0,5.0
 24,São Paulo,HIGH_SPEED,6.0,5.0,6.0
+25,Lusail,HYBRID,6.0,5.0,6.0

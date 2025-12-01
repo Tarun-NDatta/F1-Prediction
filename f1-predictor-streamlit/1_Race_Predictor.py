@@ -538,7 +538,7 @@ st.markdown(f"""
     .stButton > button:active {{
         transform: translateY(0) !important;
     }}
-    
+
     /* Dataframe styling */
     [data-testid="stDataFrame"] {{
         background-color: {table_bg} !important;

@@ -21,6 +21,7 @@ event_id,event_name,round,driver_id,driver_name,model,predicted_position,actual_
 88,Mexico City Grand Prix,20,11,Lando Norris,Ridge,1.0,
 89,São Paulo Grand Prix,21,24,Gabriel Bortoleto,Ridge,1.0,
 90,Las Vegas Grand Prix,22,11,Lando Norris,Ridge,1.0,
+91,Qatar Grand Prix,23,18,Oscar Piastri,Ridge,1.0,
 54,Australian Grand Prix,1,18,Oscar Piastri,Ridge,2.0,9.0
 61,Chinese Grand Prix,2,6,George Russell,Ridge,2.0,3.0
 55,Japanese Grand Prix,3,11,Lando Norris,Ridge,2.0,2.0
@@ -43,6 +44,7 @@ event_id,event_name,round,driver_id,driver_name,model,predicted_position,actual_
 88,Mexico City Grand Prix,20,3,Charles Leclerc,Ridge,2.0,
 89,São Paulo Grand Prix,21,11,Lando Norris,Ridge,2.0,
 90,Las Vegas Grand Prix,22,1,Max Verstappen,Ridge,2.0,
+91,Qatar Grand Prix,23,11,Lando Norris,Ridge,2.0,
 54,Australian Grand Prix,1,1,Max Verstappen,Ridge,3.0,2.0
 61,Chinese Grand Prix,2,11,Lando Norris,Ridge,3.0,2.0
 55,Japanese Grand Prix,3,18,Oscar Piastri,Ridge,3.0,3.0
@@ -65,6 +67,7 @@ event_id,event_name,round,driver_id,driver_name,model,predicted_position,actual_
 88,Mexico City Grand Prix,20,7,Lewis Hamilton,Ridge,3.0,
 89,São Paulo Grand Prix,21,29,Kimi Antonelli,Ridge,3.0,
 90,Las Vegas Grand Prix,22,4,Carlos Sainz,Ridge,3.0,
+91,Qatar Grand Prix,23,1,Max Verstappen,Ridge,3.0,
 54,Australian Grand Prix,1,6,George Russell,Ridge,4.0,3.0
 61,Chinese Grand Prix,2,1,Max Verstappen,Ridge,4.0,4.0
 55,Japanese Grand Prix,3,3,Charles Leclerc,Ridge,4.0,4.0
@@ -87,6 +90,7 @@ event_id,event_name,round,driver_id,driver_name,model,predicted_position,actual_
 88,Mexico City Grand Prix,20,6,George Russell,Ridge,4.0,
 89,São Paulo Grand Prix,21,3,Charles Leclerc,Ridge,4.0,
 90,Las Vegas Grand Prix,22,6,George Russell,Ridge,4.0,
+91,Qatar Grand Prix,23,6,George Russell,Ridge,4.0,
 54,Australian Grand Prix,1,14,Yuki Tsunoda,Ridge,5.0,12.0
 61,Chinese Grand Prix,2,7,Lewis Hamilton,Ridge,5.0,19.0
 55,Japanese Grand Prix,3,6,George Russell,Ridge,5.0,5.0
@@ -109,6 +113,7 @@ event_id,event_name,round,driver_id,driver_name,model,predicted_position,actual_
 88,Mexico City Grand Prix,20,1,Max Verstappen,Ridge,5.0,
 89,São Paulo Grand Prix,21,18,Oscar Piastri,Ridge,5.0,
 90,Las Vegas Grand Prix,22,18,Oscar Piastri,Ridge,5.0,
+91,Qatar Grand Prix,23,29,Kimi Antonelli,Ridge,5.0,
 54,Australian Grand Prix,1,15,Alexander Albon,Ridge,6.0,5.0
 61,Chinese Grand Prix,2,3,Charles Leclerc,Ridge,6.0,18.0
 55,Japanese Grand Prix,3,29,Kimi Antonelli,Ridge,6.0,6.0
@@ -131,6 +136,7 @@ event_id,event_name,round,driver_id,driver_name,model,predicted_position,actual_
 88,Mexico City Grand Prix,20,29,Kimi Antonelli,Ridge,6.0,
 89,São Paulo Grand Prix,21,23,Isack Hadjar,Ridge,6.0,
 90,Las Vegas Grand Prix,22,25,Liam Lawson,Ridge,6.0,
+91,Qatar Grand Prix,23,23,Isack Hadjar,Ridge,6.0,
 54,Australian Grand Prix,1,3,Charles Leclerc,Ridge,7.0,8.0
 61,Chinese Grand Prix,2,23,Isack Hadjar,Ridge,7.0,11.0
 55,Japanese Grand Prix,3,23,Isack Hadjar,Ridge,7.0,8.0
@@ -153,6 +159,7 @@ event_id,event_name,round,driver_id,driver_name,model,predicted_position,actual_
 88,Mexico City Grand Prix,20,4,Carlos Sainz,Ridge,7.0,
 89,São Paulo Grand Prix,21,6,George Russell,Ridge,7.0,
 90,Las Vegas Grand Prix,22,5,Fernando Alonso,Ridge,7.0,
+91,Qatar Grand Prix,23,4,Carlos Sainz,Ridge,7.0,
 54,Australian Grand Prix,1,7,Lewis Hamilton,Ridge,8.0,10.0
 61,Chinese Grand Prix,2,29,Kimi Antonelli,Ridge,8.0,6.0
 55,Japanese Grand Prix,3,7,Lewis Hamilton,Ridge,8.0,7.0
@@ -175,6 +182,7 @@ event_id,event_name,round,driver_id,driver_name,model,predicted_position,actual_
 88,Mexico City Grand Prix,20,18,Oscar Piastri,Ridge,8.0,
 89,São Paulo Grand Prix,21,25,Liam Lawson,Ridge,8.0,
 90,Las Vegas Grand Prix,22,23,Isack Hadjar,Ridge,8.0,
+91,Qatar Grand Prix,23,5,Fernando Alonso,Ridge,8.0,
 54,Australian Grand Prix,1,20,Pierre Gasly,Ridge,9.0,11.0
 61,Chinese Grand Prix,2,14,Yuki Tsunoda,Ridge,9.0,16.0
 55,Japanese Grand Prix,3,15,Alexander Albon,Ridge,9.0,9.0
@@ -197,6 +205,7 @@ event_id,event_name,round,driver_id,driver_name,model,predicted_position,actual_
 88,Mexico City Grand Prix,20,23,Isack Hadjar,Ridge,9.0,
 89,São Paulo Grand Prix,21,26,Oliver Bearman,Ridge,9.0,
 90,Las Vegas Grand Prix,22,3,Charles Leclerc,Ridge,9.0,
+91,Qatar Grand Prix,23,20,Pierre Gasly,Ridge,9.0,
 54,Australian Grand Prix,1,4,Carlos Sainz,Ridge,10.0,18.0
 61,Chinese Grand Prix,2,15,Alexander Albon,Ridge,10.0,7.0
 55,Japanese Grand Prix,3,26,Oliver Bearman,Ridge,10.0,10.0
@@ -219,6 +228,7 @@ event_id,event_name,round,driver_id,driver_name,model,predicted_position,actual_
 88,Mexico City Grand Prix,20,26,Oliver Bearman,Ridge,10.0,
 89,São Paulo Grand Prix,21,20,Pierre Gasly,Ridge,10.0,
 90,Las Vegas Grand Prix,22,20,Pierre Gasly,Ridge,10.0,
+91,Qatar Grand Prix,23,3,Charles Leclerc,Ridge,10.0,
 54,Australian Grand Prix,1,23,Isack Hadjar,Ridge,11.0,20.0
 61,Chinese Grand Prix,2,9,Esteban Ocon,Ridge,11.0,5.0
 55,Japanese Grand Prix,3,20,Pierre Gasly,Ridge,11.0,13.0
@@ -241,6 +251,7 @@ event_id,event_name,round,driver_id,driver_name,model,predicted_position,actual_
 88,Mexico City Grand Prix,20,14,Yuki Tsunoda,Ridge,11.0,
 89,São Paulo Grand Prix,21,10,Nico Hulkenberg,Ridge,11.0,
 90,Las Vegas Grand Prix,22,10,Nico Hulkenberg,Ridge,11.0,
+91,Qatar Grand Prix,23,10,Nico Hulkenberg,Ridge,11.0,
 54,Australian Grand Prix,1,5,Fernando Alonso,Ridge,12.0,17.0
 61,Chinese Grand Prix,2,10,Nico Hulkenberg,Ridge,12.0,15.0
 55,Japanese Grand Prix,3,4,Carlos Sainz,Ridge,12.0,14.0
@@ -263,6 +274,7 @@ event_id,event_name,round,driver_id,driver_name,model,predicted_position,actual_
 88,Mexico City Grand Prix,20,9,Esteban Ocon,Ridge,12.0,
 89,São Paulo Grand Prix,21,5,Fernando Alonso,Ridge,12.0,
 90,Las Vegas Grand Prix,22,8,Lance Stroll,Ridge,12.0,
+91,Qatar Grand Prix,23,25,Liam Lawson,Ridge,12.0,
 54,Australian Grand Prix,1,8,Lance Stroll,Ridge,13.0,6.0
 61,Chinese Grand Prix,2,5,Fernando Alonso,Ridge,13.0,17.0
 55,Japanese Grand Prix,3,5,Fernando Alonso,Ridge,13.0,11.0
@@ -285,6 +297,7 @@ event_id,event_name,round,driver_id,driver_name,model,predicted_position,actual_
 88,Mexico City Grand Prix,20,10,Nico Hulkenberg,Ridge,13.0,
 89,São Paulo Grand Prix,21,15,Alexander Albon,Ridge,13.0,
 90,Las Vegas Grand Prix,22,9,Esteban Ocon,Ridge,13.0,
+91,Qatar Grand Prix,23,26,Oliver Bearman,Ridge,13.0,
 54,Australian Grand Prix,1,28,Jack Doohan,Ridge,14.0,19.0
 61,Chinese Grand Prix,2,8,Lance Stroll,Ridge,14.0,9.0
 55,Japanese Grand Prix,3,25,Liam Lawson,Ridge,14.0,17.0
@@ -307,6 +320,7 @@ event_id,event_name,round,driver_id,driver_name,model,predicted_position,actual_
 88,Mexico City Grand Prix,20,5,Fernando Alonso,Ridge,14.0,
 89,São Paulo Grand Prix,21,7,Lewis Hamilton,Ridge,14.0,
 90,Las Vegas Grand Prix,22,26,Oliver Bearman,Ridge,14.0,
+91,Qatar Grand Prix,23,24,Gabriel Bortoleto,Ridge,14.0,
 54,Australian Grand Prix,1,24,Gabriel Bortoleto,Ridge,15.0,16.0
 61,Chinese Grand Prix,2,4,Carlos Sainz,Ridge,15.0,10.0
 55,Japanese Grand Prix,3,14,Yuki Tsunoda,Ridge,15.0,12.0
@@ -329,6 +343,7 @@ event_id,event_name,round,driver_id,driver_name,model,predicted_position,actual_
 88,Mexico City Grand Prix,20,25,Liam Lawson,Ridge,15.0,
 89,São Paulo Grand Prix,21,8,Lance Stroll,Ridge,15.0,
 90,Las Vegas Grand Prix,22,27,Franco Colapinto,Ridge,15.0,
+91,Qatar Grand Prix,23,15,Alexander Albon,Ridge,15.0,
 54,Australian Grand Prix,1,29,Kimi Antonelli,Ridge,16.0,4.0
 61,Chinese Grand Prix,2,20,Pierre Gasly,Ridge,16.0,20.0
 55,Japanese Grand Prix,3,10,Nico Hulkenberg,Ridge,16.0,16.0
@@ -351,6 +366,7 @@ event_id,event_name,round,driver_id,driver_name,model,predicted_position,actual_
 88,Mexico City Grand Prix,20,24,Gabriel Bortoleto,Ridge,16.0,
 89,São Paulo Grand Prix,21,4,Carlos Sainz,Ridge,16.0,
 90,Las Vegas Grand Prix,22,15,Alexander Albon,Ridge,16.0,
+91,Qatar Grand Prix,23,14,Yuki Tsunoda,Ridge,16.0,
 54,Australian Grand Prix,1,10,Nico Hulkenberg,Ridge,17.0,7.0
 61,Chinese Grand Prix,2,26,Oliver Bearman,Ridge,17.0,8.0
 55,Japanese Grand Prix,3,24,Gabriel Bortoleto,Ridge,17.0,19.0
@@ -373,6 +389,7 @@ event_id,event_name,round,driver_id,driver_name,model,predicted_position,actual_
 88,Mexico City Grand Prix,20,15,Alexander Albon,Ridge,17.0,
 89,São Paulo Grand Prix,21,1,Max Verstappen,Ridge,17.0,
 90,Las Vegas Grand Prix,22,29,Kimi Antonelli,Ridge,17.0,
+91,Qatar Grand Prix,23,9,Esteban Ocon,Ridge,17.0,
 54,Australian Grand Prix,1,25,Liam Lawson,Ridge,18.0,15.0
 61,Chinese Grand Prix,2,28,Jack Doohan,Ridge,18.0,13.0
 55,Japanese Grand Prix,3,9,Esteban Ocon,Ridge,18.0,18.0
@@ -395,6 +412,7 @@ event_id,event_name,round,driver_id,driver_name,model,predicted_position,actual_
 88,Mexico City Grand Prix,20,20,Pierre Gasly,Ridge,18.0,
 89,São Paulo Grand Prix,21,9,Esteban Ocon,Ridge,18.0,
 90,Las Vegas Grand Prix,22,24,Gabriel Bortoleto,Ridge,18.0,
+91,Qatar Grand Prix,23,7,Lewis Hamilton,Ridge,18.0,
 54,Australian Grand Prix,1,9,Esteban Ocon,Ridge,19.0,13.0
 61,Chinese Grand Prix,2,24,Gabriel Bortoleto,Ridge,19.0,14.0
 55,Japanese Grand Prix,3,28,Jack Doohan,Ridge,19.0,15.0
@@ -417,6 +435,7 @@ event_id,event_name,round,driver_id,driver_name,model,predicted_position,actual_
 88,Mexico City Grand Prix,20,8,Lance Stroll,Ridge,19.0,
 89,São Paulo Grand Prix,21,27,Franco Colapinto,Ridge,19.0,
 90,Las Vegas Grand Prix,22,14,Yuki Tsunoda,Ridge,19.0,
+91,Qatar Grand Prix,23,8,Lance Stroll,Ridge,19.0,
 54,Australian Grand Prix,1,26,Oliver Bearman,Ridge,20.0,14.0
 61,Chinese Grand Prix,2,25,Liam Lawson,Ridge,20.0,12.0
 55,Japanese Grand Prix,3,8,Lance Stroll,Ridge,20.0,20.0
@@ -439,6 +458,7 @@ event_id,event_name,round,driver_id,driver_name,model,predicted_position,actual_
 88,Mexico City Grand Prix,20,27,Franco Colapinto,Ridge,20.0,
 89,São Paulo Grand Prix,21,14,Yuki Tsunoda,Ridge,20.0,
 90,Las Vegas Grand Prix,22,7,Lewis Hamilton,Ridge,20.0,
+91,Qatar Grand Prix,23,27,Franco Colapinto,Ridge,20.0,
 54,Australian Grand Prix,1,11,Lando Norris,XGBoost,1.0,1.0
 54,Australian Grand Prix,1,18,Oscar Piastri,XGBoost,2.0,9.0
 54,Australian Grand Prix,1,1,Max Verstappen,XGBoost,3.0,2.0
@@ -879,6 +899,26 @@ event_id,event_name,round,driver_id,driver_name,model,predicted_position,actual_
 85,Azerbaijan Grand Prix,17,20,Pierre Gasly,XGBoost,18.0,
 85,Azerbaijan Grand Prix,17,15,Alexander Albon,XGBoost,19.0,
 85,Azerbaijan Grand Prix,17,9,Esteban Ocon,XGBoost,20.0,
+91,Qatar Grand Prix,23,18,Oscar Piastri,XGBoost,1.0,
+91,Qatar Grand Prix,23,11,Lando Norris,XGBoost,2.0,
+91,Qatar Grand Prix,23,1,Max Verstappen,XGBoost,3.0,
+91,Qatar Grand Prix,23,6,George Russell,XGBoost,4.0,
+91,Qatar Grand Prix,23,29,Kimi Antonelli,XGBoost,5.0,
+91,Qatar Grand Prix,23,23,Isack Hadjar,XGBoost,6.0,
+91,Qatar Grand Prix,23,4,Carlos Sainz,XGBoost,7.0,
+91,Qatar Grand Prix,23,5,Fernando Alonso,XGBoost,8.0,
+91,Qatar Grand Prix,23,20,Pierre Gasly,XGBoost,9.0,
+91,Qatar Grand Prix,23,3,Charles Leclerc,XGBoost,10.0,
+91,Qatar Grand Prix,23,10,Nico Hulkenberg,XGBoost,11.0,
+91,Qatar Grand Prix,23,25,Liam Lawson,XGBoost,12.0,
+91,Qatar Grand Prix,23,26,Oliver Bearman,XGBoost,13.0,
+91,Qatar Grand Prix,23,24,Gabriel Bortoleto,XGBoost,14.0,
+91,Qatar Grand Prix,23,15,Alexander Albon,XGBoost,15.0,
+91,Qatar Grand Prix,23,14,Yuki Tsunoda,XGBoost,16.0,
+91,Qatar Grand Prix,23,9,Esteban Ocon,XGBoost,17.0,
+91,Qatar Grand Prix,23,7,Lewis Hamilton,XGBoost,18.0,
+91,Qatar Grand Prix,23,8,Lance Stroll,XGBoost,19.0,
+91,Qatar Grand Prix,23,27,Franco Colapinto,XGBoost,20.0,
 54,Australian Grand Prix,1,11,Lando Norris,CatBoost,1.0,1.0
 61,Chinese Grand Prix,2,18,Oscar Piastri,CatBoost,1.0,1.0
 55,Japanese Grand Prix,3,1,Max Verstappen,CatBoost,1.0,1.0
@@ -898,8 +938,10 @@ event_id,event_name,round,driver_id,driver_name,model,predicted_position,actual_
 85,Azerbaijan Grand Prix,17,1,Max Verstappen,CatBoost,1.0,
 86,Singapore Grand Prix,18,6,George Russell,CatBoost,1.0,
 87,United States Grand Prix,19,1,Max Verstappen,CatBoost,1.0,
-88,Mexico City Grand Prix,20,11,Lando Norris,CatBoost,1.0,
+88,Mexico City Grand Prix,20,11,Lando Norris,CatBoost,1.0,1.0
+89,São Paulo Grand Prix,21,11,Lando Norris,CatBoost,1.0,1.0
 90,Las Vegas Grand Prix,22,11,Lando Norris,CatBoost,1.0,
+91,Qatar Grand Prix,23,1,Max Verstappen,CatBoost,1.0,
 54,Australian Grand Prix,1,1,Max Verstappen,CatBoost,2.0,2.0
 61,Chinese Grand Prix,2,11,Lando Norris,CatBoost,2.0,2.0
 55,Japanese Grand Prix,3,11,Lando Norris,CatBoost,2.0,2.0
@@ -919,8 +961,10 @@ event_id,event_name,round,driver_id,driver_name,model,predicted_position,actual_
 85,Azerbaijan Grand Prix,17,29,Kimi Antonelli,CatBoost,2.0,
 86,Singapore Grand Prix,18,1,Max Verstappen,CatBoost,2.0,
 87,United States Grand Prix,19,11,Lando Norris,CatBoost,2.0,
-88,Mexico City Grand Prix,20,3,Charles Leclerc,CatBoost,2.0,
+88,Mexico City Grand Prix,20,3,Charles Leclerc,CatBoost,2.0,2.0
+89,São Paulo Grand Prix,21,29,Kimi Antonelli,CatBoost,2.0,2.0
 90,Las Vegas Grand Prix,22,1,Max Verstappen,CatBoost,2.0,
+91,Qatar Grand Prix,23,18,Oscar Piastri,CatBoost,2.0,
 54,Australian Grand Prix,1,6,George Russell,CatBoost,3.0,3.0
 61,Chinese Grand Prix,2,6,George Russell,CatBoost,3.0,3.0
 55,Japanese Grand Prix,3,18,Oscar Piastri,CatBoost,3.0,3.0
@@ -940,8 +984,10 @@ event_id,event_name,round,driver_id,driver_name,model,predicted_position,actual_
 85,Azerbaijan Grand Prix,17,4,Carlos Sainz,CatBoost,3.0,
 86,Singapore Grand Prix,18,18,Oscar Piastri,CatBoost,3.0,
 87,United States Grand Prix,19,3,Charles Leclerc,CatBoost,3.0,
-88,Mexico City Grand Prix,20,7,Lewis Hamilton,CatBoost,3.0,
+88,Mexico City Grand Prix,20,7,Lewis Hamilton,CatBoost,3.0,8.0
+89,São Paulo Grand Prix,21,3,Charles Leclerc,CatBoost,3.0,19.0
 90,Las Vegas Grand Prix,22,18,Oscar Piastri,CatBoost,3.0,
+91,Qatar Grand Prix,23,11,Lando Norris,CatBoost,3.0,
 54,Australian Grand Prix,1,18,Oscar Piastri,CatBoost,4.0,9.0
 61,Chinese Grand Prix,2,1,Max Verstappen,CatBoost,4.0,4.0
 55,Japanese Grand Prix,3,3,Charles Leclerc,CatBoost,4.0,4.0
@@ -961,8 +1007,10 @@ event_id,event_name,round,driver_id,driver_name,model,predicted_position,actual_
 85,Azerbaijan Grand Prix,17,6,George Russell,CatBoost,4.0,
 86,Singapore Grand Prix,18,29,Kimi Antonelli,CatBoost,4.0,
 87,United States Grand Prix,19,6,George Russell,CatBoost,4.0,
-88,Mexico City Grand Prix,20,6,George Russell,CatBoost,4.0,
+88,Mexico City Grand Prix,20,6,George Russell,CatBoost,4.0,7.0
+89,São Paulo Grand Prix,21,18,Oscar Piastri,CatBoost,4.0,5.0
 90,Las Vegas Grand Prix,22,6,George Russell,CatBoost,4.0,
+91,Qatar Grand Prix,23,6,George Russell,CatBoost,4.0,
 54,Australian Grand Prix,1,15,Alexander Albon,CatBoost,5.0,5.0
 61,Chinese Grand Prix,2,7,Lewis Hamilton,CatBoost,5.0,19.0
 55,Japanese Grand Prix,3,6,George Russell,CatBoost,5.0,5.0
@@ -982,8 +1030,10 @@ event_id,event_name,round,driver_id,driver_name,model,predicted_position,actual_
 85,Azerbaijan Grand Prix,17,11,Lando Norris,CatBoost,5.0,
 86,Singapore Grand Prix,18,11,Lando Norris,CatBoost,5.0,
 87,United States Grand Prix,19,18,Oscar Piastri,CatBoost,5.0,
-88,Mexico City Grand Prix,20,1,Max Verstappen,CatBoost,5.0,
+88,Mexico City Grand Prix,20,1,Max Verstappen,CatBoost,5.0,3.0
+89,São Paulo Grand Prix,21,24,Gabriel Bortoleto,CatBoost,5.0,20.0
 90,Las Vegas Grand Prix,22,4,Carlos Sainz,CatBoost,5.0,
+91,Qatar Grand Prix,23,29,Kimi Antonelli,CatBoost,5.0,
 54,Australian Grand Prix,1,3,Charles Leclerc,CatBoost,6.0,8.0
 61,Chinese Grand Prix,2,29,Kimi Antonelli,CatBoost,6.0,6.0
 55,Japanese Grand Prix,3,29,Kimi Antonelli,CatBoost,6.0,6.0
@@ -1003,8 +1053,10 @@ event_id,event_name,round,driver_id,driver_name,model,predicted_position,actual_
 85,Azerbaijan Grand Prix,17,25,Liam Lawson,CatBoost,6.0,
 86,Singapore Grand Prix,18,7,Lewis Hamilton,CatBoost,6.0,
 87,United States Grand Prix,19,7,Lewis Hamilton,CatBoost,6.0,
-88,Mexico City Grand Prix,20,29,Kimi Antonelli,CatBoost,6.0,
+88,Mexico City Grand Prix,20,29,Kimi Antonelli,CatBoost,6.0,6.0
+89,São Paulo Grand Prix,21,6,George Russell,CatBoost,6.0,4.0
 90,Las Vegas Grand Prix,22,25,Liam Lawson,CatBoost,6.0,
+91,Qatar Grand Prix,23,4,Carlos Sainz,CatBoost,6.0,
 54,Australian Grand Prix,1,7,Lewis Hamilton,CatBoost,7.0,10.0
 61,Chinese Grand Prix,2,3,Charles Leclerc,CatBoost,7.0,18.0
 55,Japanese Grand Prix,3,7,Lewis Hamilton,CatBoost,7.0,7.0
@@ -1024,8 +1076,10 @@ event_id,event_name,round,driver_id,driver_name,model,predicted_position,actual_
 85,Azerbaijan Grand Prix,17,18,Oscar Piastri,CatBoost,7.0,
 86,Singapore Grand Prix,18,3,Charles Leclerc,CatBoost,7.0,
 87,United States Grand Prix,19,29,Kimi Antonelli,CatBoost,7.0,
-88,Mexico City Grand Prix,20,18,Oscar Piastri,CatBoost,7.0,
+88,Mexico City Grand Prix,20,18,Oscar Piastri,CatBoost,7.0,5.0
+89,São Paulo Grand Prix,21,23,Isack Hadjar,CatBoost,7.0,8.0
 90,Las Vegas Grand Prix,22,5,Fernando Alonso,CatBoost,7.0,
+91,Qatar Grand Prix,23,23,Isack Hadjar,CatBoost,7.0,
 54,Australian Grand Prix,1,14,Yuki Tsunoda,CatBoost,8.0,12.0
 61,Chinese Grand Prix,2,9,Esteban Ocon,CatBoost,8.0,5.0
 55,Japanese Grand Prix,3,23,Isack Hadjar,CatBoost,8.0,8.0
@@ -1045,8 +1099,10 @@ event_id,event_name,round,driver_id,driver_name,model,predicted_position,actual_
 85,Azerbaijan Grand Prix,17,14,Yuki Tsunoda,CatBoost,8.0,
 86,Singapore Grand Prix,18,26,Oliver Bearman,CatBoost,8.0,
 87,United States Grand Prix,19,26,Oliver Bearman,CatBoost,8.0,
-88,Mexico City Grand Prix,20,4,Carlos Sainz,CatBoost,8.0,
+88,Mexico City Grand Prix,20,4,Carlos Sainz,CatBoost,8.0,17.0
+89,São Paulo Grand Prix,21,26,Oliver Bearman,CatBoost,8.0,6.0
 90,Las Vegas Grand Prix,22,3,Charles Leclerc,CatBoost,8.0,
+91,Qatar Grand Prix,23,5,Fernando Alonso,CatBoost,8.0,
 54,Australian Grand Prix,1,20,Pierre Gasly,CatBoost,9.0,11.0
 61,Chinese Grand Prix,2,15,Alexander Albon,CatBoost,9.0,7.0
 55,Japanese Grand Prix,3,26,Oliver Bearman,CatBoost,9.0,10.0
@@ -1066,8 +1122,10 @@ event_id,event_name,round,driver_id,driver_name,model,predicted_position,actual_
 85,Azerbaijan Grand Prix,17,3,Charles Leclerc,CatBoost,9.0,
 86,Singapore Grand Prix,18,5,Fernando Alonso,CatBoost,9.0,
 87,United States Grand Prix,19,5,Fernando Alonso,CatBoost,9.0,
-88,Mexico City Grand Prix,20,26,Oliver Bearman,CatBoost,9.0,
+88,Mexico City Grand Prix,20,26,Oliver Bearman,CatBoost,9.0,4.0
+89,São Paulo Grand Prix,21,25,Liam Lawson,CatBoost,9.0,7.0
 90,Las Vegas Grand Prix,22,23,Isack Hadjar,CatBoost,9.0,
+91,Qatar Grand Prix,23,3,Charles Leclerc,CatBoost,9.0,
 54,Australian Grand Prix,1,4,Carlos Sainz,CatBoost,10.0,18.0
 61,Chinese Grand Prix,2,23,Isack Hadjar,CatBoost,10.0,11.0
 55,Japanese Grand Prix,3,20,Pierre Gasly,CatBoost,10.0,13.0
@@ -1087,8 +1145,10 @@ event_id,event_name,round,driver_id,driver_name,model,predicted_position,actual_
 85,Azerbaijan Grand Prix,17,23,Isack Hadjar,CatBoost,10.0,
 86,Singapore Grand Prix,18,10,Nico Hulkenberg,CatBoost,10.0,
 87,United States Grand Prix,19,4,Carlos Sainz,CatBoost,10.0,
-88,Mexico City Grand Prix,20,5,Fernando Alonso,CatBoost,10.0,
+88,Mexico City Grand Prix,20,5,Fernando Alonso,CatBoost,10.0,18.0
+89,São Paulo Grand Prix,21,20,Pierre Gasly,CatBoost,10.0,10.0
 90,Las Vegas Grand Prix,22,10,Nico Hulkenberg,CatBoost,10.0,
+91,Qatar Grand Prix,23,20,Pierre Gasly,CatBoost,10.0,
 54,Australian Grand Prix,1,5,Fernando Alonso,CatBoost,11.0,17.0
 61,Chinese Grand Prix,2,10,Nico Hulkenberg,CatBoost,11.0,15.0
 55,Japanese Grand Prix,3,15,Alexander Albon,CatBoost,11.0,9.0
@@ -1108,8 +1168,10 @@ event_id,event_name,round,driver_id,driver_name,model,predicted_position,actual_
 85,Azerbaijan Grand Prix,17,5,Fernando Alonso,CatBoost,11.0,
 86,Singapore Grand Prix,18,25,Liam Lawson,CatBoost,11.0,
 87,United States Grand Prix,19,25,Liam Lawson,CatBoost,11.0,
-88,Mexico City Grand Prix,20,23,Isack Hadjar,CatBoost,11.0,
+88,Mexico City Grand Prix,20,23,Isack Hadjar,CatBoost,11.0,13.0
+89,São Paulo Grand Prix,21,7,Lewis Hamilton,CatBoost,11.0,18.0
 90,Las Vegas Grand Prix,22,20,Pierre Gasly,CatBoost,11.0,
+91,Qatar Grand Prix,23,25,Liam Lawson,CatBoost,11.0,
 54,Australian Grand Prix,1,8,Lance Stroll,CatBoost,12.0,6.0
 61,Chinese Grand Prix,2,8,Lance Stroll,CatBoost,12.0,9.0
 55,Japanese Grand Prix,3,4,Carlos Sainz,CatBoost,12.0,14.0
@@ -1129,8 +1191,10 @@ event_id,event_name,round,driver_id,driver_name,model,predicted_position,actual_
 85,Azerbaijan Grand Prix,17,7,Lewis Hamilton,CatBoost,12.0,
 86,Singapore Grand Prix,18,23,Isack Hadjar,CatBoost,12.0,
 87,United States Grand Prix,19,10,Nico Hulkenberg,CatBoost,12.0,
-88,Mexico City Grand Prix,20,9,Esteban Ocon,CatBoost,12.0,
+88,Mexico City Grand Prix,20,9,Esteban Ocon,CatBoost,12.0,9.0
+89,São Paulo Grand Prix,21,5,Fernando Alonso,CatBoost,12.0,14.0
 90,Las Vegas Grand Prix,22,8,Lance Stroll,CatBoost,12.0,
+91,Qatar Grand Prix,23,26,Oliver Bearman,CatBoost,12.0,
 54,Australian Grand Prix,1,29,Kimi Antonelli,CatBoost,13.0,4.0
 61,Chinese Grand Prix,2,5,Fernando Alonso,CatBoost,13.0,17.0
 55,Japanese Grand Prix,3,5,Fernando Alonso,CatBoost,13.0,11.0
@@ -1150,8 +1214,10 @@ event_id,event_name,round,driver_id,driver_name,model,predicted_position,actual_
 85,Azerbaijan Grand Prix,17,8,Lance Stroll,CatBoost,13.0,
 86,Singapore Grand Prix,18,14,Yuki Tsunoda,CatBoost,13.0,
 87,United States Grand Prix,19,14,Yuki Tsunoda,CatBoost,13.0,
-88,Mexico City Grand Prix,20,10,Nico Hulkenberg,CatBoost,13.0,
+88,Mexico City Grand Prix,20,10,Nico Hulkenberg,CatBoost,13.0,19.0
+89,São Paulo Grand Prix,21,10,Nico Hulkenberg,CatBoost,13.0,9.0
 90,Las Vegas Grand Prix,22,9,Esteban Ocon,CatBoost,13.0,
+91,Qatar Grand Prix,23,10,Nico Hulkenberg,CatBoost,13.0,
 54,Australian Grand Prix,1,28,Jack Doohan,CatBoost,14.0,19.0
 61,Chinese Grand Prix,2,4,Carlos Sainz,CatBoost,14.0,10.0
 55,Japanese Grand Prix,3,25,Liam Lawson,CatBoost,14.0,17.0
@@ -1171,8 +1237,10 @@ event_id,event_name,round,driver_id,driver_name,model,predicted_position,actual_
 85,Azerbaijan Grand Prix,17,24,Gabriel Bortoleto,CatBoost,14.0,
 86,Singapore Grand Prix,18,24,Gabriel Bortoleto,CatBoost,14.0,
 87,United States Grand Prix,19,20,Pierre Gasly,CatBoost,14.0,
-88,Mexico City Grand Prix,20,14,Yuki Tsunoda,CatBoost,14.0,
+88,Mexico City Grand Prix,20,14,Yuki Tsunoda,CatBoost,14.0,11.0
+89,São Paulo Grand Prix,21,15,Alexander Albon,CatBoost,14.0,11.0
 90,Las Vegas Grand Prix,22,26,Oliver Bearman,CatBoost,14.0,
+91,Qatar Grand Prix,23,24,Gabriel Bortoleto,CatBoost,14.0,
 54,Australian Grand Prix,1,23,Isack Hadjar,CatBoost,15.0,20.0
 61,Chinese Grand Prix,2,20,Pierre Gasly,CatBoost,15.0,20.0
 55,Japanese Grand Prix,3,14,Yuki Tsunoda,CatBoost,15.0,12.0
@@ -1192,8 +1260,10 @@ event_id,event_name,round,driver_id,driver_name,model,predicted_position,actual_
 85,Azerbaijan Grand Prix,17,26,Oliver Bearman,CatBoost,15.0,
 86,Singapore Grand Prix,18,8,Lance Stroll,CatBoost,15.0,
 87,United States Grand Prix,19,27,Franco Colapinto,CatBoost,15.0,
-88,Mexico City Grand Prix,20,25,Liam Lawson,CatBoost,15.0,
+88,Mexico City Grand Prix,20,25,Liam Lawson,CatBoost,15.0,20.0
+89,São Paulo Grand Prix,21,1,Max Verstappen,CatBoost,15.0,3.0
 90,Las Vegas Grand Prix,22,29,Kimi Antonelli,CatBoost,15.0,
+91,Qatar Grand Prix,23,15,Alexander Albon,CatBoost,15.0,
 54,Australian Grand Prix,1,10,Nico Hulkenberg,CatBoost,16.0,7.0
 61,Chinese Grand Prix,2,14,Yuki Tsunoda,CatBoost,16.0,16.0
 55,Japanese Grand Prix,3,10,Nico Hulkenberg,CatBoost,16.0,16.0
@@ -1213,8 +1283,10 @@ event_id,event_name,round,driver_id,driver_name,model,predicted_position,actual_
 85,Azerbaijan Grand Prix,17,10,Nico Hulkenberg,CatBoost,16.0,
 86,Singapore Grand Prix,18,27,Franco Colapinto,CatBoost,16.0,
 87,United States Grand Prix,19,24,Gabriel Bortoleto,CatBoost,16.0,
-88,Mexico City Grand Prix,20,24,Gabriel Bortoleto,CatBoost,16.0,
+88,Mexico City Grand Prix,20,24,Gabriel Bortoleto,CatBoost,16.0,10.0
+89,São Paulo Grand Prix,21,8,Lance Stroll,CatBoost,16.0,16.0
 90,Las Vegas Grand Prix,22,27,Franco Colapinto,CatBoost,16.0,
+91,Qatar Grand Prix,23,14,Yuki Tsunoda,CatBoost,16.0,
 54,Australian Grand Prix,1,24,Gabriel Bortoleto,CatBoost,17.0,16.0
 61,Chinese Grand Prix,2,26,Oliver Bearman,CatBoost,17.0,8.0
 55,Japanese Grand Prix,3,24,Gabriel Bortoleto,CatBoost,17.0,19.0
@@ -1234,8 +1306,10 @@ event_id,event_name,round,driver_id,driver_name,model,predicted_position,actual_
 85,Azerbaijan Grand Prix,17,27,Franco Colapinto,CatBoost,17.0,
 86,Singapore Grand Prix,18,9,Esteban Ocon,CatBoost,17.0,
 87,United States Grand Prix,19,9,Esteban Ocon,CatBoost,17.0,
-88,Mexico City Grand Prix,20,15,Alexander Albon,CatBoost,17.0,
+88,Mexico City Grand Prix,20,15,Alexander Albon,CatBoost,17.0,12.0
+89,São Paulo Grand Prix,21,4,Carlos Sainz,CatBoost,17.0,13.0
 90,Las Vegas Grand Prix,22,15,Alexander Albon,CatBoost,17.0,
+91,Qatar Grand Prix,23,7,Lewis Hamilton,CatBoost,17.0,
 54,Australian Grand Prix,1,9,Esteban Ocon,CatBoost,18.0,13.0
 61,Chinese Grand Prix,2,24,Gabriel Bortoleto,CatBoost,18.0,14.0
 55,Japanese Grand Prix,3,9,Esteban Ocon,CatBoost,18.0,18.0
@@ -1255,8 +1329,10 @@ event_id,event_name,round,driver_id,driver_name,model,predicted_position,actual_
 85,Azerbaijan Grand Prix,17,15,Alexander Albon,CatBoost,18.0,
 86,Singapore Grand Prix,18,15,Alexander Albon,CatBoost,18.0,
 87,United States Grand Prix,19,23,Isack Hadjar,CatBoost,18.0,
-88,Mexico City Grand Prix,20,8,Lance Stroll,CatBoost,18.0,
+88,Mexico City Grand Prix,20,8,Lance Stroll,CatBoost,18.0,14.0
+89,São Paulo Grand Prix,21,14,Yuki Tsunoda,CatBoost,18.0,17.0
 90,Las Vegas Grand Prix,22,14,Yuki Tsunoda,CatBoost,18.0,
+91,Qatar Grand Prix,23,9,Esteban Ocon,CatBoost,18.0,
 54,Australian Grand Prix,1,26,Oliver Bearman,CatBoost,19.0,14.0
 61,Chinese Grand Prix,2,25,Liam Lawson,CatBoost,19.0,12.0
 55,Japanese Grand Prix,3,28,Jack Doohan,CatBoost,19.0,15.0
@@ -1276,8 +1352,10 @@ event_id,event_name,round,driver_id,driver_name,model,predicted_position,actual_
 85,Azerbaijan Grand Prix,17,20,Pierre Gasly,CatBoost,19.0,
 86,Singapore Grand Prix,18,20,Pierre Gasly,CatBoost,19.0,
 87,United States Grand Prix,19,8,Lance Stroll,CatBoost,19.0,
-88,Mexico City Grand Prix,20,20,Pierre Gasly,CatBoost,19.0,
+88,Mexico City Grand Prix,20,20,Pierre Gasly,CatBoost,19.0,15.0
+89,São Paulo Grand Prix,21,27,Franco Colapinto,CatBoost,19.0,15.0
 90,Las Vegas Grand Prix,22,24,Gabriel Bortoleto,CatBoost,19.0,
+91,Qatar Grand Prix,23,27,Franco Colapinto,CatBoost,19.0,
 54,Australian Grand Prix,1,25,Liam Lawson,CatBoost,20.0,15.0
 61,Chinese Grand Prix,2,28,Jack Doohan,CatBoost,20.0,13.0
 55,Japanese Grand Prix,3,8,Lance Stroll,CatBoost,20.0,20.0
@@ -1297,5 +1375,7 @@ event_id,event_name,round,driver_id,driver_name,model,predicted_position,actual_
 85,Azerbaijan Grand Prix,17,9,Esteban Ocon,CatBoost,20.0,
 86,Singapore Grand Prix,18,4,Carlos Sainz,CatBoost,20.0,
 87,United States Grand Prix,19,15,Alexander Albon,CatBoost,20.0,
-88,Mexico City Grand Prix,20,27,Franco Colapinto,CatBoost,20.0,
+88,Mexico City Grand Prix,20,27,Franco Colapinto,CatBoost,20.0,16.0
+89,São Paulo Grand Prix,21,9,Esteban Ocon,CatBoost,20.0,12.0
 90,Las Vegas Grand Prix,22,7,Lewis Hamilton,CatBoost,20.0,
+91,Qatar Grand Prix,23,8,Lance Stroll,CatBoost,20.0,

@@ -19,7 +19,9 @@ event_id,event,driver_id,driver,predicted_pos,actual_pos,error,chaos_score,race_
 86,2025 R18 Singapore Grand Prix,6,George Russell,1.0,1,0.0,0.0,clean,False,2025
 87,2025 R19 United States Grand Prix,1,Max Verstappen,1.0,1,0.0,0.25,moderate,False,2025
 88,2025 R20 Mexico City Grand Prix,11,Lando Norris,1.0,1,0.0,1.0,chaotic,False,2025
+89,2025 R21 São Paulo Grand Prix,11,Lando Norris,1.0,1,0.0,0.75,chaotic,False,2025
 90,2025 R22 Las Vegas Grand Prix,11,Lando Norris,1.0,19,18.0,0.8499999999999999,chaotic,True,2025
+91,2025 R23 Qatar Grand Prix,1,Max Verstappen,1.0,1,0.0,1.0,chaotic,False,2025
 54,2025 R1 Australian Grand Prix,1,Max Verstappen,2.0,2,0.0,1.5,chaotic,False,2025
 61,2025 R2 Chinese Grand Prix,11,Lando Norris,2.0,2,0.0,0.4,moderate,False,2025
 55,2025 R3 Japanese Grand Prix,11,Lando Norris,2.0,2,0.0,0.0,clean,False,2025
@@ -40,7 +42,9 @@ event_id,event,driver_id,driver,predicted_pos,actual_pos,error,chaos_score,race_
 86,2025 R18 Singapore Grand Prix,1,Max Verstappen,2.0,2,0.0,0.0,clean,False,2025
 87,2025 R19 United States Grand Prix,11,Lando Norris,2.0,2,0.0,0.25,moderate,False,2025
 88,2025 R20 Mexico City Grand Prix,3,Charles Leclerc,2.0,2,0.0,1.0,chaotic,False,2025
+89,2025 R21 São Paulo Grand Prix,29,Kimi Antonelli,2.0,2,0.0,0.75,chaotic,False,2025
 90,2025 R22 Las Vegas Grand Prix,1,Max Verstappen,2.0,1,1.0,0.8499999999999999,chaotic,False,2025
+91,2025 R23 Qatar Grand Prix,18,Oscar Piastri,2.0,2,0.0,1.0,chaotic,False,2025
 54,2025 R1 Australian Grand Prix,6,George Russell,3.0,3,0.0,1.5,chaotic,False,2025
 61,2025 R2 Chinese Grand Prix,6,George Russell,3.0,3,0.0,0.4,moderate,False,2025
 55,2025 R3 Japanese Grand Prix,18,Oscar Piastri,3.0,3,0.0,0.0,clean,False,2025
@@ -61,7 +65,9 @@ event_id,event,driver_id,driver,predicted_pos,actual_pos,error,chaos_score,race_
 86,2025 R18 Singapore Grand Prix,18,Oscar Piastri,3.0,4,1.0,0.0,clean,False,2025
 87,2025 R19 United States Grand Prix,3,Charles Leclerc,3.0,3,0.0,0.25,moderate,False,2025
 88,2025 R20 Mexico City Grand Prix,7,Lewis Hamilton,3.0,8,5.0,1.0,chaotic,False,2025
+89,2025 R21 São Paulo Grand Prix,3,Charles Leclerc,3.0,19,16.0,0.75,chaotic,True,2025
 90,2025 R22 Las Vegas Grand Prix,18,Oscar Piastri,3.0,20,17.0,0.8499999999999999,chaotic,True,2025
+91,2025 R23 Qatar Grand Prix,11,Lando Norris,3.0,4,1.0,1.0,chaotic,False,2025
 54,2025 R1 Australian Grand Prix,18,Oscar Piastri,4.0,9,5.0,1.5,chaotic,False,2025
 61,2025 R2 Chinese Grand Prix,1,Max Verstappen,4.0,4,0.0,0.4,moderate,False,2025
 55,2025 R3 Japanese Grand Prix,3,Charles Leclerc,4.0,4,0.0,0.0,clean,False,2025
@@ -82,7 +88,9 @@ event_id,event,driver_id,driver,predicted_pos,actual_pos,error,chaos_score,race_
 86,2025 R18 Singapore Grand Prix,29,Kimi Antonelli,4.0,5,1.0,0.0,clean,False,2025
 87,2025 R19 United States Grand Prix,6,George Russell,4.0,6,2.0,0.25,moderate,False,2025
 88,2025 R20 Mexico City Grand Prix,6,George Russell,4.0,7,3.0,1.0,chaotic,False,2025
+89,2025 R21 São Paulo Grand Prix,18,Oscar Piastri,4.0,5,1.0,0.75,chaotic,False,2025
 90,2025 R22 Las Vegas Grand Prix,6,George Russell,4.0,2,2.0,0.8499999999999999,chaotic,False,2025
+91,2025 R23 Qatar Grand Prix,6,George Russell,4.0,6,2.0,1.0,chaotic,False,2025
 54,2025 R1 Australian Grand Prix,15,Alexander Albon,5.0,5,0.0,1.5,chaotic,False,2025
 61,2025 R2 Chinese Grand Prix,7,Lewis Hamilton,5.0,19,14.0,0.4,moderate,True,2025
 55,2025 R3 Japanese Grand Prix,6,George Russell,5.0,5,0.0,0.0,clean,False,2025
@@ -103,7 +111,9 @@ event_id,event,driver_id,driver,predicted_pos,actual_pos,error,chaos_score,race_
 86,2025 R18 Singapore Grand Prix,11,Lando Norris,5.0,3,2.0,0.0,clean,False,2025
 87,2025 R19 United States Grand Prix,18,Oscar Piastri,5.0,5,0.0,0.25,moderate,False,2025
 88,2025 R20 Mexico City Grand Prix,1,Max Verstappen,5.0,3,2.0,1.0,chaotic,False,2025
+89,2025 R21 São Paulo Grand Prix,24,Gabriel Bortoleto,5.0,20,15.0,0.75,chaotic,True,2025
 90,2025 R22 Las Vegas Grand Prix,4,Carlos Sainz,5.0,5,0.0,0.8499999999999999,chaotic,False,2025
+91,2025 R23 Qatar Grand Prix,29,Kimi Antonelli,5.0,5,0.0,1.0,chaotic,False,2025
 54,2025 R1 Australian Grand Prix,3,Charles Leclerc,6.0,8,2.0,1.5,chaotic,False,2025
 61,2025 R2 Chinese Grand Prix,29,Kimi Antonelli,6.0,6,0.0,0.4,moderate,False,2025
 55,2025 R3 Japanese Grand Prix,29,Kimi Antonelli,6.0,6,0.0,0.0,clean,False,2025
@@ -124,7 +134,9 @@ event_id,event,driver_id,driver,predicted_pos,actual_pos,error,chaos_score,race_
 86,2025 R18 Singapore Grand Prix,7,Lewis Hamilton,6.0,8,2.0,0.0,clean,False,2025
 87,2025 R19 United States Grand Prix,7,Lewis Hamilton,6.0,4,2.0,0.25,moderate,False,2025
 88,2025 R20 Mexico City Grand Prix,29,Kimi Antonelli,6.0,6,0.0,1.0,chaotic,False,2025
+89,2025 R21 São Paulo Grand Prix,6,George Russell,6.0,4,2.0,0.75,chaotic,False,2025
 90,2025 R22 Las Vegas Grand Prix,25,Liam Lawson,6.0,14,8.0,0.8499999999999999,chaotic,False,2025
+91,2025 R23 Qatar Grand Prix,4,Carlos Sainz,6.0,3,3.0,1.0,chaotic,False,2025
 54,2025 R1 Australian Grand Prix,7,Lewis Hamilton,7.0,10,3.0,1.5,chaotic,False,2025
 61,2025 R2 Chinese Grand Prix,3,Charles Leclerc,7.0,18,11.0,0.4,moderate,True,2025
 55,2025 R3 Japanese Grand Prix,7,Lewis Hamilton,7.0,7,0.0,0.0,clean,False,2025
@@ -145,7 +157,9 @@ event_id,event,driver_id,driver,predicted_pos,actual_pos,error,chaos_score,race_
 86,2025 R18 Singapore Grand Prix,3,Charles Leclerc,7.0,6,1.0,0.0,clean,False,2025
 87,2025 R19 United States Grand Prix,29,Kimi Antonelli,7.0,13,6.0,0.25,moderate,False,2025
 88,2025 R20 Mexico City Grand Prix,18,Oscar Piastri,7.0,5,2.0,1.0,chaotic,False,2025
+89,2025 R21 São Paulo Grand Prix,23,Isack Hadjar,7.0,8,1.0,0.75,chaotic,False,2025
 90,2025 R22 Las Vegas Grand Prix,5,Fernando Alonso,7.0,11,4.0,0.8499999999999999,chaotic,False,2025
+91,2025 R23 Qatar Grand Prix,23,Isack Hadjar,7.0,18,11.0,1.0,chaotic,True,2025
 54,2025 R1 Australian Grand Prix,14,Yuki Tsunoda,8.0,12,4.0,1.5,chaotic,False,2025
 61,2025 R2 Chinese Grand Prix,9,Esteban Ocon,8.0,5,3.0,0.4,moderate,False,2025
 55,2025 R3 Japanese Grand Prix,23,Isack Hadjar,8.0,8,0.0,0.0,clean,False,2025
@@ -166,7 +180,9 @@ event_id,event,driver_id,driver,predicted_pos,actual_pos,error,chaos_score,race_
 86,2025 R18 Singapore Grand Prix,26,Oliver Bearman,8.0,9,1.0,0.0,clean,False,2025
 87,2025 R19 United States Grand Prix,26,Oliver Bearman,8.0,9,1.0,0.25,moderate,False,2025
 88,2025 R20 Mexico City Grand Prix,4,Carlos Sainz,8.0,17,9.0,1.0,chaotic,True,2025
+89,2025 R21 São Paulo Grand Prix,26,Oliver Bearman,8.0,6,2.0,0.75,chaotic,False,2025
 90,2025 R22 Las Vegas Grand Prix,3,Charles Leclerc,8.0,4,4.0,0.8499999999999999,chaotic,False,2025
+91,2025 R23 Qatar Grand Prix,5,Fernando Alonso,8.0,7,1.0,1.0,chaotic,False,2025
 54,2025 R1 Australian Grand Prix,20,Pierre Gasly,9.0,11,2.0,1.5,chaotic,False,2025
 61,2025 R2 Chinese Grand Prix,15,Alexander Albon,9.0,7,2.0,0.4,moderate,False,2025
 55,2025 R3 Japanese Grand Prix,26,Oliver Bearman,9.0,10,1.0,0.0,clean,False,2025
@@ -187,7 +203,9 @@ event_id,event,driver_id,driver,predicted_pos,actual_pos,error,chaos_score,race_
 86,2025 R18 Singapore Grand Prix,5,Fernando Alonso,9.0,7,2.0,0.0,clean,False,2025
 87,2025 R19 United States Grand Prix,5,Fernando Alonso,9.0,10,1.0,0.25,moderate,False,2025
 88,2025 R20 Mexico City Grand Prix,26,Oliver Bearman,9.0,4,5.0,1.0,chaotic,False,2025
+89,2025 R21 São Paulo Grand Prix,25,Liam Lawson,9.0,7,2.0,0.75,chaotic,False,2025
 90,2025 R22 Las Vegas Grand Prix,23,Isack Hadjar,9.0,6,3.0,0.8499999999999999,chaotic,False,2025
+91,2025 R23 Qatar Grand Prix,3,Charles Leclerc,9.0,8,1.0,1.0,chaotic,False,2025
 54,2025 R1 Australian Grand Prix,4,Carlos Sainz,10.0,18,8.0,1.5,chaotic,True,2025
 61,2025 R2 Chinese Grand Prix,23,Isack Hadjar,10.0,11,1.0,0.4,moderate,False,2025
 55,2025 R3 Japanese Grand Prix,20,Pierre Gasly,10.0,13,3.0,0.0,clean,False,2025
@@ -208,7 +226,9 @@ event_id,event,driver_id,driver,predicted_pos,actual_pos,error,chaos_score,race_
 86,2025 R18 Singapore Grand Prix,10,Nico Hulkenberg,10.0,20,10.0,0.0,clean,False,2025
 87,2025 R19 United States Grand Prix,4,Carlos Sainz,10.0,20,10.0,0.25,moderate,True,2025
 88,2025 R20 Mexico City Grand Prix,5,Fernando Alonso,10.0,18,8.0,1.0,chaotic,True,2025
+89,2025 R21 São Paulo Grand Prix,20,Pierre Gasly,10.0,10,0.0,0.75,chaotic,False,2025
 90,2025 R22 Las Vegas Grand Prix,10,Nico Hulkenberg,10.0,7,3.0,0.8499999999999999,chaotic,False,2025
+91,2025 R23 Qatar Grand Prix,20,Pierre Gasly,10.0,16,6.0,1.0,chaotic,False,2025
 54,2025 R1 Australian Grand Prix,5,Fernando Alonso,11.0,17,6.0,1.5,chaotic,True,2025
 61,2025 R2 Chinese Grand Prix,10,Nico Hulkenberg,11.0,15,4.0,0.4,moderate,False,2025
 55,2025 R3 Japanese Grand Prix,15,Alexander Albon,11.0,9,2.0,0.0,clean,False,2025
@@ -229,7 +249,9 @@ event_id,event,driver_id,driver,predicted_pos,actual_pos,error,chaos_score,race_
 86,2025 R18 Singapore Grand Prix,25,Liam Lawson,11.0,15,4.0,0.0,clean,False,2025
 87,2025 R19 United States Grand Prix,25,Liam Lawson,11.0,11,0.0,0.25,moderate,False,2025
 88,2025 R20 Mexico City Grand Prix,23,Isack Hadjar,11.0,13,2.0,1.0,chaotic,False,2025
+89,2025 R21 São Paulo Grand Prix,7,Lewis Hamilton,11.0,18,7.0,0.75,chaotic,True,2025
 90,2025 R22 Las Vegas Grand Prix,20,Pierre Gasly,11.0,13,2.0,0.8499999999999999,chaotic,False,2025
+91,2025 R23 Qatar Grand Prix,25,Liam Lawson,11.0,9,2.0,1.0,chaotic,False,2025
 54,2025 R1 Australian Grand Prix,8,Lance Stroll,12.0,6,6.0,1.5,chaotic,False,2025
 61,2025 R2 Chinese Grand Prix,8,Lance Stroll,12.0,9,3.0,0.4,moderate,False,2025
 55,2025 R3 Japanese Grand Prix,4,Carlos Sainz,12.0,14,2.0,0.0,clean,False,2025
@@ -250,7 +272,9 @@ event_id,event,driver_id,driver,predicted_pos,actual_pos,error,chaos_score,race_
 86,2025 R18 Singapore Grand Prix,23,Isack Hadjar,12.0,11,1.0,0.0,clean,False,2025
 87,2025 R19 United States Grand Prix,10,Nico Hulkenberg,12.0,8,4.0,0.25,moderate,False,2025
 88,2025 R20 Mexico City Grand Prix,9,Esteban Ocon,12.0,9,3.0,1.0,chaotic,False,2025
+89,2025 R21 São Paulo Grand Prix,5,Fernando Alonso,12.0,14,2.0,0.75,chaotic,False,2025
 90,2025 R22 Las Vegas Grand Prix,8,Lance Stroll,12.0,18,6.0,0.8499999999999999,chaotic,True,2025
+91,2025 R23 Qatar Grand Prix,26,Oliver Bearman,12.0,19,7.0,1.0,chaotic,True,2025
 54,2025 R1 Australian Grand Prix,29,Kimi Antonelli,13.0,4,9.0,1.5,chaotic,False,2025
 61,2025 R2 Chinese Grand Prix,5,Fernando Alonso,13.0,17,4.0,0.4,moderate,True,2025
 55,2025 R3 Japanese Grand Prix,5,Fernando Alonso,13.0,11,2.0,0.0,clean,False,2025
@@ -270,7 +294,9 @@ event_id,event,driver_id,driver,predicted_pos,actual_pos,error,chaos_score,race_
 86,2025 R18 Singapore Grand Prix,14,Yuki Tsunoda,13.0,12,1.0,0.0,clean,False,2025
 87,2025 R19 United States Grand Prix,14,Yuki Tsunoda,13.0,7,6.0,0.25,moderate,False,2025
 88,2025 R20 Mexico City Grand Prix,10,Nico Hulkenberg,13.0,19,6.0,1.0,chaotic,True,2025
+89,2025 R21 São Paulo Grand Prix,10,Nico Hulkenberg,13.0,9,4.0,0.75,chaotic,False,2025
 90,2025 R22 Las Vegas Grand Prix,9,Esteban Ocon,13.0,9,4.0,0.8499999999999999,chaotic,False,2025
+91,2025 R23 Qatar Grand Prix,10,Nico Hulkenberg,13.0,20,7.0,1.0,chaotic,True,2025
 54,2025 R1 Australian Grand Prix,28,Jack Doohan,14.0,19,5.0,1.5,chaotic,True,2025
 61,2025 R2 Chinese Grand Prix,4,Carlos Sainz,14.0,10,4.0,0.4,moderate,False,2025
 55,2025 R3 Japanese Grand Prix,25,Liam Lawson,14.0,17,3.0,0.0,clean,False,2025
@@ -291,7 +317,9 @@ event_id,event,driver_id,driver,predicted_pos,actual_pos,error,chaos_score,race_
 86,2025 R18 Singapore Grand Prix,24,Gabriel Bortoleto,14.0,17,3.0,0.0,clean,False,2025
 87,2025 R19 United States Grand Prix,20,Pierre Gasly,14.0,19,5.0,0.25,moderate,False,2025
 88,2025 R20 Mexico City Grand Prix,14,Yuki Tsunoda,14.0,11,3.0,1.0,chaotic,False,2025
+89,2025 R21 São Paulo Grand Prix,15,Alexander Albon,14.0,11,3.0,0.75,chaotic,False,2025
 90,2025 R22 Las Vegas Grand Prix,26,Oliver Bearman,14.0,10,4.0,0.8499999999999999,chaotic,False,2025
+91,2025 R23 Qatar Grand Prix,24,Gabriel Bortoleto,14.0,13,1.0,1.0,chaotic,False,2025
 54,2025 R1 Australian Grand Prix,23,Isack Hadjar,15.0,20,5.0,1.5,chaotic,True,2025
 61,2025 R2 Chinese Grand Prix,20,Pierre Gasly,15.0,20,5.0,0.4,moderate,True,2025
 55,2025 R3 Japanese Grand Prix,14,Yuki Tsunoda,15.0,12,3.0,0.0,clean,False,2025
@@ -312,7 +340,9 @@ event_id,event,driver_id,driver,predicted_pos,actual_pos,error,chaos_score,race_
 86,2025 R18 Singapore Grand Prix,8,Lance Stroll,15.0,13,2.0,0.0,clean,False,2025
 87,2025 R19 United States Grand Prix,27,Franco Colapinto,15.0,17,2.0,0.25,moderate,False,2025
 88,2025 R20 Mexico City Grand Prix,25,Liam Lawson,15.0,20,5.0,1.0,chaotic,True,2025
+89,2025 R21 São Paulo Grand Prix,1,Max Verstappen,15.0,3,12.0,0.75,chaotic,False,2025
 90,2025 R22 Las Vegas Grand Prix,29,Kimi Antonelli,15.0,3,12.0,0.8499999999999999,chaotic,False,2025
+91,2025 R23 Qatar Grand Prix,15,Alexander Albon,15.0,11,4.0,1.0,chaotic,False,2025
 54,2025 R1 Australian Grand Prix,10,Nico Hulkenberg,16.0,7,9.0,1.5,chaotic,False,2025
 61,2025 R2 Chinese Grand Prix,14,Yuki Tsunoda,16.0,16,0.0,0.4,moderate,False,2025
 55,2025 R3 Japanese Grand Prix,10,Nico Hulkenberg,16.0,16,0.0,0.0,clean,False,2025
@@ -333,7 +363,9 @@ event_id,event,driver_id,driver,predicted_pos,actual_pos,error,chaos_score,race_
 86,2025 R18 Singapore Grand Prix,27,Franco Colapinto,16.0,16,0.0,0.0,clean,False,2025
 87,2025 R19 United States Grand Prix,24,Gabriel Bortoleto,16.0,18,2.0,0.25,moderate,False,2025
 88,2025 R20 Mexico City Grand Prix,24,Gabriel Bortoleto,16.0,10,6.0,1.0,chaotic,False,2025
+89,2025 R21 São Paulo Grand Prix,8,Lance Stroll,16.0,16,0.0,0.75,chaotic,False,2025
 90,2025 R22 Las Vegas Grand Prix,27,Franco Colapinto,16.0,15,1.0,0.8499999999999999,chaotic,False,2025
+91,2025 R23 Qatar Grand Prix,14,Yuki Tsunoda,16.0,10,6.0,1.0,chaotic,False,2025
 54,2025 R1 Australian Grand Prix,24,Gabriel Bortoleto,17.0,16,1.0,1.5,chaotic,True,2025
 61,2025 R2 Chinese Grand Prix,26,Oliver Bearman,17.0,8,9.0,0.4,moderate,False,2025
 55,2025 R3 Japanese Grand Prix,24,Gabriel Bortoleto,17.0,19,2.0,0.0,clean,False,2025
@@ -354,7 +386,9 @@ event_id,event,driver_id,driver,predicted_pos,actual_pos,error,chaos_score,race_
 86,2025 R18 Singapore Grand Prix,9,Esteban Ocon,17.0,18,1.0,0.0,clean,False,2025
 87,2025 R19 United States Grand Prix,9,Esteban Ocon,17.0,15,2.0,0.25,moderate,False,2025
 88,2025 R20 Mexico City Grand Prix,15,Alexander Albon,17.0,12,5.0,1.0,chaotic,False,2025
+89,2025 R21 São Paulo Grand Prix,4,Carlos Sainz,17.0,13,4.0,0.75,chaotic,False,2025
 90,2025 R22 Las Vegas Grand Prix,15,Alexander Albon,17.0,16,1.0,0.8499999999999999,chaotic,True,2025
+91,2025 R23 Qatar Grand Prix,7,Lewis Hamilton,17.0,12,5.0,1.0,chaotic,False,2025
 54,2025 R1 Australian Grand Prix,9,Esteban Ocon,18.0,13,5.0,1.5,chaotic,False,2025
 61,2025 R2 Chinese Grand Prix,24,Gabriel Bortoleto,18.0,14,4.0,0.4,moderate,False,2025
 55,2025 R3 Japanese Grand Prix,9,Esteban Ocon,18.0,18,0.0,0.0,clean,False,2025
@@ -375,7 +409,9 @@ event_id,event,driver_id,driver,predicted_pos,actual_pos,error,chaos_score,race_
 86,2025 R18 Singapore Grand Prix,15,Alexander Albon,18.0,14,4.0,0.0,clean,False,2025
 87,2025 R19 United States Grand Prix,23,Isack Hadjar,18.0,16,2.0,0.25,moderate,False,2025
 88,2025 R20 Mexico City Grand Prix,8,Lance Stroll,18.0,14,4.0,1.0,chaotic,False,2025
+89,2025 R21 São Paulo Grand Prix,14,Yuki Tsunoda,18.0,17,1.0,0.75,chaotic,False,2025
 90,2025 R22 Las Vegas Grand Prix,14,Yuki Tsunoda,18.0,12,6.0,0.8499999999999999,chaotic,False,2025
+91,2025 R23 Qatar Grand Prix,9,Esteban Ocon,18.0,15,3.0,1.0,chaotic,False,2025
 54,2025 R1 Australian Grand Prix,26,Oliver Bearman,19.0,14,5.0,1.5,chaotic,False,2025
 61,2025 R2 Chinese Grand Prix,25,Liam Lawson,19.0,12,7.0,0.4,moderate,False,2025
 55,2025 R3 Japanese Grand Prix,28,Jack Doohan,19.0,15,4.0,0.0,clean,False,2025
@@ -396,7 +432,9 @@ event_id,event,driver_id,driver,predicted_pos,actual_pos,error,chaos_score,race_
 86,2025 R18 Singapore Grand Prix,20,Pierre Gasly,19.0,19,0.0,0.0,clean,False,2025
 87,2025 R19 United States Grand Prix,8,Lance Stroll,19.0,12,7.0,0.25,moderate,False,2025
 88,2025 R20 Mexico City Grand Prix,20,Pierre Gasly,19.0,15,4.0,1.0,chaotic,False,2025
+89,2025 R21 São Paulo Grand Prix,27,Franco Colapinto,19.0,15,4.0,0.75,chaotic,False,2025
 90,2025 R22 Las Vegas Grand Prix,24,Gabriel Bortoleto,19.0,17,2.0,0.8499999999999999,chaotic,True,2025
+91,2025 R23 Qatar Grand Prix,27,Franco Colapinto,19.0,14,5.0,1.0,chaotic,False,2025
 54,2025 R1 Australian Grand Prix,25,Liam Lawson,20.0,15,5.0,1.5,chaotic,True,2025
 61,2025 R2 Chinese Grand Prix,28,Jack Doohan,20.0,13,7.0,0.4,moderate,False,2025
 55,2025 R3 Japanese Grand Prix,8,Lance Stroll,20.0,20,0.0,0.0,clean,False,2025
@@ -417,4 +455,6 @@ event_id,event,driver_id,driver,predicted_pos,actual_pos,error,chaos_score,race_
 86,2025 R18 Singapore Grand Prix,4,Carlos Sainz,20.0,10,10.0,0.0,clean,False,2025
 87,2025 R19 United States Grand Prix,15,Alexander Albon,20.0,14,6.0,0.25,moderate,False,2025
 88,2025 R20 Mexico City Grand Prix,27,Franco Colapinto,20.0,16,4.0,1.0,chaotic,False,2025
+89,2025 R21 São Paulo Grand Prix,9,Esteban Ocon,20.0,12,8.0,0.75,chaotic,False,2025
 90,2025 R22 Las Vegas Grand Prix,7,Lewis Hamilton,20.0,8,12.0,0.8499999999999999,chaotic,False,2025
+91,2025 R23 Qatar Grand Prix,8,Lance Stroll,20.0,17,3.0,1.0,chaotic,True,2025

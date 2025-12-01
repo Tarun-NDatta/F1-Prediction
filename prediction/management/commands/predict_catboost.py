@@ -201,28 +201,30 @@ class Command(BaseCommand):
 
         # Header
         self.stdout.write(f"{'Pos':<4} {'Driver':<20} {'CatBoost':<9} {'±':<2} {'SimpleAvg':<9} {'Median':<9} {'Ridge':<8} {'XGBoost':<8} {'Qual':<5}")
-        self.stdout.write("-" * 85)  # Increased width
+        self.stdout.write("-" * 85)
 
-    # Predictions - UPDATED
+        # Predictions
         for _, row in predictions_df.iterrows():
+            # Handle NaN qualifying positions
+            qual_pos = int(row['qualifying_position']) if pd.notna(row['qualifying_position']) else '-'
+            
             self.stdout.write(
                 f"{int(row['final_predicted_position']):<4} "
                 f"{row['driver']:<20} "
                 f"{row['catboost_prediction']:<9.2f} "
                 f"±{margin:<1} "
-                f"{row['simple_avg_prediction']:<9.2f} "  # NEW
-                f"{row['median_ensemble_prediction']:<9.2f} "  # NEW
+                f"{row['simple_avg_prediction']:<9.2f} "
+                f"{row['median_ensemble_prediction']:<9.2f} "
                 f"{row['ridge_prediction']:<8.2f} "
                 f"{row['xgboost_prediction']:<8.2f} "
-                f"{int(row['qualifying_position']):<5}"
+                f"{qual_pos:<5}"
             )
 
-            # Track characteristics
-            self.stdout.write(f"\n=== Track Characteristics ===")
-            self.stdout.write(f"Power Sensitivity: {predictions_df.iloc[0]['track_power_sensitivity']:.1f}/10")
-            self.stdout.write(f"Overtaking Difficulty: {predictions_df.iloc[0]['track_overtaking_difficulty']:.1f}/10")
-            self.stdout.write(f"Qualifying Importance: {predictions_df.iloc[0]['track_qualifying_importance']:.1f}/10")
-
+        # Track characteristics (displayed once after all predictions)
+        self.stdout.write(f"\n=== Track Characteristics ===")
+        self.stdout.write(f"Power Sensitivity: {predictions_df.iloc[0]['track_power_sensitivity']:.1f}/10")
+        self.stdout.write(f"Overtaking Difficulty: {predictions_df.iloc[0]['track_overtaking_difficulty']:.1f}/10")
+        self.stdout.write(f"Qualifying Importance: {predictions_df.iloc[0]['track_qualifying_importance']:.1f}/10")
     def display_predictions_with_comparison(self, predictions_df, event):
         """Display race predictions with actual results comparison"""
         from data.models import RaceResult
@@ -261,6 +263,8 @@ class Command(BaseCommand):
         
         # Predictions with comparison
         for _, row in display_df.iterrows():
+            qual_pos = int(row['qualifying_position']) if pd.notna(row['qualifying_position']) else '-'
+            
             actual_pos = int(row['actual_position']) if pd.notna(row['actual_position']) else 'N/A'
             diff = f"{row['position_difference']:+.0f}" if pd.notna(row['position_difference']) else 'N/A'
             
@@ -282,7 +286,7 @@ class Command(BaseCommand):
                 f"{row['ensemble_prediction']:<9.2f} "
                 f"{row['ridge_prediction']:<8.2f} "
                 f"{row['xgboost_prediction']:<8.2f} "
-                f"{int(row['qualifying_position']):<5} "
+                f"{qual_pos:<5} "
                 f"{actual_pos:<6} "
                 f"{diff_colored}"
             )
